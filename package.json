@@ -1,0 +1,21 @@
+{
+  "name": "kraken",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
+  "dependencies": {
+    "@chrisoakman/chessboardjs": "^1.0.0",
+    "axios": "^1.15.0",
+    "chess.js": "^1.4.0",
+    "express": "^5.2.1",
+    "jquery": "^4.0.0",
+    "stockfish": "^18.0.7"
+  }
+}

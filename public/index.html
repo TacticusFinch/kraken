@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kraken Chess Trainer</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Свои стили -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Chessboard.js -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+    <!-- Chess.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+</head>
+
+<body>
+
+    <div class="app">
+        <!-- Колонка1: Панель управления (слева) -->
+        <aside class="side-panel">
+            <div class="header">
+                <h1>KRAKEN</h1>
+                <div class="subtitle">Тренажёр дебютов</div>
+            </div>
+
+            <div class="info-card">
+                <div id="rating-display">
+                    <div class="rating-main">
+                        <span class="label">⭐ Рейтинг</span>
+                        <span id="rating-value">2000</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-wrapper">
+                <div class="control-group">
+                    <label>🎯 Начальный рейтинг</label>
+                    <select id="startRating">
+                        <option value="1000">Новичок — 1000</option>
+                        <option value="1400" selected>Любитель — 1400</option>
+                        <option value="1800">Клубный — 1800</option>
+                        <option value="2200">Мастер — 2200</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>⚔ Играть за</label>
+                    <select id="playerColor">
+                        <option value="white">⚪ Белые</option>
+                        <option value="black">⚫ Чёрные</option>
+                    </select>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn-secondary" id="applyRating">Применить</button>
+                </div>
+                <button class="btn-start" onclick="startGame()">🚀 В бой!</button>
+            </div>
+        </aside>
+
+        <!-- Колонка 2: Доска (центр) -->
+        <div class="board-column">
+            <div id="board"></div>
+        </div>
+
+        <!-- Колонка 3: Аналитика и Прогресс (справа) -->
+<aside class="analysis-panel">
+    <!-- Комбо-линия -->
+    <div class="combo-container">
+        <div class="combo-info">
+            <span class="combo-label">COMBO STREAK</span>
+            <span id="combo-multiplier">x1</span>
+        </div>
+        <div class="combo-bar-bg">
+            <div id="combo-fill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Нотация -->
+    <div class="notation-box">
+        <div class="panel-label">История ходов</div>
+        <div id="move-history" class="move-history">
+            <!-- Ходы будут добавляться сюда: 1. e4 e5 ... -->
+        </div>
+    </div>
+
+    <!-- Комментарии и Дебют -->
+    <div class="feedback-box">
+        <div id="opening-badge" class="opening-badge">Начальная позиция</div>
+        <div id="kraken-message" class="kraken-message">
+            Кракен наблюдает за вашими ходами...
+        </div>
+    </div>
+
+</aside>
+    </div>
+    <script src="sounds.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

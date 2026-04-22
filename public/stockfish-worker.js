@@ -1,0 +1,1 @@
+importScripts('stockfish-18-lite-single.js');
