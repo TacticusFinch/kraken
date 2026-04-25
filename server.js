@@ -3,6 +3,7 @@
 // Node.js 22+, Express, Lichess Explorer API
 // ============================================
 
+require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const fs = require('fs');
@@ -21,36 +22,44 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get('/sf-worker2.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'sf-worker2.js'));
+});
+
+app.get('/stockfish-18-lite-single.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'stockfish.js'));
+});
+
 // Используем регулярное выражение для перехвата всех .wasm запросов
 app.get(/.*\.wasm$/, (req, res) => {
-    // Извлекаем только имя файла из пути (например, из /js/stockfish.wasm получим stockfish.wasm)
     const fileName = path.basename(req.url);
-    const publicDir = path.join(__dirname, 'public');
-    const requestedFile = path.join(publicDir, fileName);
+    const requestedFile = path.join(__dirname, fileName);
 
-    console.log('🔍 Запрос на WASM:', fileName);
+    console.log('🔍WASM запрос:', req.url, '→ищем:', requestedFile);
 
     if (fs.existsSync(requestedFile)) {
-        // Файл найден по имени
         res.setHeader('Content-Type', 'application/wasm');
         res.sendFile(requestedFile);
     } else {
-        // Файл не найден — ищем любой другой .wasm в папке public
-        const wasmFiles = fs.readdirSync(publicDir).filter(f => f.endsWith('.wasm'));
+        //Ищем любой .wasm файл в корне
+        const wasmFiles = fs.readdirSync(__dirname).filter(f => f.endsWith('.wasm'));
+        console.log('🔍 Доступные .wasm файлы:', wasmFiles);
         
         if (wasmFiles.length > 0) {
-            const fallbackFile = path.join(publicDir, wasmFiles[0]);
-            console.log(`⚠️ Файл ${fileName} не найден. Отдаю запасной: ${wasmFiles[0]}`);
+            console.log(`⚠️ ${fileName} не найден, отдаю ${wasmFiles[0]}`);
             res.setHeader('Content-Type', 'application/wasm');
-            res.sendFile(fallbackFile);
+            res.sendFile(path.join(__dirname, wasmFiles[0]));
         } else {
-            console.error('❌ ОШИБКА: В папке public вообще нет .wasm файлов!');
-            res.status(404).send('No .wasm file found');
+            console.error('❌ Нет .wasm файлов в папке!');
+            res.status(404).end();// ← ВАЖНО: .end() без тела, не send()
         }
     }
 });
 
-app.use(express.static('public'));
+
+app.use(express.static(__dirname));
 
 
 // ============================================
@@ -234,7 +243,7 @@ async function fetchLichessRaw(fen, bands) {
 
     const p = lichessLimit(() => axios.get(url.toString(), {
         headers: {
-            'Authorization': `Bearer ${LICHESS_TOKEN}`,
+            'Authorization': `Bearer ${token}`,
             'User-Agent': 'KrakenChessTrainer/3.2'
         },
         timeout: LICHESS_TIMEOUT

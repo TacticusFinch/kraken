@@ -25,15 +25,22 @@
 </head>
 
 <body>
+<div class="kraken-overlay">
+    <!-- Генерируем щупальца под разными углами -->
+    <div class="tentacle" style="--rot: 20deg;  animation: wave 7s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 70deg;  animation: wave 9s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 120deg; animation: wave 6s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 160deg; animation: wave 10s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 210deg; animation: wave 8s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 260deg; animation: wave 11s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 300deg; animation: wave 5s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 340deg; animation: wave 12s infinite ease-in-out;"></div>
+</div>
 
     <div class="app">
         <!-- Колонка1: Панель управления (слева) -->
         <aside class="side-panel">
-            <div class="header">
-                <h1>KRAKEN</h1>
-                <div class="subtitle">Тренажёр дебютов</div>
-            </div>
-
+            
             <div class="info-card">
                 <div id="rating-display">
                     <div class="rating-main">
@@ -71,6 +78,10 @@
 
         <!-- Колонка 2: Доска (центр) -->
         <div class="board-column">
+	    <div class="header main-header">
+                <h1>KRAKEN</h1>
+                <div class="subtitle">Тренажёр дебютов</div>
+            </div>
             <div id="board"></div>
         </div>
 
@@ -108,4 +119,5 @@
     <script src="sounds.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>

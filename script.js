@@ -81,7 +81,8 @@ function createEngine(id) {
         resolve: null, turn: 'w', score: 0, isMate: false, timeout: null
     };
     try {
-        e.worker = new Worker('stockfish-worker.js');
+
+        e.worker = new Worker('sf-worker2.js');
         e.worker.onmessage = function (event) {
             const data = event.data;
             if (typeof data !== 'string') return;
@@ -127,8 +128,10 @@ function createEngine(id) {
 
         //★ ОТЛАДКА: ловим ошибки воркера
         e.worker.onerror = function (err) {
-            console.error(`❌ SF#${id} worker error:`, err.message, err.filename, err.lineno);
-        };
+    console.error(`❌ SF#${id} worker error:`, err.message ||'unknown', err.filename || 'no file', err.lineno || 'no line');
+    console.error(`❌ SF#${id} full error object:`, err);
+    console.error(`❌ SF#${id} type:`, err.type);
+};
 
         e.worker.postMessage('uci');
     } catch (err) {
@@ -216,7 +219,9 @@ async function computeCPL(fenBefore, fenAfter, playerTurnBefore) {
 // ============================================
 async function loadRatingFromServer() {
     try {
-        const r = await fetch('/api/rating/' + userId).then(r => r.json());
+        const response = await fetch('/api/rating/' + userId);
+		if (!response.ok) throw new Error('HTTP ' + response.status);
+		const r = await response.json();
         userRating = r.rating;
         gamesPlayed = r.games || 0;
         recentDeltas = r.recentDeltas || [];
