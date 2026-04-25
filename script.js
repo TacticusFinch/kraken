@@ -3,6 +3,7 @@
 // Серверный рейтинг + корректный расчёт CPL
 // ============================================
 
+const API_BASE = 'https://kraken-qslu.onrender.com';
 var board = null;
 var game = new Chess();
 var playerColor = 'white';
@@ -219,7 +220,7 @@ async function computeCPL(fenBefore, fenAfter, playerTurnBefore) {
 // ============================================
 async function loadRatingFromServer() {
     try {
-        const response = await fetch('/api/rating/' + userId);
+        const response = await fetch(API_BASE +'/api/rating/' + userId);
 		if (!response.ok) throw new Error('HTTP ' + response.status);
 		const r = await response.json();
         userRating = r.rating;
@@ -241,7 +242,7 @@ async function loadRatingFromServer() {
 
 async function playMoveOnServer(fen, san, rating) {
     try {
-        const response = await fetch('/play-move', {
+        const response = await fetch(API_BASE +'/play-move', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fen, san, rating })
@@ -654,7 +655,7 @@ async function endSession() {
     sessionStats.perfectStreak = allGood && userMoves.length >= 4;
 
     try {
-        const resp = await fetch('/api/rating/' + userId + '/update', {
+        const resp = await fetch(API_BASE +'/api/rating/' + userId + '/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -859,7 +860,7 @@ function updateRatingUI() {
 }
 async function makeFirstWhiteMove() {
     try {
-        const response = await fetch('/get-move', {
+        const response = await fetch(API_BASE +'/get-move', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1208,7 +1209,7 @@ $('#applyRating').on('click', async function () {
         }
 
         try {
-            const resp = await fetch('/api/rating/' + userId + '/reset', {
+            const resp = await fetch(API_BASE +'/api/rating/' + userId + '/reset', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rating: newRating })
