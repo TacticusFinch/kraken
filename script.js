@@ -260,17 +260,20 @@ async function playMoveOnServer(fen, san, rating) {
 // Обработка хода игрока
 // ============================================
 function onDrop(source, target) {
-
+    // Если фигуру просто тапнули (взяли и отпустили на месте)
     if (source === target) {
+        // Вызываем логику клика с микро-задержкой, чтобы библиотека успела сбросить drag
+        setTimeout(() => onSquareClick(source), 10);
         return 'snapback';
     }
-	  justDragged = true;
-    setTimeout(function() { justDragged = false; }, 50);
+
+    justDragged = true;
+    setTimeout(function() { justDragged = false; }, 150);
     clearClickHighlight();
     selectedSquare = null;
     if (!sessionActive) return 'snapback';
 
-    // Еслиждёмответ соперника — сохраняем как предход
+    // Если ждём ответ соперника — сохраняем как предход
     if (waitingForOpponent) {
         premoveData = { source, target };
         highlightPremove(source, target);
@@ -1113,6 +1116,64 @@ function clearClickHighlight() {
 
 
 // ============================================
+// Логика клика по клетке (Tap-to-move)
+// ============================================
+function onSquareClick(square) {
+    if (!sessionActive) return;
+
+    const piece = game.get(square);
+
+    // Если уже выбрана клетка — пробуем сделать ход
+    if (selectedSquare) {
+        const from = selectedSquare;
+        clearClickHighlight();
+        selectedSquare = null;
+
+        // Клик на ту же клетку — просто отмена выделения
+        if (from === square) return;
+
+        // Клик на другую свою фигуру — переключаем выбор
+        if (piece && isOwnPiece(piece)) {
+            selectedSquare = square;
+            highlightClickSquare(square);
+            highlightLegalMoves(square);
+            return;
+        }
+
+        // Пробуем сделать ход
+        if (waitingForOpponent) {
+            premoveData = { source: from, target: square };
+            highlightPremove(from, square);
+            updateStatus('⏩ Предход: ' + from + '→' + square);
+            return;
+        }
+
+        const fenBefore = game.fen();
+        const move = game.move({ from: from, to: square, promotion: 'q' });
+        if (move === null) {
+            SoundEngine.illegal();
+            board.position(game.fen(), false);
+            return;
+        }
+
+        board.position(game.fen(), true);
+        playMoveSound(move);
+        waitingForOpponent = true;
+        processPlayerMove(move, fenBefore);
+        return;
+    }
+
+    // Первый клик — выбираем свою фигуру
+    if (piece && isOwnPiece(piece) && !waitingForOpponent) {
+        selectedSquare = square;
+        highlightClickSquare(square);
+        highlightLegalMoves(square);
+    }
+}
+
+
+
+// ============================================
 // Инициализация
 // ============================================
 
@@ -1139,16 +1200,11 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ Click-to-move ═══
-    let lastTouchTime = 0; // Переменная для защиты от двойных срабатываний
-    
-    // Меняем 'click' на 'touchstart mousedown'
-    $('#board').on('touchstart mousedown', '.square-55d63', function (e) {
-        // Защита от двойного клика на устройствах, где есть и тачскрин, и мышь
-        if (e.type === 'touchstart') {
-            lastTouchTime = Date.now();
-        } else if (e.type === 'mousedown' && Date.now() - lastTouchTime < 500) {
-            return;
+// ═══ Click-to-move (Только для пустых клеток и фигур соперника) ═══
+    $('#board').on('touchend click', '.square-55d63', function (e) {
+        // Предотвращаем двойное срабатывание (и touch, и click) на смартфонах
+        if (e.type === 'touchend') {
+            e.preventDefault();
         }
     
     if (justDragged) return;
@@ -1159,22 +1215,11 @@ $(document).ready(async function () {
 
         const piece = game.get(square);
 
-        // Если уже выбрана клетка — пробуем сделать ход
-        if (selectedSquare) {
-            const from = selectedSquare;
-            clearClickHighlight();
-            selectedSquare = null;
-
-            // Клик нату же клетку — отмена
-            if (from === square) return;
-
-            // Клик на свою фигуру — переключаем выбор
-            if (piece && isOwnPiece(piece)) {
-                selectedSquare = square;
-                highlightClickSquare(square);
-                highlightLegalMoves(square);
-                return;
-            }
+        // ВАЖНО: Клики по СВОИМ фигурам мы игнорируем здесь! 
+        // Их перехватывает функция onDrop (Шаг 2), потому что они draggable.
+        if (piece && isOwnPiece(piece)) {
+            return;
+        }
 
             // Пробуем ход (через onDrop логику)
             if (waitingForOpponent) {
