@@ -1227,22 +1227,30 @@ $(document).ready(async function () {
     });
 
 // ═══ ИДЕАЛЬНЫЙ TAP-TO-MOVE (Touch + Mouse) ═══
-    // Слушаем и касания, и клики мыши. Причем как по пустым клеткам, так и по фигурам!
     $('#board').on('touchstart mousedown', '.square-55d63, .piece-417db', function (e) {
-        // Игнорируем клик правой кнопкой мыши
+        // Игнорируем правый клик мыши
         if (e.type === 'mousedown' && e.which !== 1) return;
+        if (justDragged) return;
+
+        // НАХОДИМ КЛЕТКУ: даже если кликнули по картинке фигуры, ищем её родительский div
+        var $square = $(this).closest('.square-55d63');
+        if (!$square.length) return;
+
+        // Извлекаем ID клетки (например, 'e4')
+        var square = $square.attr('data-square');
         
-        if (justDragged) return; 
-        
-        // getSquareFromElement отлично работает и для фигур, так как 
-        // chessboard.js вешает на них классы вида square-e4
-        var square = getSquareFromElement(this);
-        
+        // Резервный вариант поиска клетки, если data-square недоступен
+        if (!square) {
+            var match = $square.attr('class').match(/square-([a-h][1-8])/);
+            if (match) square = match[1];
+        }
+
         if (square) {
-            // Небольшая задержка предотвращает конфликты с внутренними событиями доски
-            setTimeout(function() {
-                onSquareClick(square);
-            }, 10);
+            // Если это мобильный тап, предотвращаем "фантомный" клик мыши (ghost click)
+            if (e.type === 'touchstart') {
+                e.preventDefault(); 
+            }
+            onSquareClick(square);
         }
     });
     // ═══ КОНЕЦ ═══
