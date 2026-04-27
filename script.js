@@ -260,8 +260,12 @@ async function playMoveOnServer(fen, san, rating) {
 // Обработка хода игрока
 // ============================================
 function onDrop(source, target) {
+
+    if (source === target) {
+        return 'snapback';
+    }
 	  justDragged = true;
-    setTimeout(function() { justDragged = false; }, 150);
+    setTimeout(function() { justDragged = false; }, 50);
     clearClickHighlight();
     selectedSquare = null;
     if (!sessionActive) return 'snapback';
