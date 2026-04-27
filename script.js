@@ -1121,6 +1121,17 @@ function highlightClickSquare(square) {
     }, 200);
 }
 
+function highlightLegalMoves(square) {
+    const moves = game.moves({ square: square, verbose: true });
+    moves.forEach(function (m) {
+        const $sq = $('#board .square-' + m.to);
+        if (m.captured) {
+            $sq.addClass('legal-capture');
+        } else {
+            $sq.addClass('legal-dot');
+        }
+    });
+}
 
 function clearClickHighlight() {
     $('#board .click-selected').removeClass('click-selected');$('#board .legal-dot').removeClass('legal-dot');
@@ -1133,12 +1144,14 @@ function clearClickHighlight() {
 // ============================================
 
 function onSquareClick(square) {
-    console.log('👉 [DEBUG] onSquareClick вызван для клетки:', square);
- // Пропускаем если это не тап (а например, начало drag)
-    if ('ontouchstart' in window && justDragged) return;
+// 🛡️ БРОНЯ ОТ ДВОЙНЫХ ТАПОВ: Игнорируем всё, что приходит быстрее чем за 250мс
     var now = Date.now();
-    if (now - lastClickTime < 100) return;  // ← защита от двойного вызова
+    if (now - lastClickTime < 250) {
+        console.log('🛑 [DEBUG] Спам-клик заблокирован:', square);
+        return; 
+    }
     lastClickTime = now;
+    console.log('👉 [DEBUG] onSquareClick вызван для клетки:', square);
 
     if (justDragged) return;
     if (!sessionActive) return;
