@@ -1225,28 +1225,36 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ ОБРАБОТКА ТАПОВ ПО ПУСТЫМ КЛЕТКАМ ═══
-    $('#board').on('touchstart mousedown', '.square-55d63', function (e) {
-	console.log('👉 [DEBUG] Сработало событие доски:', e.type, 'Элемент:', e.target.className);
-        // Если тапнули по фигуре - игнорируем! Это обработает onDragStart -> onDrop
-        if ($(e.target).hasClass('piece-417db')) return;
-        
+// ═══ УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ТАПОВ (Фигуры + Пустые клетки) ═══
+    $('#board').on('touchstart mousedown', '.square-55d63, .piece-417db', function (e) {
         if (e.type === 'mousedown' && e.which !== 1) return;
         if (justDragged) return;
 
-        var square = $(this).attr('data-square');
+        // Находим родительскую клетку (даже если тапнули по картинке <img> фигуры)
+        var $square = $(e.target).closest('.square-55d63');
+        if (!$square.length) return;
+
+        var square = $square.attr('data-square');
         if (!square) {
-            var match = $(this).attr('class').match(/square-([a-h][1-8])/);
+            var match = $square.attr('class').match(/square-([a-h][1-8])/);
             if (match) square = match[1];
         }
 
         if (square) {
-            if (e.type === 'touchstart') e.preventDefault();
-            onSquareClick(square);
+            // Блокируем скролл экрана только для пустых клеток.
+            // Для фигур скролл блокирует сама доска (иначе мы сломаем перетаскивание)
+            if (e.type === 'touchstart' && !$(e.target).hasClass('piece-417db')) {
+                e.preventDefault();
+            }
+            
+            // Вызываем выделение клетки с микро-задержкой, 
+            // чтобы не конфликтовать с внутренними процессами доски
+            setTimeout(function() {
+                onSquareClick(square);
+            }, 10);
         }
     });
     // ═══ КОНЕЦ ═══
-
 $(document).one('click touchstart', function () {
     SoundEngine.unlock();
 });
