@@ -265,14 +265,15 @@ async function playMoveOnServer(fen, san, rating) {
 // ============================================
 
 function onDrop(source, target) {
-     if (source === target) {
-        // ЭТО БЫЛ ТАП ПО СВОЕЙ ФИГУРЕ!
-        // Библиотека поняла это как перетаскивание на ту же клетку.
-        // Вызываем клик-ход с микро-задержкой, чтобы анимация возврата не мешала.
+    var dragDuration = Date.now() - dragStartTime;
+
+    // Если это был быстрый тап (меньше 200мс) ИЛИ фигура осталась на той же клетке
+    if (dragDuration < 200 || source === target) {
+        // Это клик! Отменяем перетаскивание и вызываем выделение клетки
         setTimeout(function() {
             onSquareClick(source);
         }, 50);
-        return 'snapback';
+        return 'snapback'; 
     }
 
     justDragged = true;
@@ -281,12 +282,12 @@ function onDrop(source, target) {
     selectedSquare = null;
     if (!sessionActive) return 'snapback';
 
-    // Еслиждём ответ соперника — сохраняем как предход
+    // Если ждём ответ соперника — сохраняем как предход
     if (waitingForOpponent) {
         premoveData = { source, target };
         highlightPremove(source, target);
         updateStatus('⏩ Предход: ' + source + '→' + target);
-        return'snapback';
+        return 'snapback';
     }
 
     const fenBefore = game.fen();
@@ -940,6 +941,8 @@ function startGame() {
 	SoundEngine.gameStart();
 }
 
+var dragStartTime = 0; // Добавляем таймер
+
 function onDragStart(source, piece) {
     if (!sessionActive || waitingForOpponent) return false;
     if (game.game_over()) return false;
@@ -947,9 +950,11 @@ function onDragStart(source, piece) {
     if (playerColor === 'black' && piece[0] === 'w') return false;
     if (playerColor === 'white' && game.turn() === 'b') return false;
     if (playerColor === 'black' && game.turn() === 'w') return false;
+    
+    // Запоминаем время, когда палец коснулся фигуры
+    dragStartTime = Date.now(); 
     return true;
 }
-
 function onSnapEnd() { board.position(game.fen(), false); }
 
 
