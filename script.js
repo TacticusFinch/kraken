@@ -1125,6 +1125,8 @@ function clearClickHighlight() {
 // ============================================
 
 function onSquareClick(square) {
+ // Пропускаем если это не тап (а например, начало drag)
+    if ('ontouchstart' in window && justDragged) return;
     var now = Date.now();
     if (now - lastClickTime < 100) return;  // ← защита от двойного вызова
     lastClickTime = now;
@@ -1215,6 +1217,7 @@ $(document).ready(async function () {
     var boardEl = document.getElementById('board');
 
     boardEl.addEventListener('touchstart', function (e) {
+	e.preventDefault();
         var touch = e.touches[0];
         var el = document.elementFromPoint(touch.clientX, touch.clientY);
         var squareEl = el ? el.closest('.square-55d63') : null;
@@ -1223,10 +1226,12 @@ $(document).ready(async function () {
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;
             touchStartTime = Date.now();
+
+	if (e.cancelable) e.preventDefault();
         } else {
             touchStartSquare = null;
         }
-    }, true);
+    }, { passive: false });
 
     boardEl.addEventListener('touchend', function (e) {
         if (!touchStartSquare) return;
@@ -1235,18 +1240,24 @@ $(document).ready(async function () {
         var dx = Math.abs(touch.clientX - touchStartX);
         var dy = Math.abs(touch.clientY - touchStartY);
         var dt = Date.now() - touchStartTime;
-        var square = touchStartSquare;
-        touchStartSquare = null;
 
         // Тап: палец сдвинулся < 15px и< 500ms
-        if (dx < 15 && dy < 15 && dt < 500) {
+        if (dx < 25 && dy < 25 && dt < 500) {
             e.preventDefault();
             e.stopPropagation();
+	    var square = touchStartSquare;
+            touchStartSquare = null;
+
             setTimeout(function () {
                 onSquareClick(square);
             }, 50);
         }
-    }, true);
+    }, { passive: false });
+
+
+boardEl.addEventListener('touchcancel', function() {
+    touchStartSquare = null;
+});
 
     // Десктоп — обычный click
     $('#board').on('click', '.square-55d63', function () {
