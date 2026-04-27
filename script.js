@@ -18,6 +18,7 @@ var sessionActive = false;
 var movesOutOfBook = 0;
 var MAX_MOVES_OUT_OF_BOOK = 2;
 var justDragged = false; // подавление клика после drag
+var lastClickTime = 0; 
 
 var blunderHistory = JSON.parse(localStorage.getItem('blunderHistory') || '{}');
 
@@ -259,11 +260,16 @@ async function playMoveOnServer(fen, san, rating) {
 // ============================================
 // Обработка хода игрока
 // ============================================
+
 function onDrop(source, target) {
-    // Фигуру подняли и отпустили на том же месте — это тап
+    // Тап по фигуре: chessboard.js вызывает onDrop(sq, sq)
+    // На мобильных touchend уже поглощён — вызываем клик-логику ЗДЕСЬ
     if (source === target) {
-        // НЕ вызываем onSquareClick здесь!
-        // touchend/click обработчик уже сработает сам.
+        // Неставим justDragged! Это был тап, не drag.
+        // Вызываем onSquareClick напрямую, т.к. touchend не дойдёт
+        setTimeout(function() {
+            onSquareClick(source);
+        }, 10);
         return 'snapback';
     }
 
@@ -278,7 +284,7 @@ function onDrop(source, target) {
         premoveData = { source, target };
         highlightPremove(source, target);
         updateStatus('⏩ Предход: ' + source + '→' + target);
-        return 'snapback';
+        return'snapback';
     }
 
     const fenBefore = game.fen();
@@ -1119,10 +1125,12 @@ function clearClickHighlight() {
 // ============================================
 // Логика клика по клетке (Tap-to-move)
 // ============================================
-// ============================================
-// Логика клика по клетке (Tap-to-move) — ИСПРАВЛЕНО
-// ============================================
+
 function onSquareClick(square) {
+    var now = Date.now();
+    if (now - lastClickTime < 100) return;  // ← защита от двойного вызова
+    lastClickTime = now;
+
     if (justDragged) return;
     if (!sessionActive) return;
 
@@ -1205,29 +1213,39 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ Click-to-move — ЕДИНЫЙ обработчик для тач и мыши ═══
-$('#board').on('touchend', '.square-55d63', function (e) {
-    // На тач-устройствах предотвращаем генерацию click
-    e.preventDefault();
+// ═══ НОВЫЙ БЛОК — Click-to-move═══
+    var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    if (justDragged) return;
+    if (isTouchDevice) {
+        $('#board').on('touchend', function (e) {
+            if (justDragged) return;
 
-    const square = getSquareFromElement(this);
-    if (!square) return;
+            var touch = e.originalEvent.changedTouches[0];
+            if (!touch) return;
 
-    onSquareClick(square);
-});
+            var elementUnderFinger = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (!elementUnderFinger) return;
 
-$('#board').on('click', '.square-55d63', function (e) {
-    // На десктопе click работает нормально
-    // На тач-устройствах он уже заблокирован через preventDefault выше
-    if (justDragged) return;
+            var squareEl = $(elementUnderFinger).closest('.square-55d63')[0];
+            if (!squareEl) return;
 
-    const square = getSquareFromElement(this);
-    if (!square) return;
+            var square = getSquareFromElement(squareEl);
+            if (!square) return;
 
-    onSquareClick(square);
-});
+            e.preventDefault();
+            onSquareClick(square);
+        });
+    } else {
+        $('#board').on('click', '.square-55d63', function (e) {
+            if (justDragged) return;
+
+            var square = getSquareFromElement(this);
+            if (!square) return;
+
+            onSquareClick(square);
+        });
+    }
+    // ═══ КОНЕЦ НОВОГО БЛОКА ═══
 
 
 $(document).one('click touchstart', function () {
