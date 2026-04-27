@@ -33,7 +33,7 @@ app.get('/sf-worker2.js', (req, res) => {
 
 app.get('/stockfish-18-lite-single.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
-    res.sendFile(path.join(__dirname, 'stockfish.js'));
+    res.sendFile(path.join(__dirname, 'stockfish-18-lite-single.js'));
 });
 
 // Используем регулярное выражение для перехвата всех .wasm запросов
@@ -756,6 +756,60 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
+
+// ============================================
+// Диагностика Lichess при старте
+// ============================================
+(async () => {
+    const testFen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
+    const testUrl = `https://explorer.lichess.ovh/lichess?variant=standard&speeds=blitz,rapid,classical&ratings=1600&fen=${encodeURIComponent(testFen)}`;
+
+    console.log('🔍 Тест Lichess Explorer...');
+    console.log('   URL:', testUrl);
+    console.log('   Токен:', token ? `${token.slice(0, 8)}...` : 'НЕ ЗАДАН');
+
+    // Тест 1: с токеном
+    try {
+        const resp = await axios.get(testUrl, {
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : undefined,
+                'User-Agent': 'KrakenChessTrainer/3.2',
+                'Accept': 'application/json'
+            },
+            timeout: 10000
+        });
+        const total = (resp.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        console.log(`✅ Тест с токеном: ${resp.status}, ${total} партий`);
+    } catch (e) {
+        console.error(`❌ Тест с токеном ПРОВАЛЕН:`);
+        if (e.response) {
+            console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);console.error(`   Body:`, JSON.stringify(e.response.data).slice(0, 200));
+        } else {
+            console.error(`   ${e.code || e.message}`);
+        }
+    }
+
+    // Тест 2: без токена
+    try {
+        const resp = await axios.get(testUrl, {
+            headers: {
+                'User-Agent': 'KrakenChessTrainer/3.2',
+                'Accept': 'application/json'
+            },
+            timeout: 10000
+        });
+        const total = (resp.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        console.log(`✅ Тест без токена: ${resp.status}, ${total} партий`);
+    } catch (e) {
+        console.error(`❌ Тест без токена ПРОВАЛЕН:`);
+        if (e.response) {
+            console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);
+        } else {
+            console.error(`   ${e.code || e.message}`);
+        }
+    }
+})();
+
 // ============================================
 // Запуск
 // ============================================
@@ -771,3 +825,5 @@ process.on('SIGINT', () => {
     try { fs.writeFileSync(RATINGS_FILE, JSON.stringify(ratings, null, 2)); } catch {}
     process.exit(0);
 });
+
+

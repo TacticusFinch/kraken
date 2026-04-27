@@ -3,8 +3,9 @@
 // Серверный рейтинг + корректный расчёт CPL
 // ============================================
 
-const API_BASE = 'https://kraken-qslu.onrender.com';
-var board = null;
+const API_BASE = window.location.hostname === 'localhost'
+    ? ''
+    : 'https://kraken-qslu.onrender.com';var board = null;
 var game = new Chess();
 var playerColor = 'white';
 var userRating = 1200;
