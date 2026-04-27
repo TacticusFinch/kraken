@@ -266,7 +266,7 @@ async function playMoveOnServer(fen, san, rating) {
 
 function onDrop(source, target) {
     if (source === target) {
-        //Ничего не делаем — capture-обработчик сам вызовет onSquareClick
+        // Неставим justDragged — пусть click-обработчик сработает
         return 'snapback';
     }
 
@@ -942,6 +942,7 @@ function onDragStart(source, piece) {
     if (playerColor === 'black' && piece[0] === 'w') return false;
     if (playerColor === 'white' && game.turn() === 'b') return false;
     if (playerColor === 'black' && game.turn() === 'w') return false;
+    return true;
 }
 
 function onSnapEnd() { board.position(game.fen(), false); }
