@@ -1140,11 +1140,16 @@ $(document).ready(async function () {
     });
 
 // ═══ Click-to-move ═══
-$('#board').on('click touchend', '.square-55d63', function (e) {
-    // Предотвращаем двойное срабатывание (и click, и touchend)
-    if (e.type === 'touchend') {
-        e.preventDefault(); 
-    }
+    let lastTouchTime = 0; // Переменная для защиты от двойных срабатываний
+    
+    // Меняем 'click' на 'touchstart mousedown'
+    $('#board').on('touchstart mousedown', '.square-55d63', function (e) {
+        // Защита от двойного клика на устройствах, где есть и тачскрин, и мышь
+        if (e.type === 'touchstart') {
+            lastTouchTime = Date.now();
+        } else if (e.type === 'mousedown' && Date.now() - lastTouchTime < 500) {
+            return;
+        }
     
     if (justDragged) return;
     if (!sessionActive) return;
