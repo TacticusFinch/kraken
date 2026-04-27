@@ -1213,51 +1213,38 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ TAP-TO-MOVE через capture-фазу (работает на мобильных!) ═══
-    var boardEl = document.getElementById('board');
+// ═══ УНИВЕРСАЛЬНЫЙ TAP-TO-MOVE (Мобильные + Десктоп) ═══
+    var touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 
-    boardEl.addEventListener('touchstart', function (e) {
-	e.preventDefault();
-        var touch = e.touches[0];
-        var el = document.elementFromPoint(touch.clientX, touch.clientY);
-        var squareEl = el ? el.closest('.square-55d63') : null;
-        if (squareEl) {
-            touchStartSquare = getSquareFromElement(squareEl);
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-            touchStartTime = Date.now();
+    // Слушаем касания прямо на клетках через делегирование jQuery
+    $('#board').on('touchstart', '.square-55d63', function (e) {
+        // ВАЖНО: Не вызываем e.preventDefault(), чтобы не сломать drag-and-drop от chessboard.js!
+        var touch = e.originalEvent.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchStartTime = Date.now();
+    });
 
-	if (e.cancelable) e.preventDefault();
-        } else {
-            touchStartSquare = null;
-        }
-    }, { passive: false });
-
-    boardEl.addEventListener('touchend', function (e) {
-        if (!touchStartSquare) return;
-
-        var touch = e.changedTouches[0];
+    $('#board').on('touchend', '.square-55d63', function (e) {
+        if (!touchStartTime) return;
+        
+        var touch = e.originalEvent.changedTouches[0];
         var dx = Math.abs(touch.clientX - touchStartX);
         var dy = Math.abs(touch.clientY - touchStartY);
         var dt = Date.now() - touchStartTime;
+        
+        touchStartTime = 0; // Сброс
 
-        // Тап: палец сдвинулся < 15px и< 500ms
-        if (dx < 25 && dy < 25 && dt < 500) {
-            e.preventDefault();
-            e.stopPropagation();
-	    var square = touchStartSquare;
-            touchStartSquare = null;
-
-            setTimeout(function () {
-                onSquareClick(square);
-            }, 50);
+        // Если палец почти не сдвинулся (тап) и прошло мало времени
+        if (dx < 15 && dy < 15 && dt < 300) {
+            if (justDragged) return;
+            var square = getSquareFromElement(this); // 'this' точно указывает на клетку
+            if (square) {
+                // Небольшая задержка, чтобы chessboard.js успел завершить свои события
+                setTimeout(function () { onSquareClick(square); }, 10);
+            }
         }
-    }, { passive: false });
-
-
-boardEl.addEventListener('touchcancel', function() {
-    touchStartSquare = null;
-});
+    });
 
     // Десктоп — обычный click
     $('#board').on('click', '.square-55d63', function () {
@@ -1266,7 +1253,6 @@ boardEl.addEventListener('touchcancel', function() {
         if (square) onSquareClick(square);
     });
     // ═══ КОНЕЦ TAP-TO-MOVE ═══
-
 
 $(document).one('click touchstart', function () {
     SoundEngine.unlock();

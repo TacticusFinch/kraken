@@ -1591,7 +1591,7 @@ box-shadow: 0 4px 20px rgba(255, 46, 147, 0.4);
     50% { transform: rotate(calc(var(--rot) + 10deg)) scaleY(1.2) skewX(5deg); opacity: 0.7; }
 }
 
-ss /* Mobile Touch Fixes */
+/* Mobile Touch Fixes */
 @media (hover: none) and (pointer: coarse) {
  /* Отключаем сложные эффекты для тач-устройств */
     #board {
