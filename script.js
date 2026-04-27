@@ -1111,19 +1111,16 @@ function getSquareFromElement(el) {
 function highlightClickSquare(square) {
     clearClickHighlight();
     $('#board .square-' + square).addClass('click-selected');
+    
+    // СЕКРЕТ: Восстанавливаем подсветку через 200мс, 
+    // если chessboard.js случайно стёр её при отмене перетаскивания
+    setTimeout(function() {
+        if (selectedSquare === square) {
+            $('#board .square-' + square).addClass('click-selected');
+        }
+    }, 200);
 }
 
-function highlightLegalMoves(square) {
-    const moves = game.moves({ square: square, verbose: true });
-    moves.forEach(function (m) {
-        const $sq = $('#board .square-' + m.to);
-        if (m.captured) {
-            $sq.addClass('legal-capture');
-        } else {
-            $sq.addClass('legal-dot');
-        }
-    });
-}
 
 function clearClickHighlight() {
     $('#board .click-selected').removeClass('click-selected');$('#board .legal-dot').removeClass('legal-dot');
@@ -1225,13 +1222,33 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ТАПОВ (Фигуры + Пустые клетки) ═══
-    $('#board').on('touchstart mousedown', '.square-55d63, .piece-417db', function (e) {
-        if (e.type === 'mousedown' && e.which !== 1) return;
+// ═══ ЖЕЛЕЗОБЕТОННЫЙ ОБРАБОТЧИК ТАПОВ ═══
+    var lastTapTime = 0;
+    var isTouching = false;
+
+    // Отвязываем старые события на всякий случай
+    $('#board').off('touchstart mousedown', '.square-55d63, .piece-417db');
+
+    $('#board').on('touchstart', '.square-55d63, .piece-417db', function (e) {
+        isTouching = true;
+        handleTap(this);
+    });
+
+    $('#board').on('mousedown', '.square-55d63, .piece-417db', function (e) {
+        if (isTouching) return; // Блокируем фантомные клики мыши на телефонах
+        if (e.which !== 1) return;
+        handleTap(this);
+    });
+
+    function handleTap(element) {
         if (justDragged) return;
 
-        // Находим родительскую клетку (даже если тапнули по картинке <img> фигуры)
-        var $square = $(e.target).closest('.square-55d63');
+        // ЖЕСТКИЙ БЛОК: разрешаем обрабатывать тап не чаще 1 раза в 200 мс
+        var now = Date.now();
+        if (now - lastTapTime < 200) return;
+        lastTapTime = now;
+
+        var $square = $(element).closest('.square-55d63');
         if (!$square.length) return;
 
         var square = $square.attr('data-square');
@@ -1241,19 +1258,12 @@ $(document).ready(async function () {
         }
 
         if (square) {
-            // Блокируем скролл экрана только для пустых клеток.
-            // Для фигур скролл блокирует сама доска (иначе мы сломаем перетаскивание)
-            if (e.type === 'touchstart' && !$(e.target).hasClass('piece-417db')) {
-                e.preventDefault();
-            }
-            
-            // Вызываем выделение клетки с микро-задержкой, 
-            // чтобы не конфликтовать с внутренними процессами доски
+            // Задержка 50мс позволяет доске завершить свои внутренние процессы
             setTimeout(function() {
                 onSquareClick(square);
-            }, 10);
+            }, 50);
         }
-    });
+    }
     // ═══ КОНЕЦ ═══
 $(document).one('click touchstart', function () {
     SoundEngine.unlock();
