@@ -941,18 +941,19 @@ function startGame() {
 	SoundEngine.gameStart();
 }
 
-var dragStartTime = 0; // Добавляем таймер
-
 function onDragStart(source, piece) {
+    // 🚀 ГЛАВНЫЙ СЕКРЕТ: Отключаем перетаскивание на мобильных экранах!
+    // Это разблокирует идеальные нативные клики (тапы).
+    if (window.matchMedia('(max-width: 900px)').matches || 'ontouchstart' in window) {
+        return false;
+    }
+
     if (!sessionActive || waitingForOpponent) return false;
     if (game.game_over()) return false;
     if (playerColor === 'white' && piece[0] === 'b') return false;
     if (playerColor === 'black' && piece[0] === 'w') return false;
     if (playerColor === 'white' && game.turn() === 'b') return false;
     if (playerColor === 'black' && game.turn() === 'w') return false;
-    
-    // Запоминаем время, когда палец коснулся фигуры
-    dragStartTime = Date.now(); 
     return true;
 }
 function onSnapEnd() { board.position(game.fen(), false); }
@@ -1223,11 +1224,11 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ ПРОСТОЙ И НАДЁЖНЫЙ КЛИК (Десктоп + Мобилки) ═══
-    // Этот клик сработает для пустых клеток и чужих фигур (т.к. библиотека их не блокирует).
-    // А клики по своим фигурам мы уже успешно ловим внутри onDrop!
+// ═══ ИДЕАЛЬНЫЙ TAP-TO-MOVE (как в рабочем проекте) ═══
+    // Поскольку мы отключили drag на мобилках в onDragStart, 
+    // браузер теперь идеально генерирует обычные клики по клеткам!
     $('#board').on('click', '.square-55d63', function () {
-        if (justDragged) return;
+        if (justDragged) return; // защита для десктопа
         var square = getSquareFromElement(this);
         if (square) onSquareClick(square);
     });
