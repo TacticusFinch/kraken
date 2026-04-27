@@ -19,11 +19,20 @@
     "updatedAt": 1777044714232
   },
   "u_8oh9lkfimod48jyi": {
-    "rating": 2180,
-    "games": 1,
+    "rating": 2228,
+    "games": 11,
     "lastDeltas": [
-      -20
+      -3,
+      13,
+      -15,
+      -4,
+      22,
+      22,
+      4,
+      22,
+      22,
+      -35
     ],
-    "updatedAt": 1777281711032
+    "updatedAt": 1777305951282
   }
 }

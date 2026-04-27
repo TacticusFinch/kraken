@@ -261,7 +261,7 @@ async function playMoveOnServer(fen, san, rating) {
 // ============================================
 function onDrop(source, target) {
 	  justDragged = true;
-    setTimeout(function() { justDragged = false; }, 50);
+    setTimeout(function() { justDragged = false; }, 150);
     clearClickHighlight();
     selectedSquare = null;
     if (!sessionActive) return 'snapback';
@@ -1128,10 +1128,22 @@ $(document).ready(async function () {
         snapbackSpeed: 150
     });
 
+ // Автоматическое изменение размера доски при повороте телефона
+    $(window).on('resize', function() {
+        if (board) {
+            board.resize();
+        }
+    });
+
 // ═══ Click-to-move ═══
-    $('#board').on('click', '.square-55d63', function () {
-	  if (justDragged) return;
-        if (!sessionActive) return;
+$('#board').on('click touchend', '.square-55d63', function (e) {
+    // Предотвращаем двойное срабатывание (и click, и touchend)
+    if (e.type === 'touchend') {
+        e.preventDefault(); 
+    }
+    
+    if (justDragged) return;
+    if (!sessionActive) return;
 
         const square = getSquareFromElement(this);
         if (!square) return;

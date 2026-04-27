@@ -458,6 +458,10 @@ BOARD
     0 30px 60px rgba(0, 0, 0, 0.7);
   position: relative;
   transition: box-shadow 0.4s ease;
+  touch-action: none; 
+    -webkit-touch-callout: none; /* Отключаем всплывающее меню на iOS */
+    -webkit-user-select: none;   /* Отключаем выделение текста */
+    user-select: none;
 }
 
 #board:hover {
