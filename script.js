@@ -265,8 +265,13 @@ async function playMoveOnServer(fen, san, rating) {
 // ============================================
 
 function onDrop(source, target) {
-    if (source === target) {
-        // Неставим justDragged — пусть click-обработчик сработает
+     if (source === target) {
+        // ЭТО БЫЛ ТАП ПО СВОЕЙ ФИГУРЕ!
+        // Библиотека поняла это как перетаскивание на ту же клетку.
+        // Вызываем клик-ход с микро-задержкой, чтобы анимация возврата не мешала.
+        setTimeout(function() {
+            onSquareClick(source);
+        }, 50);
         return 'snapback';
     }
 
@@ -1213,61 +1218,15 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ НАДЁЖНЫЙ TAP-TO-MOVE (Мобильные + Десктоп) ═══
-    var boardEl = document.getElementById('board');
-    var touchStartSquare = null;
-    var touchStartX = 0, touchStartY = 0, touchStartTime = 0;
-
-    // 1. Перехватываем касание ДО того, как chessboard.js создаст клон фигуры (capture: true)
-    boardEl.addEventListener('touchstart', function(e) {
-        var touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        touchStartTime = Date.now();
-
-        // Безопасно определяем клетку через DOM (без глючного elementFromPoint)
-        var squareEl = e.target.closest('.square-55d63');
-        if (squareEl) {
-            touchStartSquare = getSquareFromElement(squareEl);
-        } else {
-            touchStartSquare = null;
-        }
-        // ВАЖНО: Не вызываем e.preventDefault(), чтобы перетаскивание (drag) работало!
-    }, { capture: true, passive: true });
-
-    // 2. Ловим отпускание пальца
-    boardEl.addEventListener('touchend', function(e) {
-        if (!touchStartSquare) return;
-
-        var touch = e.changedTouches[0];
-        var dx = Math.abs(touch.clientX - touchStartX);
-        var dy = Math.abs(touch.clientY - touchStartY);
-        var dt = Date.now() - touchStartTime;
-
-        // Если это быстрый тап без сильного смещения пальца
-        if (dx < 15 && dy < 15 && dt < 300) {
-            var square = touchStartSquare;
-            touchStartSquare = null;
-
-            // Небольшая задержка, чтобы chessboard.js успел отработать snapback (возврат фигуры на место)
-            setTimeout(function () {
-                onSquareClick(square);
-            }, 50);
-        }
-    }, { capture: true, passive: true });
-
-    boardEl.addEventListener('touchcancel', function() {
-        touchStartSquare = null;
-    }, { capture: true, passive: true });
-
-    // 3. Десктоп — обычный click
+// ═══ ПРОСТОЙ И НАДЁЖНЫЙ КЛИК (Десктоп + Мобилки) ═══
+    // Этот клик сработает для пустых клеток и чужих фигур (т.к. библиотека их не блокирует).
+    // А клики по своим фигурам мы уже успешно ловим внутри onDrop!
     $('#board').on('click', '.square-55d63', function () {
         if (justDragged) return;
         var square = getSquareFromElement(this);
         if (square) onSquareClick(square);
     });
-    // ═══ КОНЕЦ TAP-TO-MOVE ═══
-
+    // ═══ КОНЕЦ ═══
 
 $(document).one('click touchstart', function () {
     SoundEngine.unlock();
