@@ -267,7 +267,7 @@ async function playMoveOnServer(fen, san, rating) {
 
 function onDrop(source, target) {
     var dragDuration = Date.now() - dragStartTime;
-
+    console.log('👉 [DEBUG] onDrop сработал! Откуда:', source, 'Куда:', target, 'Время:', dragDuration, 'мс');
     // ЛОГИКА LICHESS: Если бросили на ту же клетку ИЛИ очень быстро (тап)
     if (source === target || dragDuration < 200) {
         setTimeout(function() {
@@ -942,6 +942,7 @@ function startGame() {
 }
 
 function onDragStart(source, piece) {
+    console.log('👉 [DEBUG] onDragStart сработал! Клетка:', source, 'Фигура:', piece);
     dragStartTime = Date.now(); // Засекаем время касания
 
     // УДАЛЕН БЛОК БЛОКИРОВКИ МОБИЛЬНЫХ! Мы разрешаем доске реагировать на тапы.
@@ -1135,6 +1136,7 @@ function clearClickHighlight() {
 // ============================================
 
 function onSquareClick(square) {
+    console.log('👉 [DEBUG] onSquareClick вызван для клетки:', square);
  // Пропускаем если это не тап (а например, начало drag)
     if ('ontouchstart' in window && justDragged) return;
     var now = Date.now();
@@ -1225,6 +1227,7 @@ $(document).ready(async function () {
 
 // ═══ ОБРАБОТКА ТАПОВ ПО ПУСТЫМ КЛЕТКАМ ═══
     $('#board').on('touchstart mousedown', '.square-55d63', function (e) {
+	console.log('👉 [DEBUG] Сработало событие доски:', e.type, 'Элемент:', e.target.className);
         // Если тапнули по фигуре - игнорируем! Это обработает onDragStart -> onDrop
         if ($(e.target).hasClass('piece-417db')) return;
         
