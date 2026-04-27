@@ -19,7 +19,10 @@ var movesOutOfBook = 0;
 var MAX_MOVES_OUT_OF_BOOK = 2;
 var justDragged = false; // подавление клика после drag
 var lastClickTime = 0; 
-
+var touchStartSquare = null;
+var touchStartX = 0;
+var touchStartY = 0;
+var touchStartTime = 0;
 var blunderHistory = JSON.parse(localStorage.getItem('blunderHistory') || '{}');
 
 // Идентификатор пользователя (для серверного рейтинга)
@@ -262,14 +265,8 @@ async function playMoveOnServer(fen, san, rating) {
 // ============================================
 
 function onDrop(source, target) {
-    // Тап по фигуре: chessboard.js вызывает onDrop(sq, sq)
-    // На мобильных touchend уже поглощён — вызываем клик-логику ЗДЕСЬ
     if (source === target) {
-        // Неставим justDragged! Это был тап, не drag.
-        // Вызываем onSquareClick напрямую, т.к. touchend не дойдёт
-        setTimeout(function() {
-            onSquareClick(source);
-        }, 10);
+        //Ничего не делаем — capture-обработчик сам вызовет onSquareClick
         return 'snapback';
     }
 
@@ -1213,39 +1210,50 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ НОВЫЙ БЛОК — Click-to-move═══
-    var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+// ═══ TAP-TO-MOVE через capture-фазу (работает на мобильных!) ═══
+    var boardEl = document.getElementById('board');
 
-    if (isTouchDevice) {
-        $('#board').on('touchend', function (e) {
-            if (justDragged) return;
+    boardEl.addEventListener('touchstart', function (e) {
+        var touch = e.touches[0];
+        var el = document.elementFromPoint(touch.clientX, touch.clientY);
+        var squareEl = el ? el.closest('.square-55d63') : null;
+        if (squareEl) {
+            touchStartSquare = getSquareFromElement(squareEl);
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartTime = Date.now();
+        } else {
+            touchStartSquare = null;
+        }
+    }, true);
 
-            var touch = e.originalEvent.changedTouches[0];
-            if (!touch) return;
+    boardEl.addEventListener('touchend', function (e) {
+        if (!touchStartSquare) return;
 
-            var elementUnderFinger = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (!elementUnderFinger) return;
+        var touch = e.changedTouches[0];
+        var dx = Math.abs(touch.clientX - touchStartX);
+        var dy = Math.abs(touch.clientY - touchStartY);
+        var dt = Date.now() - touchStartTime;
+        var square = touchStartSquare;
+        touchStartSquare = null;
 
-            var squareEl = $(elementUnderFinger).closest('.square-55d63')[0];
-            if (!squareEl) return;
-
-            var square = getSquareFromElement(squareEl);
-            if (!square) return;
-
+        // Тап: палец сдвинулся < 15px и< 500ms
+        if (dx < 15 && dy < 15 && dt < 500) {
             e.preventDefault();
-            onSquareClick(square);
-        });
-    } else {
-        $('#board').on('click', '.square-55d63', function (e) {
-            if (justDragged) return;
+            e.stopPropagation();
+            setTimeout(function () {
+                onSquareClick(square);
+            }, 50);
+        }
+    }, true);
 
-            var square = getSquareFromElement(this);
-            if (!square) return;
-
-            onSquareClick(square);
-        });
-    }
-    // ═══ КОНЕЦ НОВОГО БЛОКА ═══
+    // Десктоп — обычный click
+    $('#board').on('click', '.square-55d63', function () {
+        if (justDragged) return;
+        var square = getSquareFromElement(this);
+        if (square) onSquareClick(square);
+    });
+    // ═══ КОНЕЦ TAP-TO-MOVE ═══
 
 
 $(document).one('click touchstart', function () {
