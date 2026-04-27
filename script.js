@@ -19,6 +19,7 @@ var movesOutOfBook = 0;
 var MAX_MOVES_OUT_OF_BOOK = 2;
 var justDragged = false; // подавление клика после drag
 var lastClickTime = 0; 
+var dragStartTime = 0;
 var touchStartSquare = null;
 var touchStartX = 0;
 var touchStartY = 0;
@@ -942,6 +943,7 @@ function startGame() {
 }
 
 function onDragStart(source, piece) {
+    dragStartTime = Date.now();
     // 🚀 ГЛАВНЫЙ СЕКРЕТ: Отключаем перетаскивание на мобильных экранах!
     // Это разблокирует идеальные нативные клики (тапы).
     if (window.matchMedia('(max-width: 900px)').matches || 'ontouchstart' in window) {
@@ -1224,13 +1226,24 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ ИДЕАЛЬНЫЙ TAP-TO-MOVE (как в рабочем проекте) ═══
-    // Поскольку мы отключили drag на мобилках в onDragStart, 
-    // браузер теперь идеально генерирует обычные клики по клеткам!
-    $('#board').on('click', '.square-55d63', function () {
-        if (justDragged) return; // защита для десктопа
+// ═══ ИДЕАЛЬНЫЙ TAP-TO-MOVE (Touch + Mouse) ═══
+    // Слушаем и касания, и клики мыши. Причем как по пустым клеткам, так и по фигурам!
+    $('#board').on('touchstart mousedown', '.square-55d63, .piece-417db', function (e) {
+        // Игнорируем клик правой кнопкой мыши
+        if (e.type === 'mousedown' && e.which !== 1) return;
+        
+        if (justDragged) return; 
+        
+        // getSquareFromElement отлично работает и для фигур, так как 
+        // chessboard.js вешает на них классы вида square-e4
         var square = getSquareFromElement(this);
-        if (square) onSquareClick(square);
+        
+        if (square) {
+            // Небольшая задержка предотвращает конфликты с внутренними событиями доски
+            setTimeout(function() {
+                onSquareClick(square);
+            }, 10);
+        }
     });
     // ═══ КОНЕЦ ═══
 
