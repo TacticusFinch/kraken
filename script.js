@@ -1226,32 +1226,77 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ ИДЕАЛЬНЫЙ TAP-TO-MOVE (Touch + Mouse) ═══
-    $('#board').on('touchstart mousedown', '.square-55d63, .piece-417db', function (e) {
-        // Игнорируем правый клик мыши
-        if (e.type === 'mousedown' && e.which !== 1) return;
-        if (justDragged) return;
-
-        // НАХОДИМ КЛЕТКУ: даже если кликнули по картинке фигуры, ищем её родительский div
-        var $square = $(this).closest('.square-55d63');
-        if (!$square.length) return;
-
-        // Извлекаем ID клетки (например, 'e4')
-        var square = $square.attr('data-square');
+// ═══ МАТЕМАТИЧЕСКИЙ TAP-TO-MOVE (Подход Lichess) ═══
+    // Слушаем касания на самом верхнем контейнере доски
+    const boardEl = document.getElementById('board');
+    
+    boardEl.addEventListener('touchstart', function(e) {
+        // Если это мультитач (зум) - игнорируем
+        if (e.touches.length > 1) return;
         
-        // Резервный вариант поиска клетки, если data-square недоступен
-        if (!square) {
-            var match = $square.attr('class').match(/square-([a-h][1-8])/);
-            if (match) square = match[1];
-        }
+        // Предотвращаем стандартное поведение браузера (скролл, фантомные клики)
+        e.preventDefault();
 
-        if (square) {
-            // Если это мобильный тап, предотвращаем "фантомный" клик мыши (ghost click)
-            if (e.type === 'touchstart') {
-                e.preventDefault(); 
-            }
-            onSquareClick(square);
+        if (!sessionActive) return;
+
+        // 1. Получаем координаты касания
+        const touch = e.touches[0];
+        const rect = boardEl.getBoundingClientRect();
+        
+        // 2. Вычисляем позицию X и Y внутри доски
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        // 3. Вычисляем размер одной клетки
+        const squareSize = rect.width / 8;
+        
+        // 4. Определяем индексы столбца (file) и строки (rank) от 0 до 7
+        let fileIndex = Math.floor(x / squareSize);
+        let rankIndex = Math.floor(y / squareSize);
+        
+        // Защита от выхода за пределы доски
+        if (fileIndex < 0 || fileIndex > 7 || rankIndex < 0 || rankIndex > 7) return;
+
+        // 5. Учитываем ориентацию доски (за кого играем)
+        let files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        let ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+        
+        if (board.orientation() === 'black') {
+            files.reverse();
+            ranks.reverse();
         }
+        
+        // 6. Формируем название клетки (например, 'e4')
+        const square = files[fileIndex] + ranks[rankIndex];
+        
+        // 7. Передаем в вашу функцию логики
+        onSquareClick(square);
+        
+    }, { passive: false }); // passive: false обязательно для работы e.preventDefault()
+
+    // Для десктопа оставляем обычный клик (там математика не обязательна, мышь работает хорошо)
+    $('#board').on('mousedown', function(e) {
+        if (e.which !== 1 || justDragged) return;
+        
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const squareSize = rect.width / 8;
+        
+        let fileIndex = Math.floor(x / squareSize);
+        let rankIndex = Math.floor(y / squareSize);
+        
+        if (fileIndex < 0 || fileIndex > 7 || rankIndex < 0 || rankIndex > 7) return;
+
+        let files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        let ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+        
+        if (board.orientation() === 'black') {
+            files.reverse();
+            ranks.reverse();
+        }
+        
+        onSquareClick(files[fileIndex] + ranks[rankIndex]);
     });
     // ═══ КОНЕЦ ═══
 
