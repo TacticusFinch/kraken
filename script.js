@@ -1144,20 +1144,22 @@ function clearClickHighlight() {
 // ============================================
 
 function onSquareClick(square) {
-// 🛡️ БРОНЯ ОТ ДВОЙНЫХ ТАПОВ: Игнорируем всё, что приходит быстрее чем за 250мс
-    var now = Date.now();
-    if (now - lastClickTime < 250) {
-        console.log('🛑 [DEBUG] Спам-клик заблокирован:', square);
-        return; 
-    }
-    lastClickTime = now;
-    console.log('[CLICK] square=', square,
+var now = Date.now();
+
+ // Блокируем слишком частые тапы только пока нет выбранной клетки.
+ if (!selectedSquare && (now - lastClickTime <200)) {
+ console.log('🛑 [DEBUG] Спам-клик заблокирован:', square);
+ return;
+ }
+ lastClickTime = now;
+
+ console.log('[CLICK] square=', square,
  '| selectedSquare=', selectedSquare,
  '| waitingForOpponent=', waitingForOpponent,
  '| sessionActive=', sessionActive);
 
-    if (justDragged) return;
-    if (!sessionActive) return;
+ if (justDragged) return;
+ if (!sessionActive) return;
 
     const piece = game.get(square);
 
