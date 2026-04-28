@@ -1242,42 +1242,47 @@ $(document).ready(async function () {
     // Отвязываем старые события на всякий случай
     $('#board').off('touchstart mousedown', '.square-55d63, .piece-417db');
 
-    $('#board').on('touchstart', '.square-55d63, .piece-417db', function (e) {
-        isTouching = true;
-        handleTap(this);
-    });
+   $('#board').on('touchstart', '.square-55d63, .piece-417db', function (e) {
+ isTouching = true;
+ e.preventDefault(); // блокируем нативный drag/scroll handleTap(this);
+});
 
-    $('#board').on('mousedown', '.square-55d63, .piece-417db', function (e) {
-        if (isTouching) return; // Блокируем фантомные клики мыши на телефонах
-        if (e.which !== 1) return;
-        handleTap(this);
-    });
+$('#board').on('touchend touchcancel', function () {
+ isTouching = false; // сбрасываем «режим тапа»
+});
+
+$('#board').on('mousedown', '.square-55d63, .piece-417db', function (e) {
+ if (isTouching) return; // тапы уже обработаны if (e.which !==1) return;
+ handleTap(this);
+});
 
     function handleTap(element) {
-        if (justDragged) return;
+ if (justDragged) return;
 
-        // ЖЕСТКИЙ БЛОК: разрешаем обрабатывать тап не чаще 1 раза в 200 мс
-        var now = Date.now();
-        if (now - lastTapTime < 200) return;
-        lastTapTime = now;
+ var now = Date.now();
+ if (now - lastTapTime <200) return;
+ lastTapTime = now;
 
-        var $square = $(element).closest('.square-55d63');
-        if (!$square.length) return;
+ //1) сначала пробуем взять data-square прямо из элемента (фигуры)
+ var square = element.getAttribute('data-square');
 
-        var square = $square.attr('data-square');
-        if (!square) {
-            var match = $square.attr('class').match(/square-([a-h][1-8])/);
-            if (match) square = match[1];
-        }
+ //2) если его нет — ищем ближайшую div-клетку if (!square) {
+ var $square = $(element).closest('.square-55d63');
+ if (!$square.length) return;
 
-        if (square) {
-            // Задержка 50мс позволяет доске завершить свои внутренние процессы
-            setTimeout(function() {
-                onSquareClick(square);
-            }, 50);
-        }
-    }
-    // ═══ КОНЕЦ ═══
+ square = $square.attr('data-square');
+ if (!square) {
+ var match = $square.attr('class').match(/square-([a-h][1-8])/);
+ if (match) square = match[1];
+ }
+ }
+
+ if (!square) return;
+
+ setTimeout(function () {
+ onSquareClick(square);
+ },50);
+}
 $(document).one('click touchstart', function () {
     SoundEngine.unlock();
 });
