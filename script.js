@@ -1256,33 +1256,38 @@ $('#board').on('mousedown', '.square-55d63, .piece-417db', function (e) {
  handleTap(this);
 });
 
-    function handleTap(element) {
- if (justDragged) return;
 
- var now = Date.now();
- if (now - lastTapTime <200) return;
- lastTapTime = now;
+function handleTap(element) {
+    if (justDragged) return;
 
- //1) сначала пробуем взять data-square прямо из элемента (фигуры)
- var square = element.getAttribute('data-square');
+    var now = Date.now();
+    if (now - lastTapTime < 200) return;
+    lastTapTime = now;
 
- //2) если его нет — ищем ближайшую div-клетку if (!square) {
- var $square = $(element).closest('.square-55d63');
- if (!$square.length) return;
+    // 1. Пытаемся взять square напрямую или из ближайшего родителя-клетки
+    var $el = $(element);
+    var square = $el.attr('data-square') || $el.closest('.square-55d63').attr('data-square');
 
- square = $square.attr('data-square');
- if (!square) {
- var match = $square.attr('class').match(/square-([a-h][1-8])/);
- if (match) square = match[1];
- }
- }
+    // 2. Если атрибута нет, пробуем вытащить из имени класса (запасной вариант)
+    if (!square) {
+        var $parentSquare = $el.closest('.square-55d63');
+        if ($parentSquare.length) {
+            var match = $parentSquare.attr('class').match(/square-([a-h][1-8])/);
+            if (match) square = match[1];
+        }
+    }
 
- if (!square) return;
+    if (!square) return;
 
- setTimeout(function () {
- onSquareClick(square);
- },50);
+    // Небольшая задержка, чтобы дать chessboard.js завершить свои процессы (например, snapback)
+    setTimeout(function () {
+        if (typeof onSquareClick === 'function') {
+            onSquareClick(square);
+        }
+    }, 50);
 }
+
+    // ═══ КОНЕЦ ═══
 $(document).one('click touchstart', function () {
     SoundEngine.unlock();
 });
