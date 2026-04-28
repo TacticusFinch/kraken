@@ -266,20 +266,22 @@ async function playMoveOnServer(fen, san, rating) {
 // ============================================
 
 function onDrop(source, target) {
-    var dragDuration = Date.now() - dragStartTime;
-    console.log('👉 [DEBUG] onDrop сработал! Откуда:', source, 'Куда:', target, 'Время:', dragDuration, 'мс');
-    // ЛОГИКА LICHESS: Если бросили на ту же клетку ИЛИ очень быстро (тап)
-    if (source === target || dragDuration < 200) {
+    console.log('👉 [DEBUG] onDrop сработал! Откуда:', source, 'Куда:', target, 
+    // Если взяли и бросили на ту же клетку — это тап по своей фигуре!
+    if (source === target) {
         setTimeout(function() {
             onSquareClick(source);
-        }, 10);
+        }, 50);
         return 'snapback'; 
     }
 
     justDragged = true;
     setTimeout(function () { justDragged = false; }, 300);
+    
+    // Если был реальный перенос фигуры — сбрасываем выделение кликом
     clearClickHighlight();
     selectedSquare = null;
+    
     if (!sessionActive) return 'snapback';
 
     // Если ждём ответ соперника — сохраняем как предход
@@ -1144,13 +1146,6 @@ function clearClickHighlight() {
 // ============================================
 
 function onSquareClick(square) {
-// 🛡️ БРОНЯ ОТ ДВОЙНЫХ ТАПОВ: Игнорируем всё, что приходит быстрее чем за 250мс
-    var now = Date.now();
-    if (now - lastClickTime < 250) {
-        console.log('🛑 [DEBUG] Спам-клик заблокирован:', square);
-        return; 
-    }
-    lastClickTime = now;
     console.log('👉 [DEBUG] onSquareClick вызван для клетки:', square);
 
     if (justDragged) return;
@@ -1207,7 +1202,6 @@ function onSquareClick(square) {
     }
 }
 
-
 // ============================================
 // Инициализация
 // ============================================
@@ -1235,49 +1229,21 @@ $(document).ready(async function () {
         }
     });
 
-// ═══ ЖЕЛЕЗОБЕТОННЫЙ ОБРАБОТЧИК ТАПОВ ═══
-    var lastTapTime = 0;
-    var isTouching = false;
-
-    // Отвязываем старые события на всякий случай
-    $('#board').off('touchstart mousedown', '.square-55d63, .piece-417db');
-
-    $('#board').on('touchstart', '.square-55d63, .piece-417db', function (e) {
-        isTouching = true;
-        handleTap(this);
-    });
-
-    $('#board').on('mousedown', '.square-55d63, .piece-417db', function (e) {
-        if (isTouching) return; // Блокируем фантомные клики мыши на телефонах
-        if (e.which !== 1) return;
-        handleTap(this);
-    });
-
-    function handleTap(element) {
+// Обработка кликов по пустым клеткам и фигурам соперника
+    $('#board').on('click', '.square-55d63', function () {
         if (justDragged) return;
-
-        // ЖЕСТКИЙ БЛОК: разрешаем обрабатывать тап не чаще 1 раза в 200 мс
-        var now = Date.now();
-        if (now - lastTapTime < 200) return;
-        lastTapTime = now;
-
-        var $square = $(element).closest('.square-55d63');
-        if (!$square.length) return;
-
-        var square = $square.attr('data-square');
+        
+        var square = $(this).attr('data-square');
         if (!square) {
-            var match = $square.attr('class').match(/square-([a-h][1-8])/);
+            var match = $(this).attr('class').match(/square-([a-h][1-8])/);
             if (match) square = match[1];
         }
-
+        
         if (square) {
-            // Задержка 50мс позволяет доске завершить свои внутренние процессы
-            setTimeout(function() {
-                onSquareClick(square);
-            }, 50);
+            onSquareClick(square);
         }
-    }
-    // ═══ КОНЕЦ ═══
+    });
+// ====КОНЕЦ====
 $(document).one('click touchstart', function () {
     SoundEngine.unlock();
 });
