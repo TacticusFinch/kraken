@@ -1151,7 +1151,10 @@ function onSquareClick(square) {
         return; 
     }
     lastClickTime = now;
-    console.log('👉 [DEBUG] onSquareClick вызван для клетки:', square);
+    console.log('[CLICK] square=', square,
+ '| selectedSquare=', selectedSquare,
+ '| waitingForOpponent=', waitingForOpponent,
+ '| sessionActive=', sessionActive);
 
     if (justDragged) return;
     if (!sessionActive) return;
@@ -1178,6 +1181,7 @@ function onSquareClick(square) {
         // Пробуем предход
         if (waitingForOpponent) {
             premoveData = { source: from, target: square };
+	    console.log('[CLICK] Установлен предход', from, '→', square);
             highlightPremove(from, square);
             updateStatus('⏩ Предход: ' + from + '→' + square);
             return;
@@ -1185,6 +1189,7 @@ function onSquareClick(square) {
 
         // Пробуем сделать ход
         const fenBefore = game.fen();
+	console.log('[CLICK] Ходим:', from, '→', square);
         const move = game.move({ from: from, to: square, promotion: 'q' });
         if (move === null) {
             SoundEngine.illegal();
@@ -1242,28 +1247,36 @@ $(document).ready(async function () {
     // Отвязываем старые события на всякий случай
     $('#board').off('touchstart mousedown', '.square-55d63, .piece-417db');
 
-   $('#board').on('touchstart', '.square-55d63, .piece-417db', function (e) {
+ const TAP_SELECTOR = '.square-55d63, .piece-417db, .legal-dot, .legal-capture';
+
+$('#board').on('touchstart', TAP_SELECTOR, function (e) {
  isTouching = true;
- e.preventDefault(); // блокируем нативный drag/scroll handleTap(this);
+ e.preventDefault(); // не даём браузеру начинать drag/scroll handleTap(this);
 });
 
 $('#board').on('touchend touchcancel', function () {
- isTouching = false; // сбрасываем «режим тапа»
+ isTouching = false;
 });
 
-$('#board').on('mousedown', '.square-55d63, .piece-417db', function (e) {
- if (isTouching) return; // тапы уже обработаны if (e.which !==1) return;
+$('#board').on('mousedown', TAP_SELECTOR, function (e) {
+ if (isTouching) return; // тач уже обработан if (e.which !==1) return;
  handleTap(this);
 });
 
 
 function handleTap(element) {
-    if (justDragged) return;
+    if (justDragged) {
+ console.log('[TAP] Пропуск: только что был drag');
+ return;
+ }
 
     var now = Date.now();
-    if (now - lastTapTime < 200) return;
+    if (now - lastTapTime <200) {
+ console.log('[TAP] Отброшено как слишком частый тап');
+ return;
+ }
     lastTapTime = now;
-
+	 console.log('[TAP] target:', element.tagName, element.className, 'data-square=', element.getAttribute('data-square'));
     // 1. Пытаемся взять square напрямую или из ближайшего родителя-клетки
     var $el = $(element);
     var square = $el.attr('data-square') || $el.closest('.square-55d63').attr('data-square');
@@ -1277,7 +1290,10 @@ function handleTap(element) {
         }
     }
 
-    if (!square) return;
+    if (!square) {
+ console.warn('[TAP] Не смог определить клетку, выходим');
+ return;
+ }
 
     // Небольшая задержка, чтобы дать chessboard.js завершить свои процессы (например, snapback)
     setTimeout(function () {
