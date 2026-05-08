@@ -2,35 +2,32 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kraken Chess Trainer</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chessboard.js -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
 
     <!-- Свои стили -->
     <link rel="stylesheet" href="styles.css">
 
     <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <!-- Chessboard.js -->
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-
-    <!-- Chess.js -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script><!-- Chessboard.js -->
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script><!-- Chess.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 </head>
 
 <body>
+
+<!-- Кракен-оверлей (фоновые щупальца при атаке) -->
 <div class="kraken-overlay">
-    <!-- Генерируем щупальца под разными углами -->
-    <div class="tentacle" style="--rot: 20deg;  animation: wave 7s infinite ease-in-out;"></div>
-    <div class="tentacle" style="--rot: 70deg;  animation: wave 9s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 20deg; animation: wave 7s infinite ease-in-out;"></div>
+    <div class="tentacle" style="--rot: 70deg; animation: wave 9s infinite ease-in-out;"></div>
     <div class="tentacle" style="--rot: 120deg; animation: wave 6s infinite ease-in-out;"></div>
     <div class="tentacle" style="--rot: 160deg; animation: wave 10s infinite ease-in-out;"></div>
     <div class="tentacle" style="--rot: 210deg; animation: wave 8s infinite ease-in-out;"></div>
@@ -39,87 +36,440 @@
     <div class="tentacle" style="--rot: 340deg; animation: wave 12s infinite ease-in-out;"></div>
 </div>
 
-    <div class="app">
-        <!-- Колонка1: Панель управления (слева) -->
-        <aside class="side-panel">
-            
-            <div class="info-card">
-                <div id="rating-display">
-                    <div class="rating-main">
-                        <span class="label">⭐ Рейтинг</span>
-                        <span id="rating-value">2000</span>
-                    </div>
+<!-- Виньетка повреждения -->
+<div id="damage-vignette" class="damage-vignette"></div>
+
+<div class="app">
+
+    <!-- ═══ Колонка 1: Панель управления ═══ -->
+    <aside class="side-panel">
+        <div class="info-card">
+            <div id="rating-display">
+                <div class="rating-main">
+                    <span class="label">Рейтинг</span>
+                    <span id="rating-value">2000</span>
                 </div>
             </div>
-
-            <div class="controls-wrapper">
-                <div class="control-group">
-                    <label>🎯 Начальный рейтинг</label>
-                    <select id="startRating">
-                        <option value="1000">Новичок — 1000</option>
-                        <option value="1400" selected>Любитель — 1400</option>
-                        <option value="1800">Клубный — 1800</option>
-                        <option value="2200">Мастер — 2200</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label>⚔ Играть за</label>
-                    <select id="playerColor">
-                        <option value="white">⚪ Белые</option>
-                        <option value="black">⚫ Чёрные</option>
-                    </select>
-                </div>
-
-                <div class="btn-row">
-                    <button class="btn-secondary" id="applyRating">Применить</button>
-                </div>
-                <button class="btn-start" onclick="startGame()">🚀 В бой!</button>
-            </div>
-        </aside>
-
-        <!-- Колонка 2: Доска (центр) -->
-        <div class="board-column">
-	    <div class="header main-header">
-                <h1>KRAKEN</h1>
-                <div class="subtitle">Тренажёр дебютов</div>
-            </div>
-            <div id="board"></div>
         </div>
 
-        <!-- Колонка 3: Аналитика и Прогресс (справа) -->
+        <div class="controls-wrapper">
+            <div class="control-group">
+                <label>Начальный рейтинг</label>
+                <select id="startRating">
+                    <option value="1000">Юнга — 1000</option>
+                    <option value="1400" selected>Матрос — 1400</option>
+                    <option value="1800">Капитан — 1800</option>
+                    <option value="2200">Морской волк — 2200</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Играть за</label>
+                <select id="playerColor">
+                    <option value="white">Белые</option>
+                    <option value="black">Чёрные</option>
+                </select>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-secondary" id="applyRating">Применить</button></div>
+            <button class="btn-start" onclick="startGame()">В бой</button>
+        </div>
+
+        <!--═══ Морская сцена ═══ -->
+<div class="sea-scene"><!-- Небо с градиентом -->
+    <div class="sky-layer">
+        <!-- Горизонт -->
+        <div class="horizon-line"></div>
+        
+        <!-- Солнце/Луна -->
+        <div class="celestial-body" id="celestial-body">
+            <div class="sun-glow"></div>
+        </div>
+        
+        <!-- Облака -->
+        <div class="clouds-container">
+            <div class="cloud cloud-1">
+                <div class="cloud-puff cp-1"></div>
+                <div class="cloud-puff cp-2"></div>
+                <div class="cloud-puff cp-3"></div>
+            </div>
+            <div class="cloud cloud-2">
+                <div class="cloud-puff cp-1"></div>
+                <div class="cloud-puff cp-2"></div>
+                <div class="cloud-puff cp-3"></div>
+                <div class="cloud-puff cp-4"></div>
+            </div>
+            <div class="cloud cloud-3">
+                <div class="cloud-puff cp-1"></div>
+                <div class="cloud-puff cp-2"></div>
+                <div class="cloud-puff cp-3"></div>
+            </div>
+            <div class="cloud cloud-4">
+                <div class="cloud-puff cp-1"></div>
+                <div class="cloud-puff cp-2"></div>
+            </div>
+            <div class="cloud cloud-5">
+                <div class="cloud-puff cp-1"></div>
+                <div class="cloud-puff cp-2"></div>
+                <div class="cloud-puff cp-3"></div>
+            </div>
+        </div>
+        
+        <!-- Чайки -->
+        <div class="seagulls-container">
+            <div class="seagull seagull-1">
+                <svg viewBox="0 0 30 12" class="seagull-svg">
+                    <path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+            </div>
+            <div class="seagull seagull-2">
+                <svg viewBox="0 0 30 12" class="seagull-svg">
+                    <path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+            </div>
+            <div class="seagull seagull-3">
+                <svg viewBox="0 0 30 12" class="seagull-svg">
+                    <path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Водная поверхность -->
+    <div class="water-surface">
+        <!-- Основная вода -->
+        <div class="water-body"></div>
+        
+        <!-- Рябь на воде -->
+        <div class="water-ripples">
+            <div class="ripple-linerl-1"></div>
+            <div class="ripple-line rl-2"></div>
+            <div class="ripple-line rl-3"></div>
+            <div class="ripple-line rl-4"></div>
+            <div class="ripple-line rl-5"></div>
+            <div class="ripple-line rl-6"></div>
+            <div class="ripple-line rl-7"></div>
+        </div>
+        
+        <!-- Блики на воде -->
+        <div class="water-glints">
+            <div class="glint g-1"></div>
+            <div class="glint g-2"></div>
+            <div class="glint g-3"></div>
+            <div class="glint g-4"></div>
+            <div class="glint g-5"></div>
+            <div class="glint g-6"></div>
+            <div class="glint g-7"></div>
+            <div class="glint g-8"></div>
+        </div>
+        
+        <!-- Пена на волнах -->
+        <div class="foam-layer">
+            <div class="foam-streak fs-1"></div>
+            <div class="foam-streak fs-2"></div>
+            <div class="foam-streak fs-3"></div>
+        </div>
+    </div>
+
+    <!-- Волны (переработанные) -->
+    <div class="sea-waves">
+        <div class="sea-wave sw-1"></div>
+        <div class="sea-wave sw-2"></div>
+        <div class="sea-wave sw-3"></div>
+        <div class="sea-wave sw-4"></div></div>
+
+    <!-- Погодные эффекты -->
+    <div class="weather-layer" id="weather-layer">
+        
+        <!-- Дождь (косой, для шторма) -->
+        <div class="rain-container">
+            <div class="raindrop" style="--x: 5%; --delay: 0s; --duration: 0.4s;"></div>
+            <div class="raindrop" style="--x: 10%; --delay: 0.08s; --duration: 0.35s;"></div>
+            <div class="raindrop" style="--x: 15%; --delay: 0.16s; --duration: 0.45s;"></div>
+            <div class="raindrop" style="--x: 20%; --delay: 0.03s; --duration: 0.38s;"></div>
+            <div class="raindrop" style="--x: 25%; --delay: 0.22s; --duration: 0.42s;"></div>
+            <div class="raindrop" style="--x: 30%; --delay: 0.11s; --duration: 0.36s;"></div>
+            <div class="raindrop" style="--x: 35%; --delay: 0.28s; --duration: 0.4s;"></div>
+            <div class="raindrop" style="--x: 40%; --delay: 0.05s; --duration: 0.44s;"></div>
+            <div class="raindrop" style="--x: 45%; --delay: 0.18s; --duration: 0.37s;"></div>
+            <div class="raindrop" style="--x: 50%; --delay: 0.33s; --duration: 0.41s;"></div>
+            <div class="raindrop" style="--x: 55%; --delay: 0.07s; --duration: 0.39s;"></div>
+            <div class="raindrop" style="--x: 60%; --delay: 0.25s; --duration: 0.43s;"></div>
+            <div class="raindrop" style="--x: 65%; --delay: 0.14s; --duration: 0.36s;"></div>
+            <div class="raindrop" style="--x: 70%; --delay: 0.31s; --duration: 0.4s;"></div>
+            <div class="raindrop" style="--x: 75%; --delay: 0.02s; --duration: 0.38s;"></div>
+            <div class="raindrop" style="--x: 80%; --delay: 0.2s; --duration: 0.42s;"></div>
+            <div class="raindrop" style="--x: 85%; --delay: 0.09s; --duration: 0.35s;"></div>
+            <div class="raindrop" style="--x: 90%; --delay: 0.27s; --duration: 0.44s;"></div>
+            <div class="raindrop" style="--x: 95%; --delay: 0.15s; --duration: 0.37s;"></div>
+            <div class="raindrop" style="--x: 100%; --delay: 0.35s; --duration: 0.4s;"></div>
+            <div class="raindrop" style="--x: 8%; --delay: 0.12s; --duration: 0.36s;"></div>
+            <div class="raindrop" style="--x: 22%; --delay: 0.29s; --duration: 0.41s;"></div>
+            <div class="raindrop" style="--x: 38%; --delay: 0.06s; --duration: 0.39s;"></div>
+            <div class="raindrop" style="--x: 52%; --delay: 0.23s; --duration: 0.43s;"></div>
+            <div class="raindrop" style="--x: 68%; --delay: 0.1s; --duration: 0.37s;"></div>
+            <div class="raindrop" style="--x: 82%; --delay: 0.32s; --duration: 0.4s;"></div>
+            <div class="raindrop" style="--x: 48%; --delay: 0.04s; --duration: 0.35s;"></div>
+            <div class="raindrop" style="--x: 62%; --delay: 0.19s; --duration: 0.42s;"></div>
+            <div class="raindrop" style="--x: 78%; --delay: 0.26s; --duration: 0.38s;"></div>
+            <div class="raindrop" style="--x: 33%; --delay: 0.13s; --duration: 0.44s;"></div>
+        </div>
+
+        <!-- Ветер — брызги и порывы -->
+        <div class="wind-container">
+            <div class="wind-gust wg-1"></div>
+            <div class="wind-gust wg-2"></div>
+            <div class="wind-gust wg-3"></div>
+            <div class="wind-gust wg-4"></div>
+            <div class="wind-spray ws-1"></div>
+            <div class="wind-spray ws-2"></div>
+            <div class="wind-spray ws-3"></div>
+            <div class="wind-spray ws-4"></div>
+            <div class="wind-spray ws-5"></div>
+        </div>
+
+        <!-- Туман — многослойный -->
+        <div class="fog-container">
+            <div class="fog-layer fog-deep"></div>
+            <div class="fog-layer fog-mid"></div>
+            <div class="fog-layer fog-near"></div>
+            <div class="fog-tendril ft-1"></div>
+            <div class="fog-tendril ft-2"></div>
+            <div class="fog-tendril ft-3"></div></div>
+
+        <!-- Молнии (для шторма) -->
+        <div class="lightning-container">
+            <div class="lightning-bolt lb-1">
+                <svg viewBox="0 0 40 100" class="bolt-svg">
+                    <path d="M20 0 L15 35 L25 38 L12 70 L22 72 L8 100" fill="none" stroke="white" stroke-width="2"/>
+                </svg>
+            </div>
+            <div class="lightning-bolt lb-2">
+                <svg viewBox="0 0 40 100" class="bolt-svg">
+                    <path d="M18 0 L22 30 L14 33 L26 65 L16 68 L28 100" fill="none" stroke="white" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <div class="lightning-flash"></div>
+        </div>
+    </div>
+
+    <!-- Индикатор погоды (перенесён влево-вниз) -->
+    <div class="weather-indicator" id="weather-indicator">
+        <span class="weather-icon" id="weather-icon">☀️</span>
+        <span class="weather-name" id="weather-name">Штиль</span>
+    </div>
+
+    <!-- Маршрут -->
+    <div class="voyage-track">
+        <!-- Порт отправления — якорь -->
+        <div class="voyage-start">
+            <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="6" r="2.5"/>
+                <line x1="12" y1="8.5" x2="12" y2="21"/>
+                <path d="M5 15c0 3.87 3.13 7 7 7s7-3.13 7-7"/><line x1="8" y1="11" x2="16" y2="11"/>
+            </svg>
+        </div>
+
+        <!-- Прогресс -->
+        <div class="voyage-progress-bg">
+            <div id="voyage-fill" class="voyage-fill" style="width:0%">
+                <!-- Корабль -->
+                <div id="ship" class="ship ship-editorial">
+  <div class="ship-drift-shell">
+    <div class="ship-bob">
+<svg viewBox="0 0 250 150" xmlns="http://w3.org">
+  <!-- ОТРАЖЕНИЕ -->
+  <ellipse cx="125" cy="116" rx="90" ry="3" fill="#1a1a1a" opacity="0.4" filter="blur(6px)"/>
+  
+  <!-- КОРПУС -->
+  <path d="M32 100 L218 100 L210 115 L40 115 Z" fill="#1B2631" stroke="#000000" stroke-width="0.3"/> 
+  <path d="M225 85 L25 85 L32 105 L218 105 Z" fill="#2C3E50" stroke="#1A242F" stroke-width="0.5"/>
+
+  <!-- НАЗВАНИЕ: ДВОЙНОЙ КОНТРАСТ -->
+  <!-- Тень для объема и четкости -->
+  <text x="125" y="100.5" 
+        font-family="Impact, Charcoal, sans-serif" 
+        font-size="12" 
+        fill="#000000" 
+        text-anchor="middle" 
+        letter-spacing="8" 
+        opacity="0.8">БИСКВИТ</text>
+  <!-- Основные белые буквы -->
+  <text x="125" y="100" 
+        font-family="Impact, Charcoal, sans-serif" 
+        font-size="12" 
+        fill="#FFFFFF" 
+        text-anchor="middle" 
+        letter-spacing="8">БИСКВИТ</text>
+
+  <!-- ЯРКАЯ КРАСНАЯ ЛИНИЯ -->
+  <path d="M25 85 L225 85 L223 87.5 L27 87.5 Z" fill="#D32F2F"/> 
+  
+  <!-- ПАЛУБА -->
+  <path d="M225 85 L25 85 L28 82 L222 82 Z" fill="#B0BEC5" stroke="#78909C" stroke-width="0.3"/>
+  
+  <!-- РУБКА -->
+  <rect x="75" y="65" width="100" height="17" rx="1" fill="#FFFFFF" stroke="#D32F2F" stroke-width="0.6"/>
+  
+  <!-- ОКНА -->
+  <g fill="#1A237E">
+    <rect x="157" y="69" width="8" height="10" rx="0.5" />
+    <rect x="135" y="69" width="8" height="10" rx="0.5" />
+    <rect x="113" y="69" width="8" height="10" rx="0.5" />
+  </g>
+
+  <!-- ТРУБЫ -->
+  <g fill="#212121">
+    <rect x="135" y="25" width="12" height="30" />
+    <rect x="105" y="25" width="12" height="30" />
+    <rect x="135" y="32" width="12" height="5" fill="#D32F2F" />
+    <rect x="105" y="32" width="12" height="5" fill="#D32F2F" />
+  </g>
+
+  <!-- МАЧТЫ -->
+  <g stroke="#2C3E50" stroke-width="0.8">
+    <line x1="200" y1="20" x2="200" y2="82" />
+    <line x1="50" y1="40" x2="50" y2="82" />
+  </g>
+
+  <!-- ШЛЮПКА -->
+  <path d="M105 78 L85 78 L88 82 L102 82 Z" fill="#D32F2F" />
+
+  <!-- ФЛАГ -->
+  <path d="M50 40 L30 45 L50 50 Z" fill="#FFFFFF" stroke="#D32F2F" stroke-width="0.4">
+    <animate attributeName="d" values="M50 40 L30 45 L50 50 Z; M50 40 L35 48 L50 52 Z; M50 40 L30 45 L50 50 Z" dur="3s" repeatCount="indefinite" />
+  </path>
+</svg>
+
+
+
+
+
+    </div>
+  </div>
+</div>
+
+            <!-- Чекпоинты -->
+            <div class="checkpoint" style="left:20%" data-tip="Выход из порта"></div>
+            <div class="checkpoint" style="left:40%" data-tip="Открытое море"></div>
+            <div class="checkpoint" style="left:60%" data-tip="Зона Кракена"></div>
+            <div class="checkpoint" style="left:80%" data-tip="Берег виден"></div>
+            <div class="checkpoint final" style="left:0%" data-tip="Безопасная гавань"></div>
+        </div>
+
+        <!-- Порт назначения — флаг -->
+        <div class="voyage-end">
+            <svg viewBox="0 0 24 24">
+                <line x1="5" y1="2" x2="5" y2="22"/>
+                <path d="M5 2l14 5-14 5"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Прочность корпуса -->
+    <div class="hull-bar">
+        <span class="hull-label">Корпус корабля</span>
+        <div class="hull-segments">
+            <div class="hull-segment active" id="hull-1"></div>
+            <div class="hull-segment active" id="hull-2"></div>
+            <div class="hull-segment active" id="hull-3"></div>
+            <div class="hull-segment active" id="hull-4"></div></div>
+        <span id="hull-text">4/4</span>
+    </div>
+</div>
+    <!-- Кракен -->
+    <div id="kraken-attack" class="kraken-attack hidden">
+        <div class="kraken-sprite" id="kraken-sprite"></div>
+        <div class="kraken-wave-line" style="--y:12%; --dur:1.4s; --delay:0.1s;"></div>
+        <div class="kraken-wave-line" style="--y:18%; --dur:1.6s; --delay:0.2s;"></div>
+        <div class="kraken-wave-line" style="--y:24%; --dur:1.5s; --delay:0.05s;"></div>
+        <div class="kraken-blot" style="left:45%; bottom:30%; width:8px; height:7px; --tx:-25px; --ty:-50px; --rot:20deg; --dur:1.1s; --delay:0.1s;"></div>
+        <div class="kraken-blot" style="left:55%; bottom:28%; width:6px; height:5px; --tx:30px; --ty:-45px; --rot:-15deg; --dur:1s; --delay:0.15s;"></div>
+        <div class="kraken-blot" style="left:42%; bottom:25%; width:5px; height:4px; --tx:-40px; --ty:-35px; --rot:30deg; --dur:0.9s; --delay:0.2s;"></div>
+        <div class="kraken-caption">— from the depths —</div>
+    </div>
+
+</div><!-- конец sea-scene -->
+
+    </aside>
+
+
+    <!--═══ Колонка 2: Доска═══ -->
+<div class="board-column">
+    <div class="header main-header">
+        <h1>KRAKEN</h1>
+        <div class="subtitle">Тренажёр дебютов</div>
+    </div>
+
+    <div id="board-wrapper" style="position:relative;">
+        <div id="board"></div>
+        <svg id="arrow-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100;">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 170, 0, 0.85)" />
+                </marker>
+            </defs>
+        </svg><!-- КАРТА ДЕБЮТОВ — поверх доски -->
+        <div id="opening-map-container" class="opening-map-container">
+            <img src="animation/map.png" alt="Карта дебютов" class="opening-map-img" id="opening-map-img">
+            <div class="map-overlay-gradient"></div>
+        </div>
+    </div>
+</div>
+
+
+<!--═══ Колонка 3: Аналитика ═══ -->
 <aside class="analysis-panel">
-    <!-- Комбо-линия -->
+
+   <!-- Комбо -->
     <div class="combo-container">
         <div class="combo-info">
-            <span class="combo-label">COMBO STREAK</span>
+            <span class="combo-label">Combo Streak</span>
             <span id="combo-multiplier">x1</span>
         </div>
         <div class="combo-bar-bg">
             <div id="combo-fill" style="width: 0%"></div>
-        </div>
-    </div>
+        </div></div>
 
     <!-- Нотация -->
     <div class="notation-box">
-        <div class="panel-label">История ходов</div>
-        <div id="move-history" class="move-history">
-            <!-- Ходы будут добавляться сюда: 1. e4 e5 ... -->
-        </div>
+        <div class="panel-label">Историяходов</div>
+        <div id="move-history" class="move-history"></div>
     </div>
 
-    <!-- Комментарии и Дебют -->
+    <a id="lichess-analysis-btn" 
+       class="btn-lichess-analysis" 
+       href="#" 
+       target="_blank" 
+       rel="noopener noreferrer">♟ Анализировать с Lichess
+    </a>
+
+    <!-- Комментарии -->
     <div class="feedback-box">
         <div id="opening-badge" class="opening-badge">Начальная позиция</div>
-        <div id="kraken-message" class="kraken-message">
-            Кракен наблюдает за вашими ходами...
+        <div id="kraken-message" class="kraken-message">Кракен наблюдает за вашимиходами...
         </div>
     </div>
+     <!-- Кнопка Карта -->
+    <div class="map-toggle-wrapper">
+        <button id="toggle-map-btn" class="btn-map-toggle" title="Показать карту дебютов">
+            <span class="map-btn-label" id="map-toggle-text">Карта</span>
+        </button>
+    </div>   
+
 
 </aside>
-    </div>
-    <script src="sounds.js"></script>
-    <script src="script.js"></script>
-</body>
 
+</div>
+<!-- конец .app -->
+
+<div id="achievement-container"></div>
+<div id="voyage-overlay"></div>
+
+<script src="sounds.js"></script>
+<script src="voyage.js"></script>
+<script src="script.js"></script>
+<script src="map.js"></script>
+</body>
 </html>

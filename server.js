@@ -799,11 +799,11 @@ app.get('/api/stats', (req, res) => {
             timeout: 10000
         });
         const total = (resp.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        console.log(`✅ Тест без токена: ${resp.status}, ${total} партий`);
+        //console.log(`✅ Тест без токена: ${resp.status}, ${total} партий`);
     } catch (e) {
-        console.error(`❌ Тест без токена ПРОВАЛЕН:`);
+        //console.error(`❌ Тест без токена ПРОВАЛЕН:`);
         if (e.response) {
-            console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);
+           // console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);
         } else {
             console.error(`   ${e.code || e.message}`);
         }
