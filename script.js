@@ -10,6 +10,7 @@ const EVAL_DEPTH = 15;
 const NUM_ENGINES = 2;
 const EVAL_TIMEOUT_MS = 6000;
 const MAX_MOVES_OUT_OF_BOOK = 2;
+const MAX_MOVES_OUT_OF_BOOK_FEN = 10; // Для FEN-позиций — больше ходов
 const TAP_DEDUP_MS = 250;
 const TOUCH_MOVE_THRESHOLD = 10;
 
@@ -21,6 +22,12 @@ let selectedSquare = null;
 let premoveData = null;
 let waitingForOpponent = false;
 let sessionActive = false;
+
+// --- Состояние FEN-сессии ---
+let lastCustomFEN = null;
+let lastCustomColor = null;
+let isCustomFENSession = false;
+
 let movesOutOfBook = 0;
 let notationHalfMoves = 0;
 let lastTapTime = 0;
@@ -137,6 +144,37 @@ function initEngines() {
 
 function findFreeEngine() {
     return engines.find(e => e.ready && !e.busy) || null;
+}
+
+// ============================================
+// Адаптивная сила движка
+// ============================================
+
+function getEngineDepthForRating(rating) {
+    if (rating < 1000) return 3;
+    if (rating < 1200) return 4;
+    if (rating < 1400) return 5;
+    if (rating < 1600) return 6;
+    if (rating < 1800) return 7;
+    if (rating < 2000) return 8;
+    if (rating < 2200) return 10;
+    return 12;
+}
+
+function getSkillLevelForRating(rating) {
+    // Skill Level 0-20, где 20 = максимальная сила
+    return Math.max(0, Math.min(20, Math.round((rating - 800) / 80)));
+}
+
+function applyEngineStrength(engine, rating) {
+    const skillLevel = getSkillLevelForRating(rating);
+    const depth = getEngineDepthForRating(rating);
+
+    engine.worker.postMessage(`setoption name Skill Level value ${skillLevel}`);
+
+    console.log(`🎯 Движок #${engine.id}: Skill Level = ${skillLevel}, Depth = ${depth}, Rating = ${rating}`);
+
+    return depth;
 }
 
 function processEngineQueue() {
@@ -321,11 +359,12 @@ async function processPlayerMove(move, fenBefore) {
             console.log('[FLOW] reply=null → вне книги');
             movesOutOfBook++;
             updateStatus(`📚 Вне книги (${movesOutOfBook}/${MAX_MOVES_OUT_OF_BOOK})`);
-            if (movesOutOfBook >= MAX_MOVES_OUT_OF_BOOK) {
-                updateStatus('📚 Тренировка дебюта завершена');
-                scheduleEndSession();
-                return;
-            }
+            const maxOutOfBook = isCustomFENSession ? MAX_MOVES_OUT_OF_BOOK_FEN : MAX_MOVES_OUT_OF_BOOK;
+	    if (movesOutOfBook >= maxOutOfBook) {
+    	    updateStatus('📚 Тренировка завершена');
+     	    scheduleEndSession();
+    	    return;
+	}
             makeEngineReply();
         }
     } catch (err) {
@@ -447,36 +486,33 @@ async function makeEngineReply() {
     console.log('[FLOW] makeEngineReply вызван');
     try {
         const fen = game.fen();
-        const bestMove = await getEngineBestMove(fen, 8);
+        const depth = getEngineDepthForRating(userRating); // ★ адаптивно
+        const bestMove = await getEngineBestMoveAdaptive(fen, depth);
         console.log('[FLOW] bestMove от движка:', bestMove);
 
         if (bestMove) {
             const result = game.move({
                 from: bestMove.slice(0, 2),
                 to: bestMove.slice(2, 4),
-                promotion: 'q'
+                promotion: bestMove.length > 4 ? bestMove[4] : 'q'
             });
             if (result) {
                 board.position(game.fen(), true);
                 playMoveSound(result);
-                // ★ КЛЮЧЕВОЙ ВЫЗОВ — записываем ход движка
                 console.log('[FLOW] Записываем ход движка:', result.san, '| color:', result.color);
-                appendMoveToNotation(result, 'opponent', false);
+                appendMoveToNotation(result,'opponent', false);
             } else {
                 console.error('[FLOW] game.move вернул null для bestMove:', bestMove);
             }
         } else {
             console.warn('[FLOW] bestMove = null, движок не дал ответ');
-        }
-
-        waitingForOpponent = false;
+        }waitingForOpponent = false;
         if (game.game_over()) scheduleEndSession();
     } catch (e) {
         console.error('[FLOW] makeEngineReply error:', e);
         waitingForOpponent = false;
     }
 }
-
 
 function getEngineBestMove(fen, depth = 8) {
     return new Promise(resolve => {
@@ -504,6 +540,45 @@ function getEngineBestMove(fen, depth = 8) {
         tryRun();
     });
 }
+
+/**
+ * Получить лучший ход с учётом Skill Level
+ * Если Skill Level не поддерживается — работает как обычная версия
+ */
+function getEngineBestMoveAdaptive(fen, depth) {
+    return new Promise(resolve => {
+        const tryRun = () => {
+            const e = findFreeEngine();
+            if (!e) { setTimeout(tryRun, 200); return; }
+            e.busy = true;
+            let bestMove = null;
+
+            // ★ Применяем Skill Level перед поиском
+            const skillLevel = getSkillLevelForRating(userRating);
+            e.worker.postMessage(`setoption name Skill Level value ${skillLevel}`);
+            console.log(`🎯 Адаптивныйход: Skill=${skillLevel}, Depth=${depth}, Rating=${userRating}`);
+
+            const origOnMessage = e.worker.onmessage;
+            e.worker.onmessage = function (event) {
+                const data = event.data;
+                if (typeof data !== 'string') return;
+                if (data.startsWith('bestmove')) {
+                    const m = data.match(/bestmove (\S+)/);
+                    if (m && m[1] !== '(none)') bestMove = m[1];
+                e.worker.onmessage = origOnMessage;e.busy = false;
+                    resolve(bestMove);
+                    processEngineQueue();
+                }
+            };
+            e.worker.postMessage('position fen ' + fen);e.worker.postMessage('go depth ' + depth);
+        };
+        tryRun();
+    });
+}
+
+
+
+
 
 //============================================
 // Предходы
@@ -544,17 +619,27 @@ function tryExecutePremove() {
 // ============================================
 
 function scheduleEndSession() {
-    if (!sessionActive) return;
+    console.log('[END] scheduleEndSession called, sessionActive=', sessionActive, 'pendingAnalysis=', sessionStats.pendingAnalysis);
+    if (!sessionActive) {
+        console.log('[END] sessionActive=false, выходим');
+        return;
+    }
     if (sessionStats.pendingAnalysis === 0) {
+        console.log('[END] pendingAnalysis=0, вызываем endSession()');
         endSession();
     } else {
         pendingEndSession = true;
+        console.log('[END]Ждём анализ, pendingEndSession=true');
         updateStatus('⏳ Анализ партии...');
     }
 }
 
 async function endSession() {
-    if (!sessionActive && !pendingEndSession) return;
+    console.log('[END] endSession called, sessionActive=', sessionActive, 'pendingEndSession=', pendingEndSession);
+    if (!sessionActive && !pendingEndSession) {
+        console.log('[END] Не активна и не pending — выходим');
+        return;
+    }
     sessionActive = false;
     pendingEndSession = false;
 
@@ -566,8 +651,7 @@ async function endSession() {
     }
 
     if (sessionStats.combo >= 2) {
-        sessionStats.comboHistory.push(sessionStats.combo);
-    }
+        sessionStats.comboHistory.push(sessionStats.combo);}
     sessionStats.perfectStreak = userMoves.every(m => m.cpl <= 100) && userMoves.length >= 4;
 
     try {
@@ -597,18 +681,26 @@ async function endSession() {
         localStorage.setItem('gamesPlayed', gamesPlayed);
         updateRatingUI();
 
-        setTimeout(() => showSessionResults(oldRating, data.delta), 400);
+        // Записываем результат в карту экспедиции
+        let mapResult = null;
+        if (typeof VoyageMap !== 'undefined' && VoyageMap.hasActiveOpening()) {
+            mapResult = VoyageMap.recordResult(data.delta, sessionStats);
+        }
+
+        const pgn = game.pgn();
+        showLichessAnalysisButton(pgn);
+
+        setTimeout(() => showSessionResults(oldRating, data.delta, mapResult), 400);
     } catch (e) {
         console.error('Не удалось обновить рейтинг:', e);
         updateStatus('❌ Не удалось обновить рейтинг');
     }
 }
-
 // ============================================
 // UI — результаты партии
 // ============================================
 
-function showSessionResults(oldRating, ratingChange) {
+function showSessionResults(oldRating, ratingChange, mapResult) {
     SoundEngine.gameEnd();
     setTimeout(() => {
         if (ratingChange >= 0) SoundEngine.ratingUp();
@@ -616,136 +708,252 @@ function showSessionResults(oldRating, ratingChange) {
     }, 500);
 
     const cats = sessionStats.categories;
-    const sign = ratingChange >= 0 ? '+' : '';
-    const clr = ratingChange >= 0 ? '#39ff7a' : '#ff5c5c';
     const userMovesCount = sessionStats.moves.filter(m => m.isUserMove).length;
 
     let worst = null;
-    sessionStats.moves.forEach(m => { if (!worst || m.cpl > worst.cpl) worst = m; });
-
-    const catRows = [
-        ['📘', 'Теория', cats.theory, '#00e5ff'],
-        ['✅', 'Хорошие', cats.good, '#39ff7a'],
-        ['⚠️', 'Неточности', cats.inaccuracy, '#ffde59'],
-        ['❌', 'Ошибки', cats.mistake, '#ffab40'],
-        ['🔥', 'Зевки', cats.blunder, '#ff2e93'],
-        ['💀', 'Грубые', cats.grossBlunder, '#b24bf3'],
-        ['☠️', 'Катастрофы', cats.catastrophe, '#ff4444']
-    ];
-
-    let catHtml = '';
-    catRows.forEach(([icon, label, count, color]) => {
-        if (count === 0) return;
-        catHtml += `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
-                <span style="color:${color};font-size:0.82rem">${icon} ${label}</span>
-                <span style="color:${color};font-family:Bungee,cursive;font-size:0.95rem">${count}</span>
-            </div>`;
+    sessionStats.moves.forEach(m => {
+        if (!worst || m.cpl > worst.cpl) worst = m;
     });
 
-    let comboHtml = '';
-    if (sessionStats.maxCombo >= 3) {
-        const tier = getComboTier(sessionStats.maxCombo);
-        comboHtml = `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:12px;background:rgba(255,222,89,0.08);border:1px solid rgba(255,222,89,0.25);border-radius:10px;font-size:0.8rem">
-                <span>${tier.icon} Лучшая серия</span>
-                <span style="font-family:Bungee,cursive;color:#ffde59">${sessionStats.maxCombo} ходов</span>
-            </div>`;
-    }
-
-    if (sessionStats.perfectStreak) {
-        comboHtml += `
-            <div style="text-align:center;padding:8px;margin-top:8px;
-                        background:rgba(57,255,122,0.08);border:1px solid rgba(57,255,122,0.25);
-                        border-radius:10px;color:#39ff7a;font-size:0.82rem;font-weight:700">🏆 Безупречная партия
-            </div>`;
-    }
-
-    let voyageHtml = '';
+    // === VOYAGE DATA ===
+    let voyageData = null;
+    let isVictory = false;
+    let isSunk = false;
     if (typeof VoyageEngine !== 'undefined' && VoyageEngine.state.movesMade > 0) {
-        const vs = VoyageEngine.getStats();
-        const voyageIcon = vs.isVictory ? '🏝️' : vs.isSunk ? '💀' : '⛵';
-        const voyageLabel = vs.isVictory ? 'Гавань достигнута!' :vs.isSunk ? 'Корабль потоплен' :
-                            Math.round(vs.progress) + '% пути';
-        const voyageColor = vs.isVictory ? '#39ff7a' : vs.isSunk ? '#ff5c5c' : '#ffde59';
-        voyageHtml = `
-            <div style="margin-top:12px;padding:10px 12px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.2);border-radius:10px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                    <span style="font-size:0.82rem;color:rgba(255,255,255,0.7)">${voyageIcon} Рейс</span>
-                    <span style="font-family:Bungee,cursive;color:${voyageColor};font-size:0.9rem">${voyageLabel}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:rgba(255,255,255,0.5)">
-                    <span>🛡️ Корпус: ${vs.hp}/${vs.maxHP}</span>
-                    <span>💥 Урон: ${vs.damageTotal}</span>
-                    <span>🏆 ${vs.achievements.length} ачивок</span>
-                </div>
-            </div>`;
+        voyageData = VoyageEngine.getStats();
+        isVictory = voyageData.isVictory;
+        isSunk = voyageData.isSunk;
     }
 
-    let penaltyHtml = '';
+    const mood = isSunk ? 'defeat' : isVictory ? 'victory' : 'neutral';
+
+    // ─── Шапка ───
+    $('#go-dateline').text(
+        `Экстренный выпуск • №${gamesPlayed} • ${userMovesCount} ходов`
+    );
+
+    // ─── Заголовок ───
+    const headline = isVictory
+        ? 'КРАКЕН ПОВЕРЖЕН: КОРАБЛЬ В ПОРТУ!'
+        : isSunk
+            ? 'КРАКЕН ПОТОПИЛ КОРАБЛЬ!'
+            : 'ЭКСПЕДИЦИЯ ЗАВЕРШЕНА';
+
+    const $title = $('#go-title');
+    $title.text(headline).removeClass('game-over-title--victory game-over-title--defeat game-over-title--neutral')
+          .addClass(
+              isVictory ? 'game-over-title--victory': isSunk    ? 'game-over-title--defeat'
+            : 'game-over-title--neutral'
+          );
+
+    // ─── Звёзды ───
+    const $stars = $('#go-stars');
+    if (voyageData && isVictory) {
+        const starCount = voyageData.hp === voyageData.maxHP ? 3: voyageData.hp >= 3 ? 2 : 1;
+        $stars.html('⭐'.repeat(starCount) + '☆'.repeat(3 - starCount))
+              .removeClass('hidden');
+    } else {
+        $stars.addClass('hidden');
+    }
+
+    // ─── GIF кракена ───
+    const $illustration = $('#go-illustration');
+    if (isSunk) {
+        $illustration.removeClass('hidden');
+    } else {
+        $illustration.addClass('hidden');
+    }
+
+    // ─── Рейтинг ───
+    const sign = ratingChange >= 0 ? '+' : '';
+    const ratingClass = ratingChange >= 0 ? 'rating-delta--positive'
+                      : 'rating-delta--negative';
+
+    $('#go-rating-delta').text(`${sign}${ratingChange}`)
+        .removeClass('rating-delta--positive rating-delta--negative rating-delta--zero')
+        .addClass(ratingChange === 0 ? 'rating-delta--zero' : ratingClass);
+
+    $('#go-rating-transition').html(`${oldRating} → <b>${userRating}</b>`);
+
+    // ─── Категории ходов ───
+    const catRows = [
+        ['📘', 'Теория',      cats.theory,'cat-theory'],
+        ['✅', 'Хорошие',     cats.good,         'cat-good'],
+        ['⚠️', 'Неточности',  cats.inaccuracy,'cat-inaccuracy'],
+        ['❌', 'Ошибки',      cats.mistake,       'cat-mistake'],
+        ['🔥', 'Зевки',       cats.blunder,       'cat-blunder'],
+        ['💀', 'Грубые',      cats.grossBlunder,  'cat-gross'],
+        ['☠️', 'Катастрофы',  cats.catastrophe,   'cat-catastrophe']
+    ];
+
+    const $cats = $('#go-categories').empty();
+    catRows.forEach(([icon, label, count, cls]) => {
+        if (count === 0) return;
+        $cats.append(`
+            <div class="voyage-stat-row">
+                <span class="voyage-stat-label ${cls}">${icon} ${label}</span>
+                <span class="voyage-stat-value ${cls} voyage-stat-value--bold">${count}</span>
+            </div>`);
+    });
+
+    // ─── Комбо ───
+    const $comboSection = $('#go-combo-section');
+    if (sessionStats.maxCombo >= 3) {
+        $('#go-combo-value').text(`${sessionStats.maxCombo} ходов`);
+        $comboSection.removeClass('hidden');
+    } else {
+        $comboSection.addClass('hidden');
+    }
+
+    // ─── Voyage───
+    const $voyageSection = $('#go-voyage-section');
+    if (voyageData) {
+        $('#go-hull').text(`${voyageData.hp}/${voyageData.maxHP}`);
+        $('#go-repairs').text(voyageData.timesRepaired);
+        $('#go-damage').text(voyageData.damageTotal);
+
+        if (voyageData.criticalHits > 0) {
+            $('#go-crits').text(voyageData.criticalHits);
+            $('#go-crits-row').removeClass('hidden');
+        } else {
+            $('#go-crits-row').addClass('hidden');
+        }
+        $voyageSection.removeClass('hidden');
+    } else {
+        $voyageSection.addClass('hidden');
+    }
+
+    // ─── Достижения ───
+    const $achievements = $('#go-achievements');
+    if (voyageData && voyageData.achievements.length > 0) {
+        const iconMap = {
+            first_blood: '🎯', unsinkable: '🛡️', kraken_slayer: '⚔️',
+            navigator: '🧭', explorer: '🗺️', survivor: '💪'
+        };
+        let html = '';
+        voyageData.achievements.forEach(a => {
+            html += `<span class="achievement-badge">${iconMap[a] || '🏆'}</span>`;
+        });
+        $achievements.html(html).removeClass('hidden');
+    } else {
+        $achievements.addClass('hidden');
+    }
+
+    // ─── Штрафы ───
     const penalties = [];
-    if (sessionStats.repeatedBlunder) penalties.push('🔁 Повторный зевок');
-    if (sessionStats.mateBlunder) penalties.push('😱 Пропущен мат');
-    if (sessionStats.hangsQueen) penalties.push('👑 Зевокферзя');
+    if (sessionStats.repeatedBlunder) penalties.push('🔁Повторный зевок');
+    if (sessionStats.mateBlunder)     penalties.push('😱 Пропущен мат');
+    if (sessionStats.hangsQueen)      penalties.push('👑 Зевок ферзя');
+
+    const $penalties = $('#go-penalties');
     if (penalties.length) {
-        penaltyHtml = `<div style="margin-top:10px;font-size:0.78rem;color:#ff5c5c">${penalties.join(' &nbsp;·&nbsp; ')}</div>`;
+        $penalties.text(penalties.join(' · ')).removeClass('hidden');
+    } else {
+        $penalties.addClass('hidden');
     }
 
-    let critHtml = '';
+    // ─── Худший ход ───
+    const $worstMove = $('#go-worst-move');
     if (worst && worst.cpl > 200) {
-        critHtml = `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:12px;
-                        background:rgba(255,0,0,0.06);border:1px solid rgba(255,70,70,0.25);border-radius:10px;font-size:0.8rem">
-                <span>💀 Ход ${worst.moveNumber}: <b style="color:#fff">${worst.san}</b></span>
-                <span style="color:#ff4444;font-family:Bungee,cursive">−${Math.round(worst.cpl)}</span>
-            </div>`;
+        $('#go-worst-value').html(
+            `💀 <b>${worst.san}</b> (ход ${worst.moveNumber}) —<span class="voyage-stat-value--critical">−${Math.round(worst.cpl)}</span>`
+        );
+        $worstMove.removeClass('hidden');
+    } else {
+        $worstMove.addClass('hidden');
     }
 
-    const html = `
-    <div>
-        <div style="text-align:center;margin-bottom:20px">
-            <div style="font-family:Bungee,cursive;font-size:1.2rem;color:#d0b8ff;letter-spacing:0.04em">Итоги партии</div>
-            <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-top:4px">${userMovesCount} ходов · партия #${gamesPlayed}</div>
-        </div>
-        <div style="text-align:center;padding:18px 0;margin-bottom:18px;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06)">
-            <div style="font-family:Bungee,cursive;font-size:2.4rem;color:${clr};text-shadow:0 0 24px ${clr};line-height:1">${sign}${ratingChange}</div>
-            <div style="font-size:0.85rem;color:rgba(255,255,255,0.5);margin-top:8px">${oldRating} → <b style="color:#fff">${userRating}</b></div>
-        </div>
-        <div style="margin-bottom:4px">${catHtml}</div>
-        ${comboHtml}
-        ${voyageHtml}
-        ${penaltyHtml}
-        ${critHtml}
-        <div style="display:flex;gap:10px;margin-top:22px">
-            <button style="flex:1;padding:12px;font-family:Bungee,cursive;font-size:0.82rem;border:none;border-radius:10px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#ff2e93,#b24bf3);box-shadow:0 4px 16px rgba(255,46,147,0.35)" onclick="closeModal(); startGame();">Ещё партия</button>
-            <button style="flex:1;padding:12px;font-size:0.82rem;font-weight:700;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;background:transparent;color:rgba(255,255,255,0.6)" onclick="closeModal();">Закрыть</button>
-        </div>
-    </div>`;
+    // ─── Совет при поражении ───
+    const $tip = $('#go-defeat-tip');
+    if (isSunk) {
+        const tips = [
+            'Неточность =1 урон.Ошибка = 2 + деморализация. Зевок = 3 + течь + пробоина.',
+            'Починка стоит 4 очка и дорожает. Теория = 2, хороший = 1.',
+            'После50% пути урон x1.4, после 75% — x1.8. Берегите HP.',
+            'Шторм усиливаетошибки на 50%. Не зевайте в шторм.',
+            'Пробоина заживает за 6 хороших ходов подряд.',
+            'Комбо x6 = +1 починки. Стабильность важнее гениальности.',
+            'Катастрофа снижает макс HP навсегда.',
+            'Течь от зевка = отложенный урон. Два зевка = двойная течь.'
+        ];
+        $tip.text('💡 ' + tips[Math.floor(Math.random() * tips.length)]).removeClass('hidden');
+    } else {
+        $tip.addClass('hidden');
+    }
 
-    showModal(html);
+    // Кнопка "Тренировать ещё раз" (только для FEN-сессий)
+    const $retryBtn = $('#go-btn-retry-fen');
+    if (lastCustomFEN && lastCustomColor) {
+        $retryBtn.removeClass('hidden');
+    } else {
+        $retryBtn.addClass('hidden');
+    }
+
+
+// ─── Результат экспедиции ───
+    const $mapResult = $('#go-map-result');
+    if (mapResult) {
+        const opening = VoyageMap.getActiveOpening
+            ? VoyageMap._activeOpening : null;
+        const openingName = opening ? opening.name : '';
+        const mapStarsHtml = '⭐'.repeat(mapResult.stars) +'☆'.repeat(3 - mapResult.stars);
+
+        $mapResult.html(`
+            <div class="map-result-row">
+                <span class="map-result-label">📚 ${openingName}</span>
+            </div>
+            <div class="map-result-row">
+                <span class="map-result-stars">${mapStarsHtml}</span>
+                <span class="map-result-accuracy">Точность: ${mapResult.accuracy}%</span>
+            </div>
+        `).removeClass('hidden');
+    } else {
+        if ($mapResult.length) $mapResult.addClass('hidden');
+    }
+
+
+    // ─── Показываем ───
+    showUnifiedModal(mood);
 }
 
 // ============================================
-// UI — модалка, статус, вспомогательные
+// UI — модалка результатов (работа с DOM-шаблоном)
 // ============================================
 
-function showModal(contentHtml) {
-    $('#session-modal').remove();
-    $('body').append(`
-        <div id="session-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,2,20,0.92);backdrop-filter:blur(8px);z-index:9999;
-            display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.25s ease;">
-            <div style="background:#120a30;border:1px solid rgba(178,75,243,0.3);border-radius:16px;
-                padding:28px 24px;max-width:380px;width:92%;color:#fff;
-                font-family:Space Grotesk,sans-serif;box-shadow:0 16px 60px rgba(0,0,0,0.7);
-                max-height:88vh;overflow-y:auto;">${contentHtml}</div>
-        </div>`);
-    document.getElementById('session-modal').offsetHeight;
-    $('#session-modal').css('opacity', '1');
+/**
+ * Показать модалку результатов с нужным настроением
+ * @param {'victory'|'defeat'|'neutral'} mood
+ */
+function showUnifiedModal(mood) {
+    // Закрываем voyage overlay если есть
+    if (typeof VoyageEngine !== 'undefined' && VoyageEngine.closeOverlay) {
+        VoyageEngine.closeOverlay();
+    }
+
+    const $modal = $('#unified-result-modal');
+    const $card = $('#game-over-card');
+
+    // Убираем старые классы настроения
+    $modal.removeClass('result-victory result-defeat result-neutral');
+    $card.removeClass('result-defeat');
+
+    // Ставим новый
+    const moodClass = mood === 'victory' ? 'result-victory'
+                    : mood === 'defeat'  ? 'result-defeat'
+                    : 'result-neutral';
+    $modal.addClass(moodClass);
+    if (mood === 'defeat') $card.addClass('result-defeat');
+
+    // Показываем
+    requestAnimationFrame(() => {
+        $modal.addClass('show');
+    });
 }
 
-function closeModal() {
-    $('#session-modal').css('opacity', '0');
-    setTimeout(() => $('#session-modal').remove(), 250);
+function closeUnifiedModal() {
+    const $modal = $('#unified-result-modal');
+    $modal.removeClass('show');
+    // Не удаляем из DOM — просто скрываем
 }
 
 function updateStatus(msg) {
@@ -1117,6 +1325,11 @@ async function makeFirstWhiteMove() {
 }
 
 function startGame() {
+    // Сброс FEN-сессии — это обычная партия
+    lastCustomFEN = null;
+    lastCustomColor = null;
+    isCustomFENSession = false; 
+
     selectedSquare = null;
     lastTapSquare = null;
     lastTapAction = null;
@@ -1150,6 +1363,12 @@ function startGame() {
     $('#kraken-message').text('Кракен наблюдает за вашими ходами...');
     updateComboBar(0);
     resetLiveStats();
+    // Скрываем кнопку Lichess от предыдущей партии
+    const lichessBtn = document.getElementById('lichess-analysis-btn');
+    if (lichessBtn) {
+        lichessBtn.classList.remove('visible');
+        lichessBtn.onclick = null;
+    }
 
     if (typeof VoyageEngine !== 'undefined') {
         VoyageEngine.init(15);
@@ -1158,6 +1377,154 @@ function startGame() {
     updateStatus('Тренировка дебюта началась!');
     SoundEngine.gameStart();
 }
+
+
+
+//============================================
+// Запуск игры из произвольной FEN-позиции
+// (вызывается из редактора позиций)
+// ============================================
+
+function startGameFromFEN(fen, color) {
+    // Сохраняем для повторной тренировки
+    lastCustomFEN = fen;
+    lastCustomColor = color;
+    isCustomFENSession = true; // Помечаем как FEN-сессию
+
+    selectedSquare = null;
+    lastTapSquare = null;
+    lastTapAction = null;
+    clearClickHighlight();
+
+    if (!board) { alert('Доска ещё не загрузилась!'); return; }
+
+    // Загружаем позицию
+    const loaded = game.load(fen);
+    if (!loaded) {
+        updateStatus('❌ Невозможно загрузить позицию');
+        return;
+    }
+
+    // Инициализация сессии
+    sessionStats = createEmptyStats();
+    sessionStats.openingDifficulty = userRating;
+    sessionActive = true;
+    pendingEndSession = false;
+    movesOutOfBook = 0;
+    premoveData = null;
+    clearPremoveHighlight();
+
+    // Определяем номер полухода из FEN для корректной нотации
+    const fenParts = fen.split(/\s+/);
+    const fenTurn = fenParts[1] || 'w';
+    const fenFullmove = parseInt(fenParts[5]) || 1;
+
+    // Полуход: (fullmove - 1) * 2 + (если чёрные — +1)
+    notationHalfMoves = (fenFullmove - 1) * 2 + (fenTurn === 'b' ? 1 : 0);
+
+    // Устанавливаем цвет игрока
+    playerColor = color;
+    $('#playerColor').val(color);
+    waitingForOpponent = false;
+
+    // Настраиваем доску
+    board.orientation(playerColor);
+    board.position(game.fen(), false);
+
+    // Очищаем UI
+    $('#move-history').empty();
+    $('#opening-badge').text('Пользовательская позиция');
+    $('#kraken-message').text('Кракен наблюдает за вашимиходами...');
+    updateComboBar(0);
+    resetLiveStats();
+
+    const lichessBtn = document.getElementById('lichess-analysis-btn');
+    if (lichessBtn) {
+        lichessBtn.classList.remove('visible');
+        lichessBtn.onclick = null;
+    }
+
+    if (typeof VoyageEngine !== 'undefined') {
+        VoyageEngine.init(15);
+    }
+
+    SoundEngine.gameStart();
+
+    // Определяем, чей ход
+    const currentTurn = game.turn(); // 'w' или 'b'
+    const isPlayerTurn =
+        (playerColor === 'white' && currentTurn === 'w') ||
+        (playerColor === 'black' && currentTurn === 'b');
+
+    if (!isPlayerTurn) {
+        //Ход соперника — движок отвечает
+        waitingForOpponent = true;
+        updateStatus('⏳ Соперник думает...');
+        setTimeout(() => makeEngineReplyFromPosition(), 300);
+    } else {
+        updateStatus('♟ Ваш ход!');
+    }
+}
+
+/**
+ * Ход движка из произвольной позиции
+ * (не из книги, сразу Stockfish)
+ */
+async function makeEngineReplyFromPosition() {
+    try {
+        const fen = game.fen();
+
+        // Сначала пробуем книгу
+        let replied = false;
+        try {
+            const response = await fetch(`${API_BASE}/get-move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fen: fen, rating: userRating })
+            });
+            const data = await response.json();
+            if (data.move) {
+                const result = game.move(data.move);
+                if (result) {
+                    board.position(game.fen(), true);
+                    playMoveSound(result);
+                    appendMoveToNotation(result, 'opponent', false);
+                    replied = true;
+                }
+            }
+        } catch (e) {
+            console.warn('Книга недоступна, используем движок');
+        }
+
+        // Если книга не дала ответ — Stockfish с адаптивной силой
+        if (!replied) {
+            const depth = getEngineDepthForRating(userRating); // ★ адаптивно
+            const bestMove = await getEngineBestMoveAdaptive(fen, depth);
+            if (bestMove) {
+                const result = game.move({
+                    from: bestMove.slice(0, 2),
+                    to: bestMove.slice(2, 4),
+                    promotion: bestMove.length > 4 ? bestMove[4] : 'q'
+                });
+                if (result) {
+                    board.position(game.fen(), true);
+                    playMoveSound(result);
+                    appendMoveToNotation(result, 'opponent', false);
+                }
+            }
+        }
+
+        waitingForOpponent = false;
+        if (game.game_over()) {
+            scheduleEndSession();
+        }
+    } catch (e) {
+        console.error('makeEngineReplyFromPosition error:', e);
+        waitingForOpponent = false;
+    }
+}
+
+
 
 
 function showLichessAnalysisButton(pgn) {
@@ -1212,6 +1579,31 @@ $(document).ready(async function () {
         snapSpeed: 25,
         snapbackSpeed: 100,
         trashSpeed: 200
+    });
+
+
+//═══ Кнопки модалки результатов ═══
+$('#go-btn-new-game').on('click', function () {
+    closeUnifiedModal();
+    startGame();
+});
+
+$('#go-btn-retry-fen').on('click', function () {
+    closeUnifiedModal();
+    if (lastCustomFEN && lastCustomColor) {
+        startGameFromFEN(lastCustomFEN, lastCustomColor);
+    }
+});
+
+$('#go-btn-close').on('click', function () {
+    closeUnifiedModal();
+});
+
+// Кнопка «Карта»
+    $('#btn-map').on('click', function () {
+        if (typeof VoyageMap !== 'undefined') {
+            VoyageMap.openMap();
+        }
     });
 
     // Ресайз при повороте экрана
@@ -1285,8 +1677,54 @@ $(document).ready(async function () {
     });
 
     initEngines();
-    await loadRatingFromServer();
+    /**
+ * Проверяет поддержку Skill Level в текущей сборке Stockfish
+ * Вызывать после инициализации движков
+ */
+function testSkillLevelSupport() {
+    const e = engines[0];
+    if (!e || !e.ready) {
+        console.warn('⏳ Движок не готов, повторяем через 2с...');
+        setTimeout(testSkillLevelSupport, 2000);
+        return;
+    }
 
+    console.log('🔍 Проверяем поддержку Skill Level...');
+
+    const origOnMessage = e.worker.onmessage;
+    let optionFound = false;
+
+    e.worker.onmessage = function (event) {
+        const data = event.data;
+        if (typeof data !== 'string') return;
+
+        // Stockfish перечисляет опции после команды "uci"
+        if (data.includes('option name Skill Level')) {
+            optionFound = true;
+            console.log('✅ Skill Level ПОДДЕРЖИВАЕТСЯ:', data.trim());
+        }
+
+        if (data === 'uciok') {
+            e.worker.onmessage = origOnMessage;
+
+            if (optionFound) {
+                console.log('✅Ваша сборка Stockfish поддерживает Skill Level!');
+                console.log('📊 Текущие настройки:');
+                console.log(`   Rating: ${userRating}`);
+                console.log(`   Skill Level: ${getSkillLevelForRating(userRating)}`);
+                console.log(`   Depth: ${getEngineDepthForRating(userRating)}`);} else {
+                console.warn('⚠️ Skill Level НЕ поддерживается!');
+                console.warn('   Будет использоваться толькоограничение глубины.');console.warn('   Для полной поддержки нужна официальная сборка Stockfish WASM.');
+            }
+        }
+    };
+
+    // Повторно запрашиваем список опций
+    e.worker.postMessage('uci');
+}
+    await loadRatingFromServer();
+    // ★ Проверка поддержки Skill Level (через 3сек, когда движки загрузятся)
+setTimeout(testSkillLevelSupport, 3000);
     // Кнопка сброса рейтинга
     $('#applyRating').on('click', async function () {
         const newRating = parseInt($('#startRating').val());

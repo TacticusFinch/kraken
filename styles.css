@@ -22,7 +22,20 @@
   --hull-green: #2ecc71;
   --hull-yellow: #f1c40f;
   --hull-red: #e74c3c;
+ /* Victorian Gazette Modal */
+  --parchment-dark: #d4c5a0;
+  --parchment-mid: #e8dcc8;
+  --parchment-light: #f2ebe0;
+  --ink-black: #1a1209;
+  --ink-faded: #3d3425;
+  --ink-red: #6b1a1a;
+  --ink-green: #1a3d1a;
+  --ink-gold: #8b6914;
+  --eldritch-purple: #2d1b4e;
 }
+
+/*═══ VICTORIAN GAZETTE FONTS═══ */
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Special+Elite&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IM+Fell+English:ital@0;1&display=swap');
 
 html, body {
   min-height: 100%;
@@ -2930,152 +2943,789 @@ button:hover {
   font-weight: 500;
 }
 
-/*═══════════════════════════════════
-  MODAL
-═══════════════════════════════════*/
-.modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.92);
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
+
+/* ============================================
+УТИЛИТЫ
+============================================ */
+
+.hidden {
+display: none !important;
 }
 
-.modal-overlay.active {
-  display: flex;
-}
+/* ============================================
+GAME OVER OVERLAY
+============================================ */
 
-.modal-content {
-  background: var(--background);
-  border: 1px solid var(--border-color);
-  padding: 40px;
-  max-width: 480px;
-  width: 90%;
-  color: var(--primary-text);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.session-results h2 {
-  font-size: 1.4rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.stat-item {
-  border: 1px solid var(--border-color);
-  padding: 16px;
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 0.65rem;
-  color: var(--secondary-text);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.rating-result {
-  text-align: center;
-  margin: 16px 0;
-  padding: 20px;
-  border: 1px solid var(--border-color);
-}
-
-.rating-change {
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-.rating-final {
-  font-size: 0.8rem;
-  color: var(--secondary-text);
-  margin-top: 8px;
-}
-
-.session-results .btn-group {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.session-results button {
-  flex: 1;
-  padding: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-/*═══════════════════════════════════
-  GAME OVER
-═══════════════════════════════════*/
 .game-over-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: rgba(10, 22, 40, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.3s ease;
+position: fixed;
+inset: 0;
+z-index: 9998;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 0;
+opacity: 0;
+visibility: hidden;
+pointer-events: none;
+background:
+radial-gradient(ellipse at 30% 20%, rgba(45, 27, 78, 0.15) 0%, transparent 50%),
+radial-gradient(ellipse at 70% 80%, rgba(26, 58, 42, 0.1) 0%, transparent 40%),
+radial-gradient(ellipse at center, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.92) 100%);
+backdrop-filter: blur(0px) sepia(0);transition:
+opacity 0.6s ease,
+visibility 0.6s ease,
+backdrop-filter 0.6s ease;
 }
 
 .game-over-overlay.show {
-  display: flex;
+opacity: 1;
+visibility: visible;
+pointer-events: auto;
+backdrop-filter: blur(4px) sepia(0.2);
 }
 
+/ Scroll-обёртка — позволяет скроллить карточку если она длиннее экрана /
+.game-over-scroll-wrap {
+display: flex;
+align-items: center;
+justify-content: center;
+min-height: 100%;
+width: 100%;
+padding: 20px;
+box-sizing: border-box;overflow-y: auto;
+-webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+GAME OVER CARD
+============================================ */
+
 .game-over-card {
-  background: var(--background);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 40px 48px;
-  width: 90%;
-  max-width: 420px;
-  text-align: center;
-  box-shadow: 0 32px 64px -12px rgba(10, 22, 40, 0.2);
+position: relative;
+background-color: var(--parchment-mid);
+background-image:
+radial-gradient(ellipse at 15% 85%, rgba(139, 105, 20, 0.08) 0%, transparent 50%),
+radial-gradient(ellipse at 85% 15%, rgba(107, 26, 26, 0.05) 0%, transparent 40%),
+radial-gradient(ellipse at 50% 50%, rgba(180, 160, 120, 0.1) 0%, transparent 70%),
+repeating-linear-gradient(
+0deg,
+transparent,
+transparent 2px,
+rgba(0, 0, 0, 0.01) 2px,
+rgba(0, 0, 0, 0.01) 3px
+),
+repeating-linear-gradient(
+90deg,
+transparent,
+transparent 3px,
+rgba(0, 0, 0, 0.008) 3px,
+rgba(0, 0, 0, 0.008) 4px
+);
+color: var(--ink-black);
+padding: 0;
+width: 90%;
+max-width: 520px;
+max-height: 90vh;
+overflow-y: auto;
+text-align: center;
+border: 3px solid var(--ink-black);
+outline: 1px solid var(--ink-black);
+outline-offset: 6px;
+box-shadow:
+0 0 0 7px var(--parchment-dark),
+0 0 0 8px var(--ink-black),
+0 25px 60px -10px rgba(0, 0, 0, 0.7),
+0 10px 30px -5px rgba(0, 0, 0, 0.5),
+inset 0 0 80px rgba(139, 105, 20, 0.05);
+transform-origin: center bottom;
+
+/ Анимация появления /
+animation: cardRise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/ Пятна старения на пергаменте /
+.game-over-card::before {
+content: '';
+position: absolute;
+inset: -1px;
+background:
+radial-gradient(circle at 0% 30%, rgba(80, 50, 20, 0.3) 0%, transparent 3%),
+radial-gradient(circle at 100% 60%, rgba(80, 50, 20, 0.2) 0%, transparent 4%),
+radial-gradient(circle at 20% 100%, rgba(60, 40, 15, 0.25) 0%, transparent 3%),
+radial-gradient(circle at 80% 0%, rgba(60, 40, 15, 0.15) 0%, transparent 5%);
+pointer-events: none;
+z-index: 0;
+}
+
+.game-over-card::after {
+content: none;
+}
+
+@keyframes cardRise {
+from {
+opacity: 0;
+transform: translateY(40px) rotateX(4deg) scale(0.95);
+filter: blur(2px) brightness(0.7);
+}
+60% {
+opacity: 1;
+filter: blur(0px) brightness(1);
+}
+to {
+transform: translateY(0) rotateX(0deg) scale(1);
+filter: none;
+}
+}
+
+/* ============================================
+MASTHEAD (шапка газеты)
+============================================ */
+
+.game-over-masthead {
+position: relative;
+padding: 20px 30px 14px;
+border-bottom: 2px solid var(--ink-black);
+z-index: 1;
+}
+
+.game-over-masthead::before {
+content: '';
+position: absolute;
+top: 0;
+left: 20px;
+right: 20px;
+height: 1px;
+background: var(--ink-black);
+}
+
+.masthead-dateline {
+font-family: 'Special Elite', 'Courier New', monospace;
+font-size: 0.6rem;
+letter-spacing: 0.25em;
+color: var(--ink-faded);
+text-transform: uppercase;
+margin-bottom: 8px;
+}
+
+.masthead-title {
+font-family: 'UnifrakturMaguntia', 'Playfair Display', serif;
+font-size: 1.8rem;
+line-height: 1;
+color: var(--ink-black);
+margin: 0;
+text-shadow: 0.5px 0.5px 0 rgba(0, 0, 0, 0.1);
+}
+
+.masthead-ornament {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+margin-top: 10px;
+}
+
+.masthead-ornament::before,
+.masthead-ornament::after {
+content: '';
+flex: 1;
+height: 1px;
+background: linear-gradient(90deg, transparent, var(--ink-faded), transparent);
+}
+
+.masthead-ornament-symbol {
+font-size: 0.7rem;
+color: var(--ink-faded);
+line-height: 1;
+}
+
+/* ============================================
+HEADLINE (заголовок-исход)
+============================================ */
+
+.game-over-headline {
+position: relative;
+padding: 18px 30px;
+border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+z-index: 1;
+}
+
+.headline-kicker {
+font-family: 'Special Elite', 'Courier New', monospace;
+font-size: 0.6rem;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+color: var(--ink-faded);
+margin-bottom: 6px;
 }
 
 .game-over-title {
-  color: var(--primary-text);
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.03em;
-  margin-bottom: 12px;
+font-family: 'Playfair Display', 'Georgia', serif;
+font-size: 1.6rem;
+font-weight: 900;
+line-height: 1.15;
+margin: 0;
+letter-spacing: -0.02em;
+color: var(--ink-black);
+}
+
+.game-over-title--victory { color: var(--ink-green); }
+.game-over-title--defeat { color: var(--ink-red); }
+.game-over-title--neutral { color: var(--ink-black); }
+
+.headline-sub {
+font-family: 'IM Fell English', 'Georgia', serif;
+font-style: italic;
+font-size: 0.85rem;
+color: var(--ink-faded);
+margin-top: 6px;
+line-height: 1.4;
+}
+
+/ Звёзды /
+.game-over-stars {
+font-size: 1.4rem;
+letter-spacing: 0.15em;
+margin-bottom: 10px;
+}
+
+/* ============================================
+ILLUSTRATION (GIF кракена)
+============================================ */
+
+.game-over-illustration {
+position: relative;
+padding: 8px 012px;
+z-index: 1;
 }
 
 .game-over-kraken-img {
-  width: 100%;
-  max-width: 280px;
-  height: auto;
-  margin: 16px auto;
-  display: block;
-  border: 1px solid #d3ccbd;
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
+width: 100%;
+max-width: 220px;
+margin: 0 auto;
+display: block;
+filter: grayscale(1) contrast(1.6) brightness(0.85) sepia(0.4);
+mix-blend-mode: multiply;border: 1.5px solid var(--ink-black);
+padding: 4px;
+background: var(--parchment-light);
+box-shadow:
+inset 0 0 10px rgba(0, 0, 0, 0.1),
+2px 2px 6px rgba(0, 0, 0, 0.15);
 }
+
+.illustration-caption {
+font-family: 'IM Fell English', 'Georgia', serif;
+font-style: italic;
+font-size: 0.65rem;
+color: var(--ink-faded);
+margin-top: 6px;
+letter-spacing: 0.02em;
+}
+
+/* ============================================
+   RATING BLOCK
+   ============================================ */
+
+.newspaper-rating-block {
+  position: relative;
+  margin: 0 30px;
+  padding: 16px 20px;
+  border-top: 3px double var(--ink-black);
+  border-bottom: 3px double var(--ink-black);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(0, 0, 0, 0.015) 1px,
+      rgba(0, 0, 0, 0.015) 2px
+    ),
+    rgba(0, 0, 0, 0.02);
+  z-index: 1;
+}
+
+.rating-block-label {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.newspaper-rating-block .rating-delta {
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 2.8rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+.rating-delta--positive { color: var(--ink-green); }
+.rating-delta--negative { color: var(--ink-red); }
+.rating-delta--zero{ color: var(--ink-faded); }
+
+.newspaper-rating-block .rating-transition {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+  text-align: center;
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+
+.newspaper-rating-block .rating-transition b {
+  color: var(--ink-black);font-weight: 700;
+}
+
+/* ============================================
+   CATEGORIES (качествоходов)
+   ============================================ */
+
+.game-over-categories {
+  position: relative;
+  padding: 14px 30px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  z-index: 1;
+}
+
+.categories-title {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  margin-bottom: 10px;
+}
+
+.game-over-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ============================================
+   VOYAGE STAT ROWS (общий стиль строк)
+   ============================================ */
+
+.voyage-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px dotted rgba(0, 0, 0, 0.08);
+}
+
+.voyage-stat-row:last-child {
+  border-bottom: none;
+}
+
+.voyage-stat-label {
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+}
+
+.voyage-stat-value {
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-black);
+  font-variant-numeric: tabular-nums;
+}
+
+.voyage-stat-value--bold {
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+.voyage-stat-value--critical {
+  color: var(--ink-red);
+  font-weight: 900;
+}
+
+/* Цвета категорий в строках */
+.cat-theory{ color: #1a4a6b; }
+.cat-good{ color: var(--ink-green); }
+.cat-inaccuracy{ color: #6b5a14; }
+.cat-mistake     { color: #6b3a14; }
+.cat-blunder     { color: var(--ink-red); }
+.cat-gross       { color: var(--eldritch-purple, #4a1a6b); }
+.cat-catastrophe { color: #4a0a0a; font-weight: 700; }
+
+/* ============================================
+   COMBO SECTION
+   ============================================ */
+
+.game-over-combo {
+  position: relative;
+  padding: 4px 0;
+  z-index: 1;
+}
+
+/*============================================
+   VOYAGE SECTION (бортовой журнал)
+   ============================================ */
+
+.game-over-voyage {
+  position: relative;
+  padding: 14px 30px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  z-index: 1;
+}
+
+.voyage-summary-title {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  margin-bottom: 8px;
+}
+
+/* ============================================
+   ACHIEVEMENTS
+   ============================================ */
+
+.game-over-achievements {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 30px;
+  z-index: 1;
+  position: relative;
+}
+
+.achievement-badge {
+  font-size: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--ink-faded);
+  border-radius: 50%;
+  background: var(--parchment-light);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.achievement-badge:hover {
+  transform: scale(1.15);
+}
+
+/* ============================================
+   PENALTIES
+   ============================================ */
+
+.penalty-line {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-red);
+  text-align: center;
+  padding: 8px 30px;
+  letter-spacing: 0.05em;
+  z-index: 1;
+  position: relative;
+}
+
+/* ============================================
+   WORST MOVE
+   ============================================ */
+
+.worst-move-row {
+  position: relative;
+  margin: 10px 30px;
+  padding: 10px 14px;
+  background: rgba(107, 26, 26, 0.04);
+  border-left: 3px solid var(--ink-red);
+  text-align: left;
+  z-index: 1;
+}
+
+.worst-move-row .label {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-red);
+}
+
+.worst-move-row .value {
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-red);
+  margin-top: 2px;
+}
+
+/* ============================================
+   DEFEAT TIP
+   ============================================ */
+
+.defeat-tip {
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--ink-faded);
+  border-left: 3px solid var(--ink-black);
+  padding: 10px 16px;
+  margin: 14px 30px;
+  text-align: left;
+  line-height: 1.5;
+  background: rgba(0, 0, 0, 0.02);
+  position: relative;
+  z-index: 1;
+}
+
+.defeat-tip::before {
+  content: '"';
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 2rem;
+  position: absolute;
+  top: -2px;
+  left: 6px;
+  color: rgba(0, 0, 0, 0.1);
+  line-height: 1;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.game-over-buttons {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  padding: 18px 30px 24px;
+  border-top: 2px solid var(--ink-black);
+  z-index: 1;
+}
+
+.game-over-buttons button {
+  flex: 1;
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  border: 1.5px solid var(--ink-black);
+  background: var(--parchment-light);
+  color: var(--ink-black);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-over-buttons button:hover {
+  background: var(--ink-black);
+  color: var(--parchment-light);
+}
+
+.game-over-buttons button:active {
+  transform: scale(0.97);
+}
+
+.game-over-buttons .btn-primary-action {
+  background: var(--ink-black);
+  color: var(--parchment-light);
+  font-weight: 700;
+}
+
+.game-over-buttons .btn-primary-action:hover {
+  background: var(--ink-faded);
+  border-color: var(--ink-faded);
+}
+
+/* ============================================
+   SECTION ORNAMENT (разделители с символом)
+   ============================================ */
+
+.section-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 30px;
+  gap: 10px;
+  z-index: 1;
+  position: relative;
+}
+
+.section-ornament::before,
+.section-ornament::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.2) 20%,
+    rgba(0, 0, 0, 0.2) 80%,
+    transparent
+  );
+}
+
+.section-ornament-glyph {
+  font-size: 0.6rem;
+  color: var(--ink-faded);
+  opacity: 0.6;
+}
+
+/* ============================================
+   ELDRITCH EFFECTS (эффекты при поражении)
+   ============================================ */
+
+/* Мерцание заголовка */
+.game-over-card.result-defeat .game-over-title {
+  animation: textFlicker 4s ease-in-out infinite;
+}
+
+@keyframes textFlicker {
+  0%, 95%, 100% { opacity: 1; }
+  96% { opacity: 0.8; }
+  97% { opacity: 1; }
+  98% { opacity: 0.85; }
+}
+
+/* «Дыхание» карточки при поражении */
+.game-over-card.result-defeat {
+  animation:
+    cardRise 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    cardBreathe 6s ease-in-out 1s infinite;
+}
+
+@keyframes cardBreathe {
+  0%, 100% {
+    box-shadow:
+      0 0 0 7px var(--parchment-dark),
+      0 0 0 8px var(--ink-black),
+      0 25px 60px -10px rgba(0, 0, 0, 0.7),
+      0 10px 30px -5px rgba(0, 0, 0, 0.5),
+      inset 0 0 80px rgba(139, 105, 20, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px var(--parchment-dark),
+      0 0 0 8px var(--ink-red),
+      0 25px 60px -10px rgba(107, 26, 26, 0.3),
+      0 10px 30px -5px rgba(0, 0, 0, 0.5),
+      inset 0 0 100px rgba(107, 26, 26, 0.03);
+  }
+}
+
+/* Лёгкое свечение при победе */
+.result-victory .game-over-card {
+  animation:
+    cardRise 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    cardGlowVictory 5s ease-in-out 1s infinite;
+}
+
+@keyframes cardGlowVictory {
+  0%, 100% {
+    box-shadow:
+      0 0 0 7px var(--parchment-dark),
+      0 0 0 8px var(--ink-black),
+      0 25px 60px -10px rgba(0, 0, 0, 0.7),
+      0 10px 30px -5px rgba(0, 0, 0, 0.5),
+      inset 0 0 80px rgba(139, 105, 20, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px var(--parchment-dark),
+      0 0 0 8px var(--ink-green),
+      0 25px 60px -10px rgba(26, 107, 42, 0.2),
+      0 10px 30px -5px rgba(0, 0, 0, 0.5),
+      inset 0 0 100px rgba(26, 107, 42, 0.02);
+  }
+}
+
+/*============================================
+   SCROLLBAR внутри карточки
+   ============================================ */
+
+.game-over-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.game-over-card::-webkit-scrollbar-track {
+  background: var(--parchment-dark);
+}
+
+.game-over-card::-webkit-scrollbar-thumb {
+  background: var(--ink-faded);
+  border-radius: 2px;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
+
+@media (max-width: 520px) {
+  .game-over-scroll-wrap {
+    padding: 10px;
+  }
+
+  .game-over-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: 95vh;
+    outline-offset: 3px;
+  }
+
+  .game-over-masthead {
+    padding: 14px 16px 10px;
+  }
+
+  .masthead-title {
+    font-size: 1.4rem;
+  }
+
+  .game-over-headline {
+    padding: 14px 16px;
+  }
+
+  .game-over-title {
+    font-size: 1.3rem;
+  }
+
+  .newspaper-rating-block {
+    margin: 0 16px;
+    padding: 12px 14px;
+  }
+
+  .newspaper-rating-block .rating-delta {
+    font-size: 2.2rem;
+  }
+
+  .game-over-categories,
+  .game-over-voyage {
+    padding: 12px 16px;
+  }
+
+  .game-over-buttons {
+    padding: 14px 16px 18px;
+    flex-direction: column;
+  }
+
+  .worst-move-row,
+  .defeat-tip {
+    margin: 10px 16px;
+  }
+
+  .game-over-achievements {
+    padding: 10px 16px;
+  }
+}
+
+
+
+
+
+
+
+
 
 /*═══════════════════════════════════
   ACHIEVEMENTS
@@ -3140,91 +3790,6 @@ button:hover {
     opacity: 1;
   }
 }
-
-/*═══════════════════════════════════
-  NEWSPAPER STYLE (GAME OVER CARD)
-═══════════════════════════════════*/
-.newspaper-style {
-  background-color: var(--parchment) !important;
-  color: #1a1a1a;
-  font-family: "Times New Roman", Times, serif;
-  box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.3), inset 0 0 50px rgba(0, 0, 0, 0.05);
-  border: 1px solid #d3ccbd !important;
-  padding: 30px !important;
-}
-
-.newspaper-brand {
-  font-size: 2.2rem;
-  font-family: "Georgia", serif;
-  font-weight: 900;
-  letter-spacing: 2px;
-  margin: 10px 0;
-  text-transform: uppercase;
-}
-
-.newspaper-meta {
-  font-family: 'Playfair Display', 'Georgia', serif;
-  font-size: 1.0rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  border-top: 1px solid #1a1a1a;
-  border-bottom: 3px double #1a1a1a;
-  padding: 5px 10px;
-  display: inline-block;
-  color: #1a1a1a;
-}
-
-.newspaper-divider-thick {
-  border-top: 4px double #1a1a1a;
-  margin: 10px 0 20px;
-}
-
-.newspaper-divider-thin {
-  border-top: 1px solid #1a1a1a;
-  margin: 15px 0;
-}
-
-.newspaper-style .game-over-title {
-  font-family: "Georgia", serif;
-  font-size: 1.5rem;
-  line-height: 1.1;
-  margin-top: 15px;
-  color: #000;
-}
-
-.newspaper-style .voyage-stat-row {
-  display: flex;
-  justify-content: space-between;
-  font-style: italic;
-  border-bottom: 1px dotted #1a1a1a;
-  padding: 5px 0;
-}
-
-.btn-newspaper-main {
-  background: #1a1a1a;
-  color: var(--parchment);
-  border: none;
-  padding: 10px 20px;
-  font-family: "Georgia", serif;
-  font-weight: bold;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-
-.btn-newspaper-sub {
-  background: transparent;
-  color: #1a1a1a;
-  border: 1px solid #1a1a1a;
-  padding: 10px 20px;
-  font-family: "Georgia", serif;
-  cursor: pointer;
-}
-
-.game-over-overlay.defeat .newspaper-style {
-  background-color: var(--parchment) !important;
-}
-
 
 /*═══════════════════════════════════
   LICHESS ANALYSIS BUTTON
@@ -3335,3 +3900,326 @@ button:hover {
 /*.sea-scene {
   filter: grayscale(1);
 } */
+
+/* Кнопка повторить тренировку из FEN */
+#go-btn-retry-fen {
+    margin-top: 8px;
+}
+
+#go-btn-retry-fen.hidden {
+    display: none;
+}
+
+
+
+/* ═══════════════════════════════════════
+   VOYAGE MAP — Слои поверх карты
+   ═══════════════════════════════════════ */
+
+
+.voyage-routes-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 2;
+}
+
+.voyage-routes-layer.active {
+    opacity: 1;
+}
+
+/* ═══ Слой портов ═══ */
+.voyage-ports-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 3;
+}
+
+.voyage-ports-layer.active {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+/* ═══ Порт ═══ */
+.voyage-port {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.3s ease;
+    z-index: 4;
+}
+
+.voyage-port:hover {
+    transform: translate(-50%, -50%) scale(1.15);
+}
+
+.voyage-port.locked {
+    filter: grayscale(0.7) brightness(0.6);
+    cursor: not-allowed;
+}
+
+.voyage-port.locked:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.voyage-port.current .vport-icon {
+    animation: portPulse 2s ease-in-out infinite;
+}
+
+@keyframes portPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.vport-icon {
+    font-size: 2rem;
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.vport-name {
+    font-size: 0.65rem;
+    color: #e8d5a3;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.vport-stars {
+    font-size: 0.5rem;
+    letter-spacing: 1px;
+}
+
+.vport-lock {
+    position: absolute;
+    top: -4px; right: -8px;
+    font-size: 0.7rem;
+}
+
+/* ═══ Корабль ═══ */
+.voyage-ship {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: left 0.7s ease, top 0.7s ease, opacity 0.4s ease;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+}
+
+.voyage-ship.active {
+    opacity: 1;
+}
+
+/* ═══ Счётчик звёзд ═══ */
+.voyage-stars-counter {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #ffd700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    z-index: 6;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    backdrop-filter: blur(4px);
+}
+
+.voyage-stars-counter.active {
+    opacity: 1;
+}
+
+/* ═══ Панель порта ═══ */
+.voyage-port-panel {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    max-height: 55%;
+    background: linear-gradient(180deg, rgba(20, 18, 15, 0.92), rgba(30, 25, 18, 0.98));
+    border-top: 2px solid #c8a96e;
+    border-radius: 12px 12px 0 0;
+    z-index: 10;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);padding: 12px;
+}
+
+.voyage-port-panel.visible {
+    transform: translateY(0);
+}
+
+.voyage-port-panel.hidden {
+    transform: translateY(100%);
+}
+
+.vpp-close-btn {
+    position: absolute;
+    top: 8px; right: 10px;
+    background: none;
+    border: none;
+    color: #c8a96e;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 11;
+    padding: 4px 8px;
+    border-radius: 4px;transition: background 0.2s;
+}
+
+.vpp-close-btn:hover {
+    background: rgba(200, 169, 110, 0.2);
+}
+
+.vpp-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(200, 169, 110, 0.3);
+    margin-bottom: 10px;
+}
+
+.vpp-icon {
+    font-size: 1.5rem;
+}
+
+.vpp-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e8d5a3;
+}
+
+.vpp-stars {
+    margin-left: auto;
+    color: #ffd700;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.vpp-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ═══ Карточка дебюта ═══ */
+.voyage-opening-card {
+    position: relative;
+    background: rgba(40, 35, 28, 0.9);
+    border: 1px solid rgba(200, 169, 110, 0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.voyage-opening-card.unlocked:hover {
+    border-color: #c8a96e;
+    transform: translateX(4px);
+    box-shadow: 0 2px 12px rgba(200, 169, 110, 0.2);
+}
+
+.voyage-opening-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.voc-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.voc-eco {
+    font-size: 0.7rem;
+    color: #888;
+    font-family: monospace;
+    background: rgba(255,255,255,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
+.voc-color {
+    font-size: 0.75rem;
+}
+
+.voc-diff {
+    margin-left: auto;
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.diff-easy{ background: #2d5a2d; color: #7ddf7d; }
+.diff-medium  { background: #5a5a2d; color: #dfdf7d; }
+.diff-hard    { background: #5a3d2d; color: #dfad7d; }
+.diff-expert{ background: #5a2d2d; color: #df7d7d; }
+.diff-master  { background: #4a2d5a; color: #c87ddf; }
+
+.voc-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #e8d5a3;
+    margin-bottom: 2px;
+}
+
+.voc-desc {
+    font-size: 0.7rem;
+    color: #999;
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+
+.voc-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.voc-stars {
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+}
+
+.voc-attempts {
+    font-size: 0.65rem;
+    color: #777;
+}
+
+.voc-lock {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 8px;
+    color: #c8a96e;
+    font-size: 0.8rem;
+    font-weight: 600;
+    backdrop-filter: blur(2px);
+}
+
+/* ═══ Подсветка карты при смене дебюта ═══ */
+#opening-map-container.flash-hint {
+    animation: mapFlash 1.5s ease;
+}
+
+@keyframes mapFlash {
+    0%   { filter: brightness(1); }
+    30%  { filter: brightness(1.3); }
+    100% { filter: brightness(1); }
+}

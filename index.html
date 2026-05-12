@@ -11,10 +11,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Chessboard.js -->
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"> 
+   
     <!-- Свои стили -->
     <link rel="stylesheet" href="styles.css">
+
+    <!-- Редактор позиций -->
+    <link rel="stylesheet" href="position-editor.css">
+
+    <!-- Карта -->
+    <link rel="stylesheet" href="voyage-map.css">
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script><!-- Chessboard.js -->
@@ -73,7 +79,7 @@
 
             <div class="btn-row">
                 <button class="btn-secondary" id="applyRating">Применить</button></div>
-            <button class="btn-start" onclick="startGame()">В бой</button>
+            	<button class="btn-start" onclick="startGame()">Быстрый рейс</button>
         </div>
 
         <!--═══ Морская сцена ═══ -->
@@ -143,7 +149,7 @@
         
         <!-- Рябь на воде -->
         <div class="water-ripples">
-            <div class="ripple-linerl-1"></div>
+            <div class="ripple-line rl-1"></div>
             <div class="ripple-line rl-2"></div>
             <div class="ripple-line rl-3"></div>
             <div class="ripple-line rl-4"></div>
@@ -357,7 +363,7 @@
             <div class="checkpoint" style="left:80%" data-tip="Берег виден"></div>
             <div class="checkpoint final" style="left:0%" data-tip="Безопасная гавань"></div>
         </div>
-
+   </div>
         <!-- Порт назначения — флаг -->
         <div class="voyage-end">
             <svg viewBox="0 0 24 24">
@@ -365,7 +371,7 @@
                 <path d="M5 2l14 5-14 5"/>
             </svg>
         </div>
-    </div>
+ 
 
     <!-- Прочность корпуса -->
     <div class="hull-bar">
@@ -420,9 +426,7 @@
 
 
 <!--═══ Колонка 3: Аналитика ═══ -->
-<aside class="analysis-panel">
-
-   <!-- Комбо -->
+<aside class="analysis-panel"><!-- Комбо -->
     <div class="combo-container">
         <div class="combo-info">
             <span class="combo-label">Combo Streak</span>
@@ -434,34 +438,34 @@
 
     <!-- Нотация -->
     <div class="notation-box">
-        <div class="panel-label">Историяходов</div>
+        <div class="panel-label">История ходов</div>
         <div id="move-history" class="move-history"></div>
-    </div>
-
-    <a id="lichess-analysis-btn" 
+    </div><a id="lichess-analysis-btn" 
        class="btn-lichess-analysis" 
        href="#" 
        target="_blank" 
-       rel="noopener noreferrer">♟ Анализировать с Lichess
+       rel="noopener noreferrer">♟ Исследовать с Lichess
     </a>
 
     <!-- Комментарии -->
     <div class="feedback-box">
         <div id="opening-badge" class="opening-badge">Начальная позиция</div>
-        <div id="kraken-message" class="kraken-message">Кракен наблюдает за вашимиходами...
-        </div>
-    </div>
-     <!-- Кнопка Карта -->
+        <div id="kraken-message" class="kraken-message">Кракен наблюдает за вашими ходами...</div>
+    </div><!-- Кнопка Карта -->
     <div class="map-toggle-wrapper">
         <button id="toggle-map-btn" class="btn-map-toggle" title="Показать карту дебютов">
             <span class="map-btn-label" id="map-toggle-text">Карта</span>
         </button>
-    </div>   
+    </div>
+
+    <!-- Кнопка Расставить позицию -->
+    <button id="btn-setup-position" class="btn-secondary" style="width:100%; margin-top:8px;">♟ Расставить позицию</button>
 
 
 </aside>
-
 </div>
+
+
 <!-- конец .app -->
 
 <div id="achievement-container"></div>
@@ -469,7 +473,263 @@
 
 <script src="sounds.js"></script>
 <script src="voyage.js"></script>
-<script src="script.js"></script>
 <script src="map.js"></script>
+<script src="position-editor.js"></script>
+<script src="script.js"></script>
+
+
+
+
+<!--═══ Модалка результатов партии ═══ -->
+<div id="unified-result-modal" class="game-over-overlay">
+  <div class="game-over-scroll-wrap">
+    <div class="game-over-card newspaper-style" id="game-over-card">
+
+      <!-- Псевдо-элементы карточки (пятна, текстура) обрабатываются через CSS -->
+
+      <!--═══ ШАПКА ГАЗЕТЫ ═══ -->
+      <header class="game-over-masthead">
+        <div class="masthead-dateline" id="go-dateline">
+          Экстренный выпуск • №0 • 0ходов
+        </div>
+        <h1 class="masthead-title">ВЕСТНИК ГАВАНИ</h1>
+        <div class="masthead-ornament">
+          <span class="masthead-ornament-symbol">⚓</span>
+        </div>
+      </header>
+
+      <!-- ═══ ЗАГОЛОВОК / ИСХОД ═══ -->
+      <section class="game-over-headline">
+        <div class="headline-kicker" id="go-kicker">Итоги экспедиции</div>
+
+        <!-- Звёзды (скрыты по умолчанию) -->
+        <div class="game-over-stars hidden" id="go-stars"></div>
+
+        <!-- GIF кракена при поражении (скрыт по умолчанию) -->
+        <div class="game-over-illustration hidden" id="go-illustration">
+          <img src="animation/krakenwin.gif"
+               class="game-over-kraken-img"
+               alt="Кракен побеждает"
+               loading="lazy">
+          <div class="illustration-caption">Художественная реконструкция событий</div>
+        </div>
+
+        <h2 class="game-over-title" id="go-title">ЭКСПЕДИЦИЯ ЗАВЕРШЕНА</h2>
+        <p class="headline-sub hidden" id="go-subtitle"></p></section>
+
+      <!-- ═══ РЕЙТИНГ ═══ -->
+      <div class="newspaper-rating-block">
+        <div class="rating-block-label">Изменение рейтинга</div>
+        <div class="rating-delta" id="go-rating-delta">+0</div>
+        <div class="rating-transition" id="go-rating-transition">1200→<b>1200</b></div>
+      </div>
+
+      <!-- ═══ КАТЕГОРИИ ХОДОВ ═══ -->
+      <section class="game-over-categories">
+        <div class="categories-title">Качество ходов</div>
+        <div class="game-over-stats" id="go-categories">
+          <!-- Заполняется из JS -->
+        </div>
+      </section>
+
+      
+      <!-- ═══ Результаты прохождения карты ═══ -->
+      <div id="go-map-result" class="go-section hidden"></div>
+
+
+
+      <!-- ═══ КОМБО (скрыт если< 3) ═══ -->
+      <div class="game-over-combo hidden" id="go-combo-section">
+        <div class="section-ornament">
+          <span class="section-ornament-glyph">✦</span>
+        </div>
+        <div class="voyage-stat-row" style="padding: 0 30px;">
+          <span class="voyage-stat-label">Лучшая серия</span>
+          <span class="voyage-stat-value voyage-stat-value--bold" id="go-combo-value">0ходов</span>
+        </div>
+      </div>
+
+      <!-- ═══ ДАННЫЕ ПЛАВАНИЯ (скрыты если нет VoyageEngine) ═══ -->
+      <section class="game-over-voyage hidden" id="go-voyage-section">
+        <div class="voyage-summary-title">Бортовой журнал</div>
+        <div class="voyage-stat-row">
+          <span class="voyage-stat-label">Состояние обшивки</span>
+          <span class="voyage-stat-value voyage-stat-value--bold" id="go-hull">0/0</span>
+        </div>
+        <div class="voyage-stat-row">
+          <span class="voyage-stat-label">Ремонтов проведено</span>
+          <span class="voyage-stat-value voyage-stat-value--bold" id="go-repairs">0</span>
+        </div>
+        <div class="voyage-stat-row">
+          <span class="voyage-stat-label">Общий урон получен</span>
+          <span class="voyage-stat-value voyage-stat-value--bold" id="go-damage">0</span>
+        </div>
+        <div class="voyage-stat-row hidden" id="go-crits-row">
+          <span class="voyage-stat-label">Критических ударов</span>
+          <span class="voyage-stat-value voyage-stat-value--critical" id="go-crits">0</span>
+        </div>
+      </section>
+
+      <!-- ═══ ДОСТИЖЕНИЯ (скрыты если нет) ═══ -->
+      <div class="game-over-achievements hidden" id="go-achievements"></div>
+
+      <!-- ═══ ШТРАФЫ (скрыты если нет) ═══ -->
+      <div class="penalty-line hidden" id="go-penalties"></div>
+
+      <!-- ═══ ХУДШИЙ ХОД (скрыт если cpl <= 200) ═══ -->
+      <div class="worst-move-row hidden" id="go-worst-move">
+        <div class="label">Худший ход</div>
+        <div class="value" id="go-worst-value"></div>
+      </div>
+
+      <!-- ═══ СОВЕТ ПРИ ПОРАЖЕНИИ (скрыт) ═══ -->
+      <div class="defeat-tip hidden" id="go-defeat-tip"></div>
+
+      <!-- ═══ КНОПКИ ═══ -->
+      <div class="game-over-buttons">
+        <button class="btn-primary-action" id="go-btn-new-game">⛵ Новый поход</button>
+	<button id="go-btn-retry-fen" class="go-btn go-btn--secondary hidden">Тренировать ещё раз</button>
+        <button id="go-btn-close">Закрыть</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!--═══ МОДАЛКА РЕДАКТОРА ПОЗИЦИЙ ═══ -->
+<div id="position-editor-modal" class="pe-modal">
+  <div class="pe-modal-content">
+    <div class="pe-header">
+      <h2 class="pe-title">♟ Редактор позиций</h2>
+      <button id="pe-close" class="pe-close-btn">&times;</button>
+    </div>
+
+    <div class="pe-body">
+      <!-- Левая панель: фигуры для расстановки -->
+      <div class="pe-sidebar">
+        <div class="pe-piece-palette">
+          <div class="pe-palette-group">
+            <div class="pe-palette-label">Белые</div>
+            <div class="pe-palette-row">
+              <div class="pe-palette-piece" data-piece="wK"><img src="/chesspieces/alpha/wK.png" alt="K"></div>
+              <div class="pe-palette-piece" data-piece="wQ"><img src="/chesspieces/alpha/wQ.png" alt="Q"></div>
+              <div class="pe-palette-piece" data-piece="wR"><img src="/chesspieces/alpha/wR.png" alt="R"></div>
+              <div class="pe-palette-piece" data-piece="wB"><img src="/chesspieces/alpha/wB.png" alt="B"></div>
+              <div class="pe-palette-piece" data-piece="wN"><img src="/chesspieces/alpha/wN.png" alt="N"></div>
+              <div class="pe-palette-piece" data-piece="wP"><img src="/chesspieces/alpha/wP.png" alt="P"></div>
+            </div>
+          </div>
+          <div class="pe-palette-group">
+            <div class="pe-palette-label">Чёрные</div>
+            <div class="pe-palette-row">
+              <div class="pe-palette-piece" data-piece="bK"><img src="/chesspieces/alpha/bK.png" alt="k"></div>
+              <div class="pe-palette-piece" data-piece="bQ"><img src="/chesspieces/alpha/bQ.png" alt="q"></div>
+              <div class="pe-palette-piece" data-piece="bR"><img src="/chesspieces/alpha/bR.png" alt="r"></div>
+              <div class="pe-palette-piece" data-piece="bB"><img src="/chesspieces/alpha/bB.png" alt="b"></div>
+              <div class="pe-palette-piece" data-piece="bN"><img src="/chesspieces/alpha/bN.png" alt="n"></div>
+              <div class="pe-palette-piece" data-piece="bP"><img src="/chesspieces/alpha/bP.png" alt="p"></div>
+            </div>
+          </div>
+          <div class="pe-palette-group">
+            <div class="pe-tool-row">
+              <div class="pe-palette-piece pe-tool-eraser active" data-piece="trash" title="Ластик">
+                <span class="pe-eraser-icon">🗑️</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Центр: доска -->
+      <div class="pe-board-wrap">
+        <div id="pe-board" style="width: 100%;"></div>
+        <button id="pe-flip-board" class="pe-btn pe-btn-small pe-flip-btn" title="Перевернуть доску">🔄 Перевернуть</button>
+      </div>
+
+      <!-- Правая панель: настройки -->
+      <div class="pe-settings">
+        <!-- Очередь хода -->
+        <div class="pe-setting-group">
+          <label class="pe-label">Очередь хода</label>
+          <div class="pe-radio-row">
+            <label class="pe-radio-label">
+              <input type="radio" name="pe-turn" value="w" checked><span class="pe-radio-custom pe-radio-white"></span> Белые
+            </label>
+            <label class="pe-radio-label">
+              <input type="radio" name="pe-turn" value="b">
+              <span class="pe-radio-custom pe-radio-black"></span> Чёрные
+            </label>
+          </div>
+        </div>
+
+        <!-- Рокировка -->
+        <div class="pe-setting-group">
+          <label class="pe-label">Рокировка</label>
+          <div class="pe-castling-grid">
+            <label class="pe-check-label">
+              <input type="checkbox" id="pe-castle-K" checked>
+              <span>♔ O-O</span>
+            </label>
+            <label class="pe-check-label">
+              <input type="checkbox" id="pe-castle-Q" checked>
+              <span>♔ O-O-O</span>
+            </label>
+            <label class="pe-check-label">
+              <input type="checkbox" id="pe-castle-k" checked>
+              <span>♚ O-O</span>
+            </label>
+            <label class="pe-check-label">
+              <input type="checkbox" id="pe-castle-q" checked>
+              <span>♚ O-O-O</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Номер хода -->
+        <div class="pe-setting-group">
+          <label class="pe-label" for="pe-move-number">Номер хода</label>
+          <input type="number" id="pe-move-number" class="pe-input" value="1" min="1" max="999">
+        </div>
+
+        <!-- FEN -->
+        <div class="pe-setting-group">
+          <label class="pe-label" for="pe-fen-input">FEN</label>
+          <div class="pe-fen-row">
+            <input type="text" id="pe-fen-input" class="pe-input pe-fen-field"
+                   placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+            <button id="pe-fen-apply" class="pe-btn pe-btn-small" title="Применить FEN">↵</button>
+            <button id="pe-fen-copy" class="pe-btn pe-btn-small" title="Копировать FEN">📋</button>
+          </div><div id="pe-fen-error" class="pe-fen-error hidden"></div>
+        </div>
+
+        <!-- Пресеты -->
+        <div class="pe-setting-group">
+          <label class="pe-label">Быстрые позиции</label>
+          <div class="pe-presets">
+            <button class="pe-btn pe-btn-preset" data-fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Начальная</button>
+            <button class="pe-btn pe-btn-preset" data-fen="8/8/8/8/8/8/8/8 w - - 0 1">Пустая</button>
+          </div>
+        </div>
+
+        <!-- Валидация -->
+        <div id="pe-validation" class="pe-validation hidden"></div>
+
+        <!-- Кнопки действий -->
+        <div class="pe-actions">
+          <button id="pe-start-white" class="pe-btn pe-btn-primary">▶ Играть за белых</button>
+          <button id="pe-start-black" class="pe-btn pe-btn-primary pe-btn-dark">▶ Играть за чёрных</button>
+          <button id="pe-cancel" class="pe-btn pe-btn-secondary">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
 </body>
 </html>

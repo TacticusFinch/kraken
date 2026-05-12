@@ -41,6 +41,15 @@ state: {
 init(estimatedMoves) {
     estimatedMoves = estimatedMoves || 15;
 
+    if (typeof SoundEngine !== 'undefined') {
+        if (SoundEngine.stopWeatherSound) {
+            SoundEngine.stopWeatherSound();
+        }
+    }
+
+    // Также останавливаем молнии от предыдущего шторма
+    this._stopLightning();
+
     this.state = {
         maxHP: 4,
         currentHP: 4,
@@ -197,14 +206,14 @@ evaluateMove(moveData) {
         case 'theory':
             result.repairPoints = 2;
             result.comboAdd = true;
-            result.message = '📖 Теоретический ход. Корабль на верном курсе.';
+            result.message = 'Теоретический ход. Корабль на верном курсе.';
             result.type = 'good';
             break;
 
         case 'good':
             result.repairPoints = 1;
             result.comboAdd = true;
-            result.message = '✅ Хороший ход. Плывём дальше.';
+            result.message = 'Хороший ход. Плывём дальше.';
             result.type = 'good';
             break;
 
@@ -213,7 +222,7 @@ evaluateMove(moveData) {
             result.damage = 1;
             result.comboBreak = false;
             result.comboAdd = false;
-            result.message = '⚠️ Неточность! Кракен царапает борт.';
+            result.message = 'Неточность! Кракен царапает борт.';
             result.type = 'warning';
             break;
 
@@ -698,7 +707,9 @@ checkAchievements(moveData, result) {
 
     if (this.state.combo >= 10 && a.indexOf('navigator') === -1) {
         a.push('navigator');
-        this.showAchievement('🧭', 'Навигатор', '10 точныхходов подряд!');
+        this.showAchievement('🧭', 'Sail!', '10 точных ходов подряд!');
+	const sailSound = new Audio('sound/sail.mp3');
+        sailSound.play().catch(e => console.log("Ошибка воспроизведения:", e));
     }
 
     if (moveData.popularityRank > 5 &&
@@ -720,13 +731,14 @@ gameOver(reason) {
     if (this.state.isGameOver) return;
     this.state.isGameOver = true;
 
-    if (reason === 'victory') {
-        this.showVictoryScreen();
-    } else if (reason === 'sunk') {
-        this.showDefeatScreen();
+    // Визуальные эффекты без окна
+    if (reason === 'sunk') {
         var ship = document.getElementById('ship');
         if (ship) ship.classList.add('sinking');
     }
+
+    // НЕ показываем отдельное окно — всё покажет showSessionResults()
+    console.log('⛵ Game over:', reason);
 },
 
 // ===== РЕНДЕРИНГ =====

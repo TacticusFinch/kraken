@@ -1,0 +1,383 @@
+/* ═══════════════════════════════════════
+   Карта экспедиции — voyage-map.css
+   ═══════════════════════════════════════ */
+
+/* --- Оверлей --- */
+.voyage-map-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(5, 15, 35, 0.92);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+.voyage-map-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- Контейнер --- */
+.voyage-map-container {
+    width: 95%;
+    max-width: 900px;
+    max-height: 90vh;
+    background: linear-gradient(135deg, #0a1628 0%, #0e1f3d 50%, #0a1628 100%);
+    border: 2px solid #c8a96e;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 0 40px rgba(200, 169, 110, 0.15),
+        inset 0 0 60px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Шапка --- */
+.voyage-map-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: linear-gradient(90deg, #1a1a2e, #16213e);
+    border-bottom: 1px solid #c8a96e44;
+}
+
+.voyage-map-title {
+    font-family: 'Georgia', serif;
+    font-size: 1.3rem;
+    color: #c8a96e;
+    margin: 0;
+}
+
+.voyage-map-stars-total {
+    font-size: 1rem;
+    color: #ffd700;
+}
+
+.voyage-map-close {
+    background: none;
+    border: 1px solid #c8a96e55;
+    color: #c8a96e;
+    font-size: 1.4rem;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.voyage-map-close:hover {
+    background: #c8a96e22;
+    transform: scale(1.1);
+}
+
+/* --- Тело карты (море) --- */
+.voyage-map-body {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.voyage-map-sea {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 60%; /* Соотношение сторон карты */
+    background:
+        radial-gradient(ellipse at 30% 40%, #1a3a5c 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 60%, #1a3a5c 0%, transparent 50%),
+        linear-gradient(180deg, #0a1e3d 0%, #0c2340 40%, #0e2a4a 100%);
+    overflow: hidden;
+}
+
+/* Волны на фоне */
+.voyage-map-sea::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 200%; height: 100%;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 40px,
+        rgba(100, 180, 255, 0.03) 40px,
+        rgba(100, 180, 255, 0.03) 42px
+    );
+    animation: sea-waves 12s linear infinite;
+}
+
+@keyframes sea-waves {
+    0%{ transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* --- SVG маршруты --- */
+.voyage-map-routes {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.route-active {
+    stroke: #c8a96e;
+    filter: drop-shadow(0 0 3px rgba(200, 169, 110, 0.4));
+}
+
+.route-locked {
+    stroke: #334;
+}
+
+/* --- Порты --- */
+#map-ports-container {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+}
+
+.voyage-port {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.25s ease, filter 0.25s ease;
+    z-index: 3;
+}
+
+.voyage-port:hover {
+    transform: translate(-50%, -50%) scale(1.15);
+}
+
+.voyage-port.locked {
+    filter: grayscale(0.7) brightness(0.5);
+    cursor: not-allowed;
+}
+
+.voyage-port.locked:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.voyage-port.current .voyage-port-icon {
+    animation: port-pulse 2s ease-in-out infinite;
+}
+
+@keyframes port-pulse {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(200, 169, 110, 0.6)); }
+    50%{ filter: drop-shadow(0 0 16px rgba(200, 169, 110, 1)); }
+}
+
+.voyage-port-icon {
+    font-size: 2.2rem;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.voyage-port-name {
+    font-family: 'Georgia', serif;
+    font-size: 0.75rem;
+    color: #c8a96e;
+    margin-top: 2px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    white-space: nowrap;
+}
+
+.voyage-port-stars {
+    font-size: 0.65rem;
+    margin-top: 1px;
+}
+
+.voyage-port-lock {
+    position: absolute;
+    top: -4px; right: -8px;
+    font-size: 0.9rem;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
+}
+
+/* --- Корабль --- */
+.voyage-ship {
+    position: absolute;
+    font-size: 2rem;
+    z-index: 10;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+    transition: left 0.8s ease, top 0.8s ease;animation: ship-bob 3s ease-in-out infinite;
+}
+
+@keyframes ship-bob {
+    0%, 100% { margin-top: 0; }
+    50%      { margin-top: -4px; }
+}
+
+/* --- Панель дебютов порта --- */
+.voyage-port-panel {
+    border-top: 1px solid #c8a96e44;
+    padding: 16px 20px;
+    background: linear-gradient(180deg, #0e1a2e, #0a1628);
+    max-height: 45vh;
+    overflow-y: auto;
+}
+
+.voyage-port-panel.hidden {
+    display: none;
+}
+
+.voyage-port-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.port-panel-icon {
+    font-size: 1.6rem;
+}
+
+.port-panel-name {
+    font-family: 'Georgia', serif;
+    font-size: 1.2rem;
+    color: #c8a96e;
+}
+
+.port-panel-stars {
+    margin-left: auto;
+    color: #ffd700;
+    font-size: 0.9rem;
+}
+
+/* --- Карточки дебютов --- */
+.voyage-port-panel-openings {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.opening-card {
+    background: linear-gradient(135deg, #162040, #1a2850);
+    border: 1px solid #c8a96e44;
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.opening-card.unlocked:hover {
+    border-color: #c8a96e;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(200, 169, 110, 0.15);
+}
+
+.opening-card.locked {
+    filter: grayscale(0.5) brightness(0.6);
+    cursor: not-allowed;
+}
+
+.opening-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.opening-card-eco {
+    font-size: 0.7rem;
+    color: #8899aa;
+    font-family: monospace;
+}
+
+.opening-card-color {
+    font-size: 0.9rem;
+}
+
+.opening-card-name {
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    color: #e8d5b5;
+    margin-bottom: 4px;
+}
+
+.opening-card-desc {
+    font-size: 0.75rem;
+    color: #7a8a9a;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.opening-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.opening-card-stars {
+    font-size: 0.8rem;
+}
+
+.opening-card-diff {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.diff-easy    { background: #1a4a2e; color: #5cdb6a; }
+.diff-medium  { background: #3a3a1a; color: #d4c85c; }
+.diff-hard    { background: #4a2a1a; color: #e8935c; }
+.diff-expert  { background: #4a1a1a; color: #e85c5c; }
+.diff-master  { background: #3a1a4a; color: #c85ce8; }
+
+.opening-card-lock {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #aaa;
+    border-radius: 10px;
+}
+
+.opening-card-attempts {
+    font-size: 0.65rem;
+    color: #667;margin-top: 6px;
+    text-align: right;
+}
+
+/* --- Мобильная адаптация --- */
+@media (max-width: 600px) {
+    .voyage-map-container {
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;border-radius: 0;
+        border: none;
+    }
+
+    .voyage-map-sea {
+        padding-bottom: 75%;
+    }
+
+    .voyage-port-icon {
+        font-size: 1.6rem;
+    }
+
+    .voyage-port-name {
+        font-size: 0.65rem;
+    }
+
+    .voyage-port-panel-openings {
+        grid-template-columns: 1fr;
+    }
+
+    .voyage-ship {
+        font-size: 1.5rem;
+    }
+}
