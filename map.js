@@ -107,7 +107,7 @@ const VoyageMap = (() => {
             id: 'sicily',
             name: 'Сицилия',
             x: 55, y: 75,
-            icon: '🏝️',
+            icon: 'scl',
             description: 'Остров острейших вариантов',
             openings: [
                 {
@@ -179,7 +179,7 @@ const VoyageMap = (() => {
     function createDefaultProgress() {
         const p = {
             currentPort: 'spain',
-            shipPosition: { x: 12, y: 52 },
+            shipPosition: { x: 30, y: 60 },
             ports: {},
             totalStars: 0,
             openingsCompleted: {}
@@ -327,10 +327,12 @@ const VoyageMap = (() => {
         container.appendChild(portsLayer);
 
         // Корабль
-        shipEl = document.createElement('div');
-        shipEl.classList.add('voyage-ship');
-        shipEl.textContent = '⛵';
-        container.appendChild(shipEl);
+        // Корабль
+	shipEl = document.createElement('div');
+	shipEl.classList.add('voyage-ship');
+	shipEl.innerHTML = '<img src="animation/ship7.png" alt="Корабль">';
+	container.appendChild(shipEl);
+
 
         // Счётчик звёзд
         starsCounter = document.createElement('div');
@@ -619,11 +621,78 @@ const VoyageMap = (() => {
         `;
 
         if (unlocked) {
-            card.addEventListener('click', () => launchOpening(port, index));
-        }
+        card.addEventListener('click', () => {
+            // Подсветка выбранной карточки
+            document.querySelectorAll('.voyage-opening-card').forEach(c =>
+                c.classList.remove('selected')
+            );
+            card.classList.add('selected');
+
+            // Анимация закрытия панели, ПОТОМ запуск
+            setTimeout(() => {
+                closePortPanelAnimated(() => {
+                    launchOpening(port, index);
+                });
+            }, 200);
+        });
+    }
 
         return card;
     }
+
+
+function closePortPanelAnimated(callback) {
+    portPanel.classList.add('closing');
+    portPanel.classList.remove('visible');
+
+    const onDone = () => {
+        portPanel.classList.remove('closing');
+        portPanel.classList.add('hidden');
+        isPanelOpen = false;
+        if (callback) callback();
+    };
+
+    //Ждём завершения CSS-анимации
+    portPanel.addEventListener('transitionend', onDone, { once: true });
+
+    // Страховочный таймер
+    setTimeout(onDone, 400);
+}
+
+
+// ═══════════════════════════════════════
+    //  ПАНЕЛЬ ПОРТА
+    // ═══════════════════════════════════════
+
+
+function selectOpening(card, openingData) {
+  if (card.classList.contains('locked')) return;
+
+  // Подсветка выбранной карточки
+  document.querySelectorAll('.voyage-opening-card').forEach(c =>
+    c.classList.remove('selected')
+  );
+  card.classList.add('selected');
+
+  // Скрытие панели с задержкой
+  const panel = document.querySelector('.voyage-port-panel');
+  
+  setTimeout(() => {
+    panel.classList.add('closing');
+    panel.classList.remove('visible');
+
+    // Сброс после завершения анимации
+    setTimeout(() => {
+      panel.classList.remove('closing');
+      panel.classList.add('hidden');
+    }, 350);
+  }, 250);
+
+  // Запуск дебюта
+  // startOpening(openingData);
+}
+
+
 
 // ═══════════════════════════════════════
     //  ЗАПУСК ТРЕНИРОВКИ
@@ -641,7 +710,6 @@ const VoyageMap = (() => {
 
     function startTraining(port, opening) {
         hideMap();
-        closePortPanel();
 
         // Записываем попытку
         const key = port.id + ':' + opening.eco;

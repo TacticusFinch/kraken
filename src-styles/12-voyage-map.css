@@ -1,0 +1,390 @@
+/* ═══════════════════════════════════════════
+12 · VOYAGE MAP
+
+Приключенческая карта с портами,
+маршрутами, кораблём, панелью выбора.
+═══════════════════════════════════════════ */
+
+/* ── Слои маршрутов и портов ── */
+.voyage-routes-layer,
+.voyage-ports-layer {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+pointer-events: none;
+opacity: 0;
+transition: opacity var(--duration-normal) ease;
+}
+
+.voyage-routes-layer { z-index: 2; }
+.voyage-ports-layer { z-index: 3; }
+
+.voyage-routes-layer.active,
+.voyage-ports-layer.active {
+opacity: 1;
+}
+
+.voyage-ports-layer.active {
+pointer-events: auto;
+}
+
+/* ── Порт ── */
+.voyage-port {
+position: absolute;
+transform: translate(-50%, -50%);
+text-align: center;
+cursor: pointer;
+transition:
+transform var(--duration-fast) ease,
+filter 0.3s ease;
+z-index: 4;
+}
+
+.voyage-port:hover {
+transform: translate(-50%, -50%) scale(1.15);
+}
+
+.voyage-port.locked:hover {
+  transform: translate(-50%, -50%) scale(1.03);
+}
+
+.voyage-port.current .vport-icon {
+  animation: portPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes portPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3)); }
+  50% { transform: scale(1.2); filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.7)); }
+}
+
+.vport-icon {
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.vport-name {
+  font-family: var(--ff-serif-body);
+  font-size: 0.65rem;
+  color: var(--c-parchment-dark);
+  font-weight: 700;
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(0, 0, 0, 0.5);
+  margin-top: 2px;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+.vport-stars {
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+.vport-lock {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  font-size: 0.7rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+/* ── Корабль на карте ── */
+.voyage-ship {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 1.8rem;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    left 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity var(--duration-normal) ease;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.7));
+}
+
+.voyage-ship img {
+  width: 50px;
+  height: auto;
+  display: block;
+}
+
+.voyage-ship.active {
+  opacity: 1;
+  animation: shipBob 3s ease-in-out infinite;
+}
+
+/* ── Счётчик звёзд ── */
+.voyage-stars-counter {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, rgba(42, 32, 18, 0.92), rgba(28, 22, 12, 0.95));
+  color: #ffd700;
+  padding: 6px 14px;
+  border: 1px solid var(--c-parchment-dark);
+  font-family: var(--ff-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  z-index: 6;
+  opacity: 0;
+  transition: opacity var(--duration-normal) ease;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(200, 169, 110, 0.15);
+}
+
+.voyage-stars-counter.active {
+  opacity: 1;
+}
+
+/* ── Панель порта ── */
+.voyage-port-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 55%;
+  background: linear-gradient(
+    180deg,
+    rgba(36, 28, 18, 0.94) 0%,
+    rgba(24, 18, 10, 0.98) 100%
+  );
+  border-top: 2px solid var(--c-parchment-dark);
+  z-index: 10;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 16px 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.voyage-port-panel.visible {
+  transform: translateY(0);
+}
+
+.voyage-port-panel.hidden {
+  transform: translateY(100%);
+}
+
+.voyage-port-panel.closing {
+  transform: translateY(100%);
+  opacity: 0;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.8, 1),
+    opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* Кнопка закрытия */
+.vpp-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--c-parchment-dark);
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 11;
+  padding: 4px 8px;
+  transition:
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+}
+
+.vpp-close-btn:hover {
+  color: var(--c-parchment);
+  border-color: var(--c-parchment-dark);
+}
+
+/* Заголовок панели */
+.vpp-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(200, 169, 110, 0.25);
+  margin-bottom: 12px;
+}
+
+.vpp-icon {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.vpp-name {
+  font-family: var(--ff-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--c-parchment);
+  letter-spacing: 0.02em;
+}
+
+.vpp-stars {
+  margin-left: auto;
+  color: #ffd700;
+  font-size: 0.85rem;
+  font-weight: 600;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.vpp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Карточка дебюта ── */
+.voyage-opening-card {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(50, 40, 28, 0.85),
+    rgba(38, 30, 20, 0.9)
+  );
+  border: 1px solid rgba(200, 169, 110, 0.25);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast),
+    transform var(--duration-fast),
+    box-shadow var(--duration-fast);
+}
+
+.voyage-opening-card.unlocked:hover {
+  border-color: var(--c-parchment-dark);
+  transform: translateX(4px);
+  box-shadow:
+    0 2px 16px rgba(200, 169, 110, 0.15),
+    inset 0 0 0 1px rgba(200, 169, 110, 0.1);
+}
+
+.voyage-opening-card.selected {
+  border-color: #ffd700;
+  background: linear-gradient(
+    135deg,
+    rgba(60, 50, 30, 0.95),
+    rgba(45, 35, 20, 0.95)
+  );
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+}
+
+.voyage-opening-card.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Верхняя строка карточки */
+.voc-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.voc-eco {
+  font-size: 0.65rem;
+  color: var(--c-parchment-dark);
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border: 1px solid rgba(200, 169, 110, 0.2);
+}
+
+.voc-color {
+  font-size: 0.75rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.voc-diff {
+  margin-left: auto;
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid;
+}
+
+/* Уровни сложности */
+.diff-easy   { background: rgba(45, 90, 45, 0.3);  color: #7ddf7d; border-color: rgba(125, 223, 125, 0.4); }
+.diff-medium { background: rgba(90, 90, 45, 0.3);  color: #dfdf7d; border-color: rgba(223, 223, 125, 0.4); }
+.diff-hard   { background: rgba(90, 61, 45, 0.3);  color: #dfad7d; border-color: rgba(223, 173, 125, 0.4); }
+.diff-expert { background: rgba(90, 45, 45, 0.3);  color: #df7d7d; border-color: rgba(223, 125, 125, 0.4); }
+.diff-master { background: rgba(74, 45, 90, 0.3);  color: #c87ddf; border-color: rgba(200, 125, 223, 0.4); }
+
+.voc-name {
+  font-family: var(--ff-serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--c-parchment);
+  margin-bottom: 2px;
+}
+
+.voc-desc {
+  font-family: var(--ff-serif-body);
+  font-size: 0.7rem;
+  color: var(--c-parchment-dark);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+
+.voc-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voc-stars {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.voc-attempts {
+  font-size: 0.6rem;
+  color: rgba(200, 169, 110, 0.5);
+  font-family: var(--ff-serif-body);
+}
+
+.voc-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(10, 8, 5, 0.75);
+  color: var(--c-parchment-dark);
+  font-family: var(--ff-serif-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  backdrop-filter: blur(2px);
+}
+
+.voc-lock::before {
+  content: '🔒';
+  font-size: 1.2rem;
+}
+
+/* ── Анимация появления карточек ── */
+.voyage-port-panel.visible .voyage-opening-card {
+  animation: cardSlideIn 0.3s ease backwards;
+}
+
+.voyage-port-panel.visible .voyage-opening-card:nth-child(1) { animation-delay: 0.05s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(2) { animation-delay: 0.1s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(3) { animation-delay: 0.15s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(4) { animation-delay: 0.2s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

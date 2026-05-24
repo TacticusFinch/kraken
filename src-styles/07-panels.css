@@ -1,0 +1,390 @@
+/* ═══════════════════════════════════════════
+   07 · PANELS — DIGITAL KRAKEN
+   
+   Приборные панели батискафа: глубиномер,
+   сонар, бортовой журнал, система
+   жизнеобеспечения и детектор аномалий.
+   ═══════════════════════════════════════════ */
+
+/* Переменные для унификации панелей */
+:root {
+  --c-panel-bg: rgba(12, 26, 36, 0.35); /* Фирменное темное стекло */
+  --c-panel-border: rgba(0, 255, 204, 0.08); /* Тончайший неон */
+  --c-panel-neon: #00ffcc; /* Чистый циан */
+  --c-panel-text-dim: #708d9f; /* Читаемый серый в синеве для логов */
+}
+
+/* ── Общий стиль панелей ── */
+
+.side-panel,
+.analysis-panel {
+  margin-top: 62px;
+  border-top: 2px solid  #c084fc;
+  box-shadow: 0 -4px 20px rgba(0, 255, 204, 0.05);
+}
+
+/* ── Элементы внутри панелей ── */
+
+.side-panel .info-card,
+.side-panel .controls-wrapper,
+.side-panel .combo-container,
+.side-panel .live-stats-box,
+.analysis-panel .notation-box,
+.analysis-panel .feedback-box,
+.analysis-panel .combo-container {
+  background: var(--c-panel-bg);
+  backdrop-filter: blur(6px);
+  border: none;
+  border-bottom: 1px solid var(--c-panel-border);
+  padding: 16px; /* Добавили внутренний отступ для эстетики стекла */
+}
+
+.side-panel > :last-child,
+.analysis-panel > :last-child {
+  border-bottom: none;
+}
+
+/* ── Info Card & Rating — глубиномер ── */
+
+.info-card {
+  background: var(--c-panel-bg);
+  padding: 24px 16px;
+  width: 100%;
+  border-bottom: 1px solid var(--c-panel-border);
+}
+
+#rating-display {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rating-main .label {
+  font-size: 0.55rem;
+  color: var(--c-panel-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+#rating-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+  text-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
+}
+
+#rating-value.rising {
+  color: #00ffaa;
+  text-shadow: 0 0 15px rgba(0, 255, 170, 0.5);
+}
+
+#rating-value.falling {
+  color: #ff2255;
+  text-shadow: 0 0 15px rgba(255, 34, 85, 0.5);
+}
+
+.rating-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--c-panel-border);
+}
+
+.rating-delta {
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-panel-text-dim);
+}
+
+.rating-delta.positive {
+  color: #00ffaa;
+  text-shadow: 0 0 6px rgba(0, 255, 170, 0.3);
+}
+
+.rating-delta.positive::before { content: '+'; }
+
+.rating-delta.negative {
+  color: #ff2255;
+  text-shadow: 0 0 6px rgba(255, 34, 85, 0.3);
+}
+
+.rating-peak {
+  font-size: 0.6rem;
+  color: var(--c-panel-text-dim);
+  letter-spacing: 0.04em;
+}
+
+.rating-peak::before {
+  content: 'PEAK ';
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* ── Notation & Feedback — бортовой журнал ── */
+
+.notation-box,
+.feedback-box {
+  background: var(--c-panel-bg);
+  border: none;
+  border-bottom: 1px solid var(--c-panel-border);
+  padding: 16px;
+  width: 100%;
+}
+
+/* ── Move History — судовой лог ── */
+
+.move-history,
+#move-history {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  max-height: 300px;
+  min-height: 60px;
+  padding: 4px;
+}
+
+.move-pair {
+  display: grid;
+  grid-template-columns: 28px 1fr 1fr;
+  gap: 4px;
+  padding: 4px 0;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid rgba(0, 255, 204, 0.05); /* Заменено на тонкий неоновый разделитель */
+}
+
+.move-pair:last-child {
+  border-bottom: none;
+}
+
+.move-number {
+  font-size: 0.72rem;
+  color: var(--c-panel-text-dim);
+  text-align: right;
+  padding-right: 4px;
+}
+
+.move-san {
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast),
+    box-shadow var(--duration-fast);
+  color: var(--c-text);
+}
+
+.move-san:hover {
+  background: rgba(0, 255, 204, 0.06);
+  box-shadow: 0 0 6px rgba(0, 255, 204, 0.15);
+}
+
+/* ── Категории ходов — система детекции на темном стекле ── */
+
+.move-san.pending     { color: #4e6378; }
+
+.move-san.opponent    { color: var(--c-panel-text-dim); }
+
+.move-san.theory {
+  color: #38bdf8;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
+}
+
+.move-san.good {
+  color: #34d399;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(52, 211, 153, 0.3);
+}
+
+.move-san.inaccuracy {
+  color: #fbbf24;
+  text-shadow: 0 0 4px rgba(251, 191, 36, 0.2);
+}
+
+.move-san.mistake {
+  color: #f97316;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(249, 115, 22, 0.3);
+}
+
+.move-san.blunder {
+  color: #ef4444;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.move-san.grossBlunder {
+  color: #d946ef;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(217, 70, 239, 0.4);
+}
+
+.move-san.catastrophe {
+  color: #ff0040;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 0, 64, 0.5);
+  animation: catastrophe-pulse 1.5s var(--ease-pulse) infinite;
+}
+
+@keyframes catastrophe-pulse {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px rgba(255,0,64,0.5)); }
+  50%      { opacity: 0.6; filter: drop-shadow(0 0 0px transparent); }
+}
+
+.move-san.placeholder { color: rgba(0, 255, 204, 0.04); }
+
+/* ── Combo Container — счётчик аномалий ── */
+
+.combo-container {
+  background: var(--c-panel-bg);
+  border-bottom: 2px solid var(--c-panel-neon);
+  padding: 20px 16px 12px;
+  width: 100%;
+  position: relative;
+  transition: all var(--duration-normal) var(--ease-bounce);
+}
+
+.combo-container.active {
+  background: rgba(0, 255, 204, 0.03);
+  box-shadow: inset 0 0 15px rgba(0, 255, 204, 0.04);
+}
+
+.combo-info {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.combo-label {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--c-text);
+}
+
+.combo-label::after {
+  content: "LIVE RECAP";
+  display: block;
+  font-size: 0.5rem;
+  font-family: var(--ff-system);
+  font-style: normal;
+  font-weight: 800;
+  background: #ff2288; /* Свежий неоновый розовый */
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 10px rgba(255, 34, 136, 0.4);
+}
+
+#combo-multiplier {
+  font-family: var(--ff-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  background: linear-gradient(
+    135deg,
+    #00ffcc,
+    #00aaff
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 204, 0.3));
+  transition: transform var(--duration-fast) ease;
+}
+
+.bump {
+  transform: scale(1.15);
+}
+
+.combo-bar-bg {
+  height: 6px;
+  background: rgba(6, 13, 19, 0.6); /* Внутреннее затемнение трека бара */
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+#combo-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #006666 0%,
+    #00ffcc 60%,
+    #00ffaa 100%
+  );
+  box-shadow:
+    0 0 10px rgba(0, 255, 204, 0.6),
+    0 0 20px rgba(0, 255, 170, 0.2);
+  width: 0%;
+  border-radius: 10px;
+  transition: width var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Live Stats — панель жизнеобеспечения ── */
+
+.live-stats-box {
+  background: var(--c-panel-bg);
+  border: none;
+  border-bottom: 1px solid var(--c-panel-border);
+  padding: 16px;
+  width: 100%;
+}
+
+.live-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.live-stat {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--c-panel-border);
+  border-right: 1px solid var(--c-panel-border);
+  text-align: center;
+  transition: background var(--duration-fast);
+}
+
+.live-stat:hover {
+  background: rgba(0, 255, 204, 0.03);
+}
+
+.live-stat:nth-child(2n) {
+  border-right: none;
+}
+
+.live-stat:nth-last-child(-n+2) {
+  border-bottom: none;
+}
+
+.live-stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.live-stat-label {
+  font-size: 0.6rem;
+  color: var(--c-panel-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}

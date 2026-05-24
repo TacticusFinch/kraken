@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════
+   06 · CHESS BOARD — DIGITAL KRAKEN (RETRO-CYBER)
+   
+   Иллюминатор батискафа. Шахматная доска —
+   вид на океанское дно сквозь толстое стекло.
+   Эстетика старой диснеевской анимации и 
+   хакерского фосфорного терминала.
+   ═══════════════════════════════════════════ */
+
+#board {
+  position: relative;
+  width: var(--w-column);
+  height: var(--w-column);
+  border: 4px solid var(--c-border); /* Сделали рамку толще, как у настоящего иллюминатора */
+  border-radius: 4px; /* Легкое скругление углов старых экранов */
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  contain: layout style;
+  
+  /* Эффект линзы старого мультфильма и мягкое сведение цветов */
+  filter: contrast(1.02) brightness(0.96) saturate(0.95);
+  
+  box-shadow:
+    0 0 30px rgba(0, 0, 0, 0.6),
+    0 0 60px var(--c-highlight-alpha),
+    inset 0 0 40px rgba(0, 0, 0, 0.8); /* Глубокая тень внутри иллюминатора */
+}
+
+/* Эффект выгнутого стекла и виньетки старого кадра */
+#board::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle, transparent 40%, rgba(6, 10, 18, 0.4) 100%);
+  pointer-events: none;
+  z-index: 5; /* Поверх клеток, но под фигурами (если фигуры имеют z-index > 5) */
+}
+
+/* ── Цвета клеток — чешуя кракена (Чернильная Фантазия / Мягкий Фосфор) ── */
+
+#board .white-1e1d7 {
+  /* Рекомендуемый пастельный тон бумаги/светлого фосфора */
+  background-color: var(--c-sq-light) !important; 
+}
+
+#board .black-3c85d {
+  /* Матовая гуашь, на которой черные фигуры гарантированно не сольются */
+  background-color: var(--c-sq-dark) !important; 
+}
+
+
+/* ── Выделение — щупальце схватило фигуру ── */
+
+#board .click-selected {
+  box-shadow: inset 0 0 0 3px var(--c-kraken-glow),
+              inset 0 0 20px var(--c-highlight-alpha) !important;
+  background-color: var(--c-highlight-alpha) !important;
+  filter: hue-rotate(-10deg); /* Мягкое смещение тона в ретро-гамму */
+}
+
+/* ── Точки возможных ходов — фосфорный луч радара ── */
+
+#board .legal-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24%;
+  height: 24%;
+  background: var(--c-accent);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+  /* Мягкое аналоговое свечение вместо ядовитого цифрового */
+  box-shadow: 0 0 10px var(--c-accent),
+              0 0 20px rgba(0, 229, 255, 0.3);
+  opacity: 0.85;
+}
+
+/* ── Кружок для взятий — охват щупальца (Ретро-эффект) ── */
+
+#board .legal-capture::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 82%;
+  height: 82%;
+  border: 2px dashed var(--c-kraken-glow); /* Штриховка добавляет интерфейсности */
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+  background: rgba(168, 85, 247, 0.05);
+  box-shadow: 0 0 12px var(--c-highlight-alpha);
+  animation: board-pulse 3s var(--ease-pulse) infinite; /* Плавное органическое дыхание */
+}
+
+/* ── Подсветка предходов — затухающий след сонара ── */
+
+#board .premove-highlight {
+  background-color: var(--c-premove) !important;
+  box-shadow: inset 0 0 0 2px var(--c-neon-cyan-dim),
+              inset 0 0 16px rgba(0, 229, 255, 0.15) !important;
+}
+
+/* ── Убираем дефолтную подсветку библиотеки ── */
+
+#board .highlight2-9c5d2 {
+  box-shadow: none !important;
+}
+
+/* ── Сервисная анимация пульсации для эффекта живого океана ── */
+@keyframes board-pulse {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.02); }
+}

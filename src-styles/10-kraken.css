@@ -1,0 +1,282 @@
+/* ── Спрайт ── */
+.kraken-sprite {
+  position: absolute;
+  background-image: url('animation/kraken_sprite.png');
+  background-size: 700% 100%;
+  background-position: 0% 0;
+  background-repeat: no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 11;
+  transform-origin: center bottom;
+  filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+}
+
+/* ── Обычная атака ── */
+.kraken-attack.active .kraken-sprite {
+  animation:
+    krakenFrames   2.4s steps(6)  forwards,
+    krakenEmerge   2.4s ease-out  forwards,
+    krakenFade     2.4s ease-out  forwards;
+}
+
+/* ── Blunder-атака ── */
+.kraken-attack.active .kraken-sprite.blunder {
+  animation:
+    krakenFrames        2s steps(6)                          forwards,
+    krakenEmergeBlunder 2s cubic-bezier(0.15, 0.9, 0.25, 1) forwards,
+    krakenFadeBlunder   2s ease-out                          forwards;
+}
+
+@keyframes krakenFrames {
+  from { background-position:   0% 0; }
+  to   { background-position: 100% 0; }
+}
+
+@keyframes krakenEmerge {
+  0%   { transform: translateX(-50%) translateY(30px) scale(0.1); }
+  12%  { transform: translateX(-50%) translateY(-4px) scale(0.75) rotate(2.5deg); }
+  24%  { transform: translateX(-50%) translateY(-10px) scale(0.68) rotate(-1.5deg); }
+  45%  { transform: translateX(-50%) translateY(-8px) scale(0.71) rotate(0.5deg); }
+  70%  { transform: translateX(-50%) translateY(-6px) scale(0.7); }
+  100% { transform: translateX(-50%) translateY(-4px) scale(0.64); }
+}
+
+@keyframes krakenEmergeBlunder {
+  0%   { transform: translateX(-50%) translateY(40px) scale(0.07) rotate(-8deg); }
+  8%   { transform: translateX(-50%) translateY(-22px) scale(0.9) rotate(6deg); }
+  18%  { transform: translateX(-50%) translateY(-16px) scale(0.78) rotate(-4deg); }
+  35%  { transform: translateX(-50%) translateY(-12px) scale(0.74) rotate(2.5deg); }
+  60%  { transform: translateX(-50%) translateY(-9px) scale(0.71); }
+  100% { transform: translateX(-50%) translateY(-6px) scale(0.7); }
+}
+
+@keyframes krakenFade {
+  0% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  4% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  20% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 12px rgba(140, 60, 255, 0.4));
+  }
+  40% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 6px rgba(140, 60, 255, 0.2));
+  }
+  55% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 10px rgba(160, 80, 255, 0.35));
+  }
+  70% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  85% {
+    opacity: 0.5;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  100% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+}
+
+@keyframes krakenFadeBlunder {
+  0% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  3% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  10% {
+    opacity: 1;
+    filter: sepia(1) saturate(4) hue-rotate(240deg) brightness(0.9)
+            drop-shadow(0 0 18px rgba(200, 50, 255, 0.6));
+  }
+  30% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 10px rgba(180, 60, 255, 0.35));
+  }
+  50% {
+    opacity: 1;
+    filter: sepia(1) saturate(3.5) hue-rotate(240deg) brightness(0.9)
+            drop-shadow(0 0 14px rgba(200, 80, 255, 0.5));
+  }
+  70% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  85% {
+    opacity: 0.4;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  100% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+}
+
+.kraken-sprite.blunder { }
+
+/* Тень под кракеном */
+.kraken-sprite::after {
+  content: '';
+  position: absolute;
+  bottom: -6%;
+  left: 22%;
+  width: 56%;
+  height: 12%;
+  background: radial-gradient(
+    ellipse,
+    rgba(60, 10, 80, 0.45) 0%,
+    rgba(40, 5, 60, 0.2) 60%,
+    transparent 100%
+  );
+  filter: blur(8px);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+/* ══════════════════════════════════════════
+   ТРЯСКА КОРАБЛЯ — агрессивная, по severity
+   ══════════════════════════════════════════ */
+
+/* Базовая (mistake) — ощутимый удар */
+.ship-bob.under-attack {
+  animation: shipStruck 3.2s ease-out forwards !important;
+  transform-origin: center bottom !important;
+}
+
+/* Blunder — сильнее */
+.ship-bob.under-attack[data-severity="blunder"] {
+  animation: shipStruckHard 3.5s ease-out forwards !important;
+}
+
+/* Gross blunder — жёсткий */
+.ship-bob.under-attack[data-severity="grossBlunder"] {
+  animation: shipStruckBrutal 4s ease-out forwards !important;
+}
+
+/* Catastrophe — почти опрокидывание */
+.ship-bob.under-attack[data-severity="catastrophe"] {
+  animation: shipStruckCatastrophe 5s ease-out forwards !important;
+}
+
+/* ── Mistake — базовый удар ── */
+@keyframes shipStruck {
+  0%   { transform: translateY(0) rotate(0deg); }
+  3%   { transform: translateY(-14px) rotate(4deg); }
+  8%   { transform: translateY(10px) rotate(-22deg); }
+  16%  { transform: translateY(-6px) rotate(18deg); }
+  26%  { transform: translateY(5px) rotate(-12deg); }
+  38%  { transform: translateY(-3px) rotate(8deg); }
+  52%  { transform: translateY(2px) rotate(-5deg); }
+  68%  { transform: translateY(-1px) rotate(3deg); }
+  82%  { transform: translateY(0) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* ── Blunder — сильный удар ── */
+@keyframes shipStruckHard {
+  0%   { transform: translateY(0) rotate(0deg); }
+  2%   { transform: translateY(-18px) rotate(5deg); }
+  6%   { transform: translateY(14px) rotate(-32deg); }
+  12%  { transform: translateY(-10px) rotate(28deg); }
+  20%  { transform: translateY(8px) rotate(-22deg); }
+  30%  { transform: translateY(-6px) rotate(16deg); }
+  42%  { transform: translateY(5px) rotate(-11deg); }
+  55%  { transform: translateY(-3px) rotate(7deg); }
+  68%  { transform: translateY(2px) rotate(-4deg); }
+  80%  { transform: translateY(-1px) rotate(2deg); }
+  92%  { transform: translateY(0) rotate(-0.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* ── Gross Blunder — жёсткий удар ── */
+@keyframes shipStruckBrutal {
+  0%   { transform: translateY(0) rotate(0deg); }
+  1.5% { transform: translateY(-24px) rotate(7deg); }
+  5%   { transform: translateY(18px) rotate(-42deg); }
+  10%  { transform: translateY(-14px) rotate(36deg); }
+  17%  { transform: translateY(12px) rotate(-30deg); }
+  25%  { transform: translateY(-9px) rotate(22deg); }
+  35%  { transform: translateY(7px) rotate(-16deg); }
+  46%  { transform: translateY(-5px) rotate(11deg); }
+  58%  { transform: translateY(3px) rotate(-7deg); }
+  70%  { transform: translateY(-2px) rotate(4deg); }
+  82%  { transform: translateY(1px) rotate(-2deg); }
+  92%  { transform: translateY(0) rotate(0.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* ── Catastrophe — почти опрокидывание ── */
+@keyframes shipStruckCatastrophe {
+  0%   { transform: translateY(0) rotate(0deg); }
+  1%   { transform: translateY(-30px) rotate(10deg); }
+  4%   { transform: translateY(24px) rotate(-55deg); }
+  8%   { transform: translateY(-18px) rotate(48deg); }
+  13%  { transform: translateY(16px) rotate(-42deg); }
+  19%  { transform: translateY(-12px) rotate(34deg); }
+  26%  { transform: translateY(10px) rotate(-26deg); }
+  34%  { transform: translateY(-8px) rotate(20deg); }
+  43%  { transform: translateY(6px) rotate(-14deg); }
+  53%  { transform: translateY(-4px) rotate(10deg); }
+  64%  { transform: translateY(3px) rotate(-6deg); }
+  75%  { transform: translateY(-2px) rotate(3deg); }
+  86%  { transform: translateY(1px) rotate(-1.5deg); }
+  94%  { transform: translateY(0) rotate(0.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* ══════════════════════════════
+   ТРЯСКА СЦЕНЫ — тоже по severity
+   ══════════════════════════════ */
+
+.sea-scene.under-attack {
+  animation: sceneImpact 1.2s cubic-bezier(0.2, 0.6, 0.3, 1);
+}
+
+@keyframes sceneImpact {
+  0%   { transform: translate(0, 0); }
+  3%   { transform: translate(-14px, 10px) rotate(-1.2deg); }
+  8%   { transform: translate(16px, -8px) rotate(1deg); }
+  15%  { transform: translate(-12px, 6px) rotate(-0.8deg); }
+  24%  { transform: translate(10px, -5px) rotate(0.6deg); }
+  35%  { transform: translate(-7px, 4px) rotate(-0.4deg); }
+  48%  { transform: translate(5px, -3px) rotate(0.2deg); }
+  62%  { transform: translate(-3px, 2px) rotate(-0.1deg); }
+  78%  { transform: translate(1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ── Корабль — жёсткая раскачка ── */
+.ship-bob.under-attack {
+  animation: shipStruck 3.2s ease-out forwards !important;
+}
+
+@keyframes shipStruck {
+  0%   { transform: translateY(0) rotate(0deg); }
+  3%   { transform: translateY(-12px) rotate(3deg); }
+  8%   { transform: translateY(8px) rotate(32deg); }
+  16%  { transform: translateY(-5px) rotate(-25deg); }
+  24%  { transform: translateY(7px) rotate(28deg); }
+  33%  { transform: translateY(-4px) rotate(-18deg); }
+  42%  { transform: translateY(5px) rotate(15deg); }
+  52%  { transform: translateY(-3px) rotate(-10deg); }
+  62%  { transform: translateY(3px) rotate(7deg); }
+  72%  { transform: translateY(-1px) rotate(-4deg); }
+  82%  { transform: translateY(1px) rotate(2deg); }
+  92%  { transform: translateY(0) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}

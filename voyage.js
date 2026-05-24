@@ -35,6 +35,7 @@ state: {
     hullBreached: false,
     baseRepairCost: 4,
     goodMovesInRow: 0,
+    lightningTimer: null,
 },
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
@@ -79,6 +80,7 @@ init(estimatedMoves) {
         hullBreached: false,
         baseRepairCost: 4,
         goodMovesInRow: 0,
+	lightningTimer: null,
     };
 
     console.log('%c⛵ VoyageEngine.init() [BALANCED HARD]', 'color: #ff6d00; font-weight: bold; font-size: 14px');
@@ -508,14 +510,55 @@ _lightningInterval: null,
 _startLightning() {
     if (this._lightningInterval) return;
     var self = this;
+
+    // Молния бьёт каждые 10 секунд
     this._lightningInterval = setInterval(function() {
+        // Проверяем, что шторм всё ещё активен
+        if (self.state.weather !== 'storm' || self.state.isGameOver) {
+            self._stopLightning();
+            return;
+        }
+
+        // Визуальная вспышка молнии — ВСЕГДА при шторме
         var flash = document.querySelector('.lightning-flash');
-        if (flash && self.state.weather === 'storm') {
+        if (flash) {
             flash.style.animation = 'none';
             flash.offsetHeight; // reflow
             flash.style.animation = '';
         }
-    }, 4000 + Math.random() * 5000);
+
+        // Звук грома
+        if (typeof SoundEngine !== 'undefined' && SoundEngine.playThunder) {
+            SoundEngine.playThunder();
+        }
+
+        // 10% шанс попадания молнии в корабль
+        var hitRoll = Math.random();
+        console.log('⚡ Молния! Бросок: ' + (hitRoll * 100).toFixed(1) + '% (нужно < 10%)');
+
+        if (hitRoll < 0.10) {
+            // ПОПАДАНИЕ! -1 HP
+            console.log('⚡⚡⚡ МОЛНИЯ ПОПАЛА В КОРАБЛЬ! -1 HP');
+
+            self.takeDamage(1);
+            self.showMessage('⚡ МОЛНИЯ УДАРИЛА В КОРАБЛЬ! -1 HP!', 'terrible');
+
+            // Дополнительная тряска для эффекта
+            self.shakeScreen();
+
+            // Усиленная вспышка при попадании
+            if (flash) {
+                flash.style.animation = 'none';
+                flash.offsetHeight;
+                flash.style.animation = '';
+            }
+
+            // Проверяем, не потонул ли корабль
+            if (self.state.currentHP <= 0) {
+                self.gameOver('sunk');
+            }
+        }
+    }, 10000); // Ровно каждые 10 секунд
 },
 
 _stopLightning() {
@@ -730,13 +773,13 @@ checkAchievements(moveData, result) {
 gameOver(reason) {
     if (this.state.isGameOver) return;
     this.state.isGameOver = true;
-
+    this._stopLightning();
     // Визуальные эффекты без окна
     if (reason === 'sunk') {
         var ship = document.getElementById('ship');
         if (ship) ship.classList.add('sinking');
-    }
-
+    }  
+    
     // НЕ показываем отдельное окно — всё покажет showSessionResults()
     console.log('⛵ Game over:', reason);
 },
@@ -1132,62 +1175,74 @@ const KrakenSprite = {
         this.shipEl = document.getElementById('ship');
     },
 
-    play(severity) {
-        severity = severity || 'mistake';
-        if (this.isPlaying) return;
-        if (!this.sprite || !this.container) {
+play(severity) {
+    severity = severity || 'mistake';
+    if (this.isPlaying) return;
+    if (!this.sprite || !this.container) {
         console.warn('KrakenSprite: элементы не найдены!');
         return;
     }
 
-	console.log('Kraken attack!', severity);
-    	console.log('Sprite size:', this.sprite.offsetWidth, this.sprite.offsetHeight);
-    	console.log('Container visible:', !this.container.classList.contains('hidden'));
-        this.isPlaying = true;
+    console.log('Kraken attack!', severity);
+    this.isPlaying = true;
 
-        this.scaleToShip(severity);
-        this.positionOverShip();
+    this.scaleToShip(severity);
+    this.positionOverShip();
 
-        this.sprite.classList.remove('blunder');
-        if (severity === 'blunder' || severity === 'grossBlunder' || severity === 'catastrophe') {
-            this.sprite.classList.add('blunder');
-        }
+    this.sprite.classList.remove('blunder');
+    if (severity === 'blunder' || severity === 'grossBlunder' || severity === 'catastrophe') {
+        this.sprite.classList.add('blunder');
+    }
 
-        this.sprite.style.animation = 'none';
-        this.sprite.offsetHeight;
-        this.sprite.style.animation = '';
+    this.sprite.style.animation = 'none';
+    this.sprite.offsetHeight;
+    this.sprite.style.animation = '';
 
-        this.container.classList.remove('hidden');
-        this.container.classList.add('active');
+    this.container.classList.remove('hidden');
+    this.container.classList.add('active');
 
-        var shipBob = document.querySelector('.ship-bob');
-        if (shipBob) {
-            shipBob.classList.add('under-attack');
-        }
+    // ── Тряска корабля — с принудительным перезапуском ──
+    var shipBob = document.querySelector('.ship-bob');
+    if (shipBob) {
+        // Снимаем класс + сбрасываем анимацию через reflow
+        shipBob.classList.remove('under-attack');
+        shipBob.style.animation = 'none';
+        shipBob.offsetHeight; // принудительный reflow
+        shipBob.style.animation = '';
+        shipBob.classList.add('under-attack');
 
-        var vignette = document.getElementById('damage-vignette');
-        if (vignette) {
-            vignette.classList.add('active');
-        }
+        // Интенсивность тряски зависит от severity
+        shipBob.setAttribute('data-severity', severity);
+    }
 
-        var seaScene = document.querySelector('.sea-scene');
-        if (seaScene) {
-            seaScene.classList.add('under-attack');
-        }
+    // ── Тряска сцены — тоже с перезапуском ──
+    var seaScene = document.querySelector('.sea-scene');
+    if (seaScene) {
+        seaScene.classList.remove('under-attack');
+        seaScene.style.animation = 'none';
+        seaScene.offsetHeight;
+        seaScene.style.animation = '';
+        seaScene.classList.add('under-attack');
+    }
 
-        var duration;
-        switch (severity) {
-            case 'catastrophe': duration = 5000; break;
-            case 'grossBlunder': duration = 3500; break;
-            case 'blunder': duration = 3200; break;
-            default: duration = 3000; break;
-        }
+    var vignette = document.getElementById('damage-vignette');
+    if (vignette) {
+        vignette.classList.add('active');
+    }
 
-        var self = this;
-        setTimeout(function() {
-            self.hide();
-        }, duration);
-    },
+    var duration;
+    switch (severity) {
+        case 'catastrophe': duration = 5000; break;
+        case 'grossBlunder': duration = 3500; break;
+        case 'blunder': duration = 3200; break;
+        default: duration = 3000; break;
+    }
+
+    var self = this;
+    setTimeout(function() {
+        self.hide();
+    }, duration);
+},
 
     scaleToShip(severity) {
         var ship = this.shipEl;

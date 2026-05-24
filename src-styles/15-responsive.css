@@ -1,0 +1,199 @@
+/* ═══════════════════════════════════════════
+   15 · RESPONSIVE
+   
+   ВСЕ медиа-запросы собраны в одном файле.
+   Порядок: от большого к маленькому.
+   
+   Это устраняет проблему разбросанных
+   @media по разным файлам и упрощает
+   отладку адаптивности.
+   ═══════════════════════════════════════════ */
+
+
+/* ═══ ≤1200px ═══ */
+@media (max-width: 1200px) {
+  :root {
+    --w-side: 240px;
+    --w-column: 480px;
+    --gap: 24px;
+  }
+
+  .side-panel,
+  .analysis-panel {
+    margin-top: 56px;
+  }
+
+  /* Sea scene */
+  .sea-scene {
+    height: 180px;
+  }
+
+  .ship.ship-editorial {
+    width: 80px;
+    height: 68px;
+    right: -50px;
+    top: -60px;
+  }
+
+  .cloud-1 .cp-2 { width: 30px; height: 18px; }
+  .cloud-2 .cp-2 { width: 22px; height: 14px; }
+}
+
+
+/* ═══ ≤900px — Одноколоночная раскладка ═══ */
+@media (max-width: 900px) {
+  body {
+    padding: 16px;
+  }
+
+  .app {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    max-width: 520px;
+  }
+
+  .side-panel,
+  .board-column,
+  .analysis-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .side-panel,
+  .analysis-panel {
+    margin-top: 0;
+    border-top: 2px solid var(--c-text);
+  }
+
+  #board {
+    width: min(90vw, 480px);
+    height: min(90vw, 480px);
+  }
+
+  .sea-scene {
+    height: 160px;
+    padding: 16px 12px 12px;
+  }
+
+  /* Упрощаем сцену */
+  .seagulls-container { display: none; }
+  .cloud-4,
+  .cloud-5 { display: none; }
+
+  .weather-indicator {
+    bottom: 48px;
+    font-size: 0.5rem;
+  }
+
+  .voyage-track {
+    bottom: 34px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .hull-bar {
+    bottom: 8px;
+    left: 12px;
+    right: 12px;
+  }
+}
+
+
+/* ═══ ≤768px — Мобильная карта ═══ */
+@media (max-width: 768px) {
+  .map-toggle-bar {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 1000;
+  }
+
+  .opening-map-container.visible {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9998;
+    background: rgba(5, 10, 20, 0.95);
+    border-radius: 0;
+  }
+}
+
+
+/* ═══ ≤600px — Маленькие экраны ═══ */
+@media (max-width: 600px) {
+  .sea-scene {
+    height: 140px;
+  }
+
+  .clouds-container { display: none; }
+  .water-glints { display: none; }
+  .fog-tendril { display: none; }
+
+  .ship.ship-editorial {
+    width: 60px;
+    height: 50px;
+    right: -40px;
+    top: -45px;
+  }
+}
+
+
+/* ═══ ≤520px — Game Over карточка ═══ */
+@media (max-width: 520px) {
+  .game-over-scroll-wrap {
+    padding: 10px;
+  }
+
+  .game-over-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: 95vh;
+    outline-offset: 3px;
+  }
+
+  .game-over-masthead {
+    padding: 14px 16px 10px;
+  }
+
+  .masthead-title {
+    font-size: 1.4rem;
+  }
+
+  .game-over-headline {
+    padding: 14px 16px;
+  }
+
+  .game-over-title {
+    font-size: 1.3rem;
+  }
+
+  .newspaper-rating-block {
+    margin: 0 16px;
+    padding: 12px 14px;
+  }
+
+  .newspaper-rating-block .rating-delta {
+    font-size: 2.2rem;
+  }
+
+  .game-over-categories,
+  .game-over-voyage {
+    padding: 12px 16px;
+  }
+
+  .game-over-buttons {
+    padding: 14px 16px 18px;
+    flex-direction: column;
+  }
+
+  .worst-move-row,
+  .defeat-tip {
+    margin: 10px 16px;
+  }
+
+  .game-over-achievements {
+    padding: 10px 16px;
+  }
+}

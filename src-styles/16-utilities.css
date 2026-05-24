@@ -1,0 +1,19 @@
+/* ═══════════════════════════════════════════
+   16 · UTILITIES
+   
+   Вспомогательные классы.
+   Единственное место где допустим !important.
+   ═══════════════════════════════════════════ */
+
+.hidden {
+  display: none !important;
+}
+
+/* ── Кнопка повторить тренировку ── */
+#go-btn-retry-fen {
+  margin-top: 8px;
+}
+
+#go-btn-retry-fen.hidden {
+  display: none !important;
+}

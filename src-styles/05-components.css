@@ -1,0 +1,320 @@
+/* ═══════════════════════════════════════════
+   05 · COMPONENTS — DIGITAL KRAKEN
+   
+   Приборы батискафа: переключатели,
+   кнопки экстренного всплытия,
+   индикаторы давления и сонар.
+   ═══════════════════════════════════════════ */
+
+/* ── Select — сонарный переключатель ── */
+
+select {
+  appearance: none;
+  width: 100%;
+  background: var(--c-bg-alt);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a6278' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--c-neon-cyan);
+  box-shadow: 0 0 0 1px var(--c-neon-cyan),
+              var(--shadow-glow-cyan);
+}
+
+/* ── Кнопки — панель управления ── */
+
+button {
+  font-family: inherit;
+  padding: 10px 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg-alt);
+  color: var(--c-text);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition:
+    border-color var(--duration-fast),
+    background-color var(--duration-fast),
+    box-shadow var(--duration-fast);
+}
+
+button:hover {
+  border-color: var(--c-neon-cyan-dim);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.1);
+}
+
+/* ── Модификаторы кнопок ── */
+
+.btn-start {
+  background: linear-gradient(135deg, var(--c-kraken-deep), var(--c-kraken));
+  color: #fff;
+  border-color: var(--c-kraken);
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.btn-start:hover {
+  background: linear-gradient(135deg, var(--c-kraken), var(--c-kraken-glow));
+  border-color: var(--c-kraken-glow);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4),
+              0 0 60px rgba(168, 85, 247, 0.15);
+}
+
+.btn-secondary {
+  background: var(--c-abyss-mid);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-row button {
+  flex: 1;
+}
+
+/* ── Кнопка анализа Lichess ── */
+
+.btn-lichess-analysis {
+  display: none;
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 12px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #4a8c1c, #629924);
+  border: 1px solid #4a8c1c;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    transform 0.1s ease,
+    box-shadow var(--duration-fast);
+  box-shadow: 0 0 12px rgba(98, 153, 36, 0.2);
+}
+
+.btn-lichess-analysis:hover {
+  background: linear-gradient(135deg, #3d7516, #4a8c1c);
+  box-shadow: 0 0 20px rgba(98, 153, 36, 0.35);
+}
+
+.btn-lichess-analysis:active {
+  transform: scale(0.98);
+}
+
+.btn-lichess-analysis.visible {
+  display: block;
+}
+
+
+/* theme-toggle.css — стили переключателя */
+
+.theme-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background: var(--bg-card, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-light, rgba(255, 255, 255, 0.08));
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-toggle-label {
+    font-size: 13px;
+    color: var(--text-secondary, #a09080);
+    user-select: none;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+}
+
+/* ═══ Переключатель (адаптированный) ═══ */
+.cl-toggle-switch {
+    position: relative;
+}
+
+.cl-switch {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.cl-switch > input {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    z-index: -1;
+    position: absolute;
+    right: 6px;
+    top: -8px;
+    display: block;
+    margin: 0;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.38);
+    outline: none;
+    opacity: 0;
+    transform: scale(1);
+    pointer-events: none;
+    transition: opacity 0.3s 0.1s, transform 0.2s 0.1s;
+}
+
+/* Трек */
+.cl-switch > span::before {
+    content: "";
+    float: right;
+    display: inline-block;
+    margin: 5px 0 5px 10px;
+    border-radius: 7px;
+    width: 36px;
+    height: 14px;
+    background-color: var(--theme-toggle-track, rgba(0, 0, 0, 0.25));
+    vertical-align: top;
+    transition: background-color 0.3s ease;
+}
+
+/* Ползунок */
+.cl-switch > span::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 16px;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    background-color: var(--theme-toggle-thumb, #fff);
+    box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+                0 2px 2px 0 rgba(0, 0, 0, 0.14),
+                0 1px 5px 0 rgba(0, 0, 0, 0.12);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+/* Checked = Тёмная тема */
+.cl-switch > input:checked {
+    right: -10px;
+    background-color: #d4a855;
+}
+
+.cl-switch > input:checked + span::before {
+    background-color: rgba(212, 168, 85, 0.4);
+}
+
+.cl-switch > input:checked + span::after {
+    background-color: #d4a855;
+    transform: translateX(16px);
+}
+
+/* Hover эффекты */
+.cl-switch:hover > input {
+    opacity: 0.04;
+}
+
+.cl-switch > input:focus {
+    opacity: 0.12;
+}
+
+.cl-switch:hover > input:focus {
+    opacity: 0.16;
+}
+
+.cl-switch > input:active {
+    opacity: 1;
+    transform: scale(0);
+    transition: transform 0s, opacity 0s;
+}
+
+.cl-switch > input:active + span::before {
+    background-color: #8f8f8f;
+}
+
+.cl-switch > input:checked:active + span::before {
+    background-color: rgba(212, 168, 85, 0.5);
+}
+
+/* ═══ Плавный переход при смене темы ═══ */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+    transition: background-color 0.4s ease,
+                color 0.4s ease,
+                border-color 0.4s ease,
+                box-shadow 0.4s ease !important;
+}
+
+
+/* ── Бейджи и теги — индикаторы сонара ── */
+
+.combo-badge,
+.cat-tag,
+.bonus-tag {
+  display: inline-flex;
+  padding: 4px 10px;
+  border: 1px solid var(--c-border);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-text);
+  background: var(--c-bg-alt);
+  transition: border-color var(--duration-fast),
+              box-shadow var(--duration-fast);
+}
+
+.combo-badge:hover,
+.cat-tag:hover,
+.bonus-tag:hover {
+  border-color: var(--c-neon-cyan-dim);
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.1);
+}
+
+.move-categories,
+.bonus-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  justify-content: center;
+}
+
+.combo-result,
+.perfect-game,
+.critical-moment {
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid var(--c-border);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: var(--c-bg-alt);
+}
+
+/* ── Controls wrapper ── */
+
+.controls-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}

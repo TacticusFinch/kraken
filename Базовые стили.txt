@@ -1,0 +1,811 @@
+/* ═══════════════════════════════════════════
+   01 · DESIGN TOKENS — LIGHT ADVENTURE THEME
+   
+   Светлая, лёгкая тема с духом морских
+   приключений. Бирюзовые воды, тёплый песок,
+   золото сокровищ и бриз открытого моря.
+   ═══════════════════════════════════════════ */
+
+:root {
+  /* ── Палитра интерфейса ──
+       Тёплый песочно-белый фон, глубокий
+       морской текст, акцент — бирюзовое золото */
+  --c-text:            #1b2a3d;          /* тёмно-морской, не чёрный */
+  --c-text-secondary:  #5a7186;          /* выцветший морской */
+  --c-bg:              #faf8f4;          /* тёплый пергамент */
+  --c-bg-alt:          #f0ece4;          /* песок на берегу */
+  --c-border:          #d9d0c1;          /* верёвка на причале */
+  --c-accent:          #0e8a7e;          /* бирюзовая волна */
+
+  /* ── Доска ──
+       Выбеленное солнцем дерево палубы
+       и тёплая тень от парусов */
+  --c-sq-light:        #f5efe6;          /* палубная доска на солнце */
+  --c-sq-dark:         #b8ccd8;          /* тень паруса на палубе */
+  --c-highlight:       #e8a832;          /* золото дублона */
+  --c-highlight-alpha: rgba(232, 168, 50, 0.30);
+  --c-premove:         rgba(14, 138, 126, 0.30); /* бирюзовый призрак */
+
+  /* ── Категории ходов ──
+       Морская карта: от спокойных вод
+       до штормовых предупреждений */
+  --c-theory:          #2589bd;          /* ясное небо */
+  --c-good:            #2a9d5c;          /* попутный ветер */
+  --c-inaccuracy:      #d4a020;          /* закат — к ветру */
+  --c-mistake:         #d4692a;          /* штормовое предупреждение */
+  --c-blunder:         #c43e3e;          /* рифы! */
+  --c-gross-blunder:   #8b3fb8;          /* кракен близко */
+  --c-catastrophe:     #a81010;          /* кракен атакует */
+
+  /* ── Рейтинг ── */
+  --c-rising:          #2a9d5c;          /* прилив */
+  --c-falling:         #c43e3e;          /* отлив */
+
+  /* ── Hull (корпус корабля) ── */
+  --c-hull-green:      #34c76a;          /* корпус цел */
+  --c-hull-yellow:     #edb830;          /* пробоина */
+  --c-hull-red:        #e04848;          /* тонем! */
+
+  /* ── Пергамент (газетный модал) ──
+       Настоящая пиратская карта сокровищ,
+       но светлая и читаемая */
+  --c-parchment:       #faf5ec;          /* свежий пергамент */
+  --c-parchment-dark:  #d4c9ad;          /* потёртый край */
+  --c-parchment-mid:   #ede4d2;          /* середина свитка */
+  --c-parchment-light: #f7f2e8;          /* центр карты */
+  --c-ink:             #2a1f10;          /* свежие чернила */
+  --c-ink-faded:       #5c4a32;          /* старые записи */
+  --c-ink-red:         #8b2020;          /* отметка «опасность» */
+  --c-ink-green:       #1a6b3a;          /* «безопасная гавань» */
+  --c-ink-gold:        #a07818;          /* «сокровище здесь» */
+  --c-eldritch:        #3a2266;          /* тени глубин */
+
+  /* ── Лейаут ── */
+  --w-column:          520px;
+  --w-side:            280px;
+  --gap:               32px;
+
+  /* ── Типографика ──
+       Те же шрифты, но можно добавить
+       приключенческий акцентный */
+  --ff-system:         'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ff-serif:          'Playfair Display', 'Georgia', serif;
+  --ff-serif-body:     'IM Fell English', 'Georgia', serif;
+  --ff-gothic:         'UnifrakturMaguntia', 'Playfair Display', serif;
+  --ff-mono:           'Special Elite', 'Courier New', monospace;
+
+  /* ── Дополнительные приключенческие токены ── */
+  --c-gold:            #d4a832;          /* золото */
+  --c-gold-light:      #f0d878;          /* блеск золота */
+  --c-ocean:           #0e8a7e;          /* океан */
+  --c-ocean-deep:      #0a6b62;          /* глубина */
+  --c-ocean-light:     #b8e4e0;          /* мелководье */
+  --c-sand:            #e8dcc4;          /* песок */
+  --c-driftwood:       #8b7355;          /* плавник */
+  --c-sail:            #fefcf8;          /* белый парус */
+  --c-compass-rose:    #c4935a;          /* роза ветров */
+
+  /* ── Тени — мягкие, воздушные ── */
+  --shadow-sm:         0 1px 3px rgba(27, 42, 61, 0.06),
+                       0 1px 2px rgba(27, 42, 61, 0.04);
+  --shadow-md:         0 4px 12px rgba(27, 42, 61, 0.08),
+                       0 2px 4px rgba(27, 42, 61, 0.04);
+  --shadow-lg:         0 12px 32px rgba(27, 42, 61, 0.10),
+                       0 4px 8px rgba(27, 42, 61, 0.04);
+  --shadow-gold:       0 4px 16px rgba(212, 168, 50, 0.20);
+
+  /* ── Анимации — чуть живее, «ветер в парусах» ── */
+  --ease-out-expo:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce:       cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-sail:         cubic-bezier(0.25, 0.46, 0.45, 0.94);  /* плавный, как парус */
+  --ease-wave:         cubic-bezier(0.36, 0.07, 0.19, 0.97);  /* волна */
+  --duration-fast:     0.18s;
+  --duration-normal:   0.35s;
+  --duration-slow:     0.7s;
+  --duration-weather:  2s;
+}
+
+/* ═══════════════════════════════════════════
+   02 · RESET & BASE
+   
+   Минимальный сброс + базовые стили body/html.
+   Никаких компонентных стилей здесь.
+   ═══════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--ff-system);
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Скроллбары (глобальные) ── */
+
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--c-text-secondary);
+}
+
+/* ═══════════════════════════════════════════
+   03 · LAYOUT
+   
+   Основная сетка приложения.
+   Только структура, никакого оформления.
+   ═══════════════════════════════════════════ */
+
+.app {
+  display: grid;
+  grid-template-columns: var(--w-side) var(--w-column) var(--w-side);
+  grid-template-rows: auto 1fr;
+  gap: 0 var(--gap);
+  align-items: start;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.board-column {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.side-panel {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-self: start;
+}
+
+.analysis-panel {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-self: start;
+}
+
+/* ═══════════════════════════════════════════
+   04 · TYPOGRAPHY
+   
+   Все текстовые паттерны.
+   Заголовки, лейблы, метки.
+   ═══════════════════════════════════════════ */
+
+/* ── Заголовок приложения ── */
+
+.header {
+  text-align: center;
+  padding: 0 0 20px;
+  width: 100%;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.header .subtitle {
+  font-size: 0.7rem;
+  color: var(--c-text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── Универсальные лейблы ── */
+
+label,
+.panel-label {
+  font-size: 0.65rem;
+  color: var(--c-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+}
+
+.panel-label {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+/* ── Бейдж дебюта ── */
+
+.opening-badge {
+  font-size: 0.7rem;
+  color: var(--c-text-secondary);
+  font-weight: 500;
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Сообщение кракена ── */
+
+.kraken-message {
+  padding-left: 10px;
+  border-left: 2px solid var(--c-text);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--c-text);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════
+   05 · COMPONENTS
+   
+   Переиспользуемые UI-элементы:
+   кнопки, селекты, бейджи, карточки.
+   ═══════════════════════════════════════════ */
+
+/* ── Select ── */
+
+select {
+  appearance: none;
+  width: 100%;
+  background: var(--c-bg);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+select:focus {
+  outline: 1px solid var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+/* ── Кнопки — базовый стиль ── */
+
+button {
+  font-family: inherit;
+  padding: 10px 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition:
+    border-color var(--duration-fast),
+    background-color var(--duration-fast);
+}
+
+button:hover {
+  border-color: var(--c-accent);
+}
+
+/* ── Модификаторы кнопок ── */
+
+.btn-start {
+  background: var(--c-text);
+  color: #fff;
+  border-color: var(--c-text);
+  font-weight: 600;
+}
+
+.btn-start:hover {
+  background: #333;
+  border-color: #333;
+}
+
+.btn-secondary {
+  background: var(--c-bg-alt);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-row button {
+  flex: 1;
+}
+
+/* ── Кнопка анализа Lichess ── */
+
+.btn-lichess-analysis {
+  display: none;
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 12px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background: #629924;
+  border: 1px solid #4d7a1d;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    transform 0.1s ease;
+}
+
+.btn-lichess-analysis:hover {
+  background: #4d7a1d;
+}
+
+.btn-lichess-analysis:active {
+  transform: scale(0.98);
+}
+
+.btn-lichess-analysis.visible {
+  display: block;
+}
+
+/* ── Бейджи и теги ── */
+
+.combo-badge,
+.cat-tag,
+.bonus-tag {
+  display: inline-flex;
+  padding: 4px 10px;
+  border: 1px solid var(--c-border);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-text);
+  background: var(--c-bg-alt);
+}
+
+.move-categories,
+.bonus-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  justify-content: center;
+}
+
+.combo-result,
+.perfect-game,
+.critical-moment {
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid var(--c-border);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── Controls wrapper ── */
+
+.controls-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════
+   06 · CHESS BOARD
+   
+   Стили доски, клеток, подсветки ходов.
+   Привязан к библиотеке chessboard.js.
+   ═══════════════════════════════════════════ */
+
+#board {
+  width: var(--w-column);
+  height: var(--w-column);
+  border: 1px solid var(--c-border);
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  contain: layout style;
+}
+
+/* ── Цвета клеток ── */
+
+#board .white-1e1d7 {
+  background-color: var(--c-sq-light) !important;
+}
+
+#board .black-3c85d {
+  background-color: var(--c-sq-dark) !important;
+}
+
+/* ── Выделение выбранной клетки ── */
+
+#board .click-selected {
+  box-shadow: inset 0 0 0 4px var(--c-highlight) !important;
+  background-color: var(--c-highlight-alpha) !important;
+}
+
+/* ── Точки возможных ходов ── */
+
+#board .legal-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 26%;
+  height: 26%;
+  background: rgba(10, 147, 150, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── Кружок для взятий ── */
+
+#board .legal-capture::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  height: 85%;
+  border: 3px solid rgba(10, 147, 150, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+  background: transparent;
+}
+
+/* ── Убираем жёлтую подсветку библиотеки ── */
+
+#board .highlight2-9c5d2 {
+  box-shadow: none !important;
+}
+
+/* ── Подсветка предходов ── */
+
+#board .premove-highlight {
+  background-color: var(--c-premove) !important;
+  box-shadow: inset 0 0 0 3px rgba(255, 170, 0, 0.7) !important;
+}
+
+/* ═══════════════════════════════════════════
+   07 · PANELS
+   
+   Боковые панели, нотация, рейтинг,
+   история ходов, комбо, live stats.
+   ═══════════════════════════════════════════ */
+
+/* ── Общий стиль панелей ── */
+
+.side-panel,
+.analysis-panel {
+  margin-top: 62px;
+  border-top: 2px solid var(--c-text);
+}
+
+/* ── Элементы внутри панелей ── */
+
+.side-panel .info-card,
+.side-panel .controls-wrapper,
+.side-panel .combo-container,
+.side-panel .live-stats-box,
+.analysis-panel .notation-box,
+.analysis-panel .feedback-box,
+.analysis-panel .combo-container {
+  background: var(--c-bg);
+  border: none;
+  border-bottom: 1px solid var(--c-border);
+  padding: 16px 0;
+}
+
+.side-panel > :last-child,
+.analysis-panel > :last-child {
+  border-bottom: none;
+}
+
+/* ── Info Card & Rating ── */
+
+.info-card {
+  background: var(--c-bg);
+  padding: 24px 0;
+  width: 100%;
+  border-bottom: 1px solid var(--c-border);
+}
+
+#rating-display {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rating-main .label {
+  font-size: 0.55rem;
+  color: var(--c-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+#rating-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
+}
+
+#rating-value.rising  { color: var(--c-rising); }
+
+#rating-value.falling { color: var(--c-falling); }
+
+.rating-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--c-border);
+}
+
+.rating-delta {
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text-secondary);
+}
+
+.rating-delta.positive { color: var(--c-rising); }
+
+.rating-delta.positive::before { content: '+'; }
+
+.rating-delta.negative { color: var(--c-falling); }
+
+.rating-peak {
+  font-size: 0.6rem;
+  color: var(--c-text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.rating-peak::before {
+  content: 'PEAK ';
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* ── Notation & Feedback boxes ── */
+
+.notation-box,
+.feedback-box {
+  background: var(--c-bg);
+  border: none;
+  border-bottom: 1px solid var(--c-border);
+  padding: 16px 0;
+  width: 100%;
+}
+
+/* ── Move History ── */
+
+.move-history,
+#move-history {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  max-height: 300px;
+  min-height: 60px;
+  padding: 8px;
+}
+
+.move-pair {
+  display: grid;
+  grid-template-columns: 28px 1fr 1fr;
+  gap: 4px;
+  padding: 3px 0;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.move-pair:last-child {
+  border-bottom: none;
+}
+
+.move-number {
+  font-size: 0.72rem;
+  color: var(--c-text-secondary);
+  text-align: right;
+  padding-right: 4px;
+}
+
+.move-san {
+  padding: 2px 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+  color: var(--c-text);
+}
+
+.move-san:hover {
+  background: var(--c-bg-alt);
+}
+
+/* ── Категории ходов ── */
+
+.move-san.pending     { color: #999; }
+
+.move-san.opponent    { color: var(--c-text-secondary); }
+
+.move-san.theory      { color: var(--c-theory); font-weight: 700; }
+
+.move-san.good        { color: var(--c-good); font-weight: 700; }
+
+.move-san.inaccuracy  { color: var(--c-inaccuracy); }
+
+.move-san.mistake     { color: var(--c-mistake); font-weight: 700; }
+
+.move-san.blunder     { color: var(--c-blunder); font-weight: 700; }
+
+.move-san.grossBlunder{ color: var(--c-gross-blunder); font-weight: 700; }
+
+.move-san.catastrophe { color: var(--c-catastrophe); font-weight: 700; }
+
+.move-san.placeholder { color: #ccc; }
+
+/* ── Combo Container ── */
+
+.combo-container {
+  background: var(--c-bg);
+  border-bottom: 2px solid var(--c-text);
+  padding: 20px 0 12px;
+  width: 100%;
+  position: relative;
+  transition: all var(--duration-normal) var(--ease-bounce);
+}
+
+.combo-container.active {
+  background: #fdfaf3;
+}
+
+.combo-info {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.combo-label {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--c-text);
+}
+
+.combo-label::after {
+  content: "LIVE RECAP";
+  display: block;
+  font-size: 0.5rem;
+  font-family: var(--ff-system);
+  font-style: normal;
+  font-weight: 800;
+  background: #ff3b30;
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+#combo-multiplier {
+  font-family: var(--ff-system);
+  font-size: 2.5rem;
+  font-weight: 500;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: var(--c-text);
+  background: linear-gradient(45deg, #000, #444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: transform var(--duration-fast) ease;
+}
+
+.bump {
+  transform: scale(1.2);
+}
+
+.combo-bar-bg {
+  height: 6px;
+  background: #e5e5e7;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+#combo-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b4513, #d4a017 40%, #ffd700);
+  box-shadow: 0 0 8px rgba(212, 160, 23, 0.6);
+  width: 0%;
+  border-radius: 10px;
+  transition: width var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Live Stats ── */
+
+.live-stats-box {
+  background: var(--c-bg);
+  border: none;
+  border-bottom: 1px solid var(--c-border);
+  padding: 16px 0;
+  width: 100%;
+}
+
+.live-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.live-stat {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--c-border);
+  border-right: 1px solid var(--c-border);
+  text-align: center;
+}
+
+.live-stat:nth-child(2n) {
+  border-right: none;
+}
+
+.live-stat:nth-last-child(-n+2) {
+  border-bottom: none;
+}
+
+.live-stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-stat-label {
+  font-size: 0.6rem;
+  color: var(--c-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}

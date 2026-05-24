@@ -1,0 +1,1130 @@
+/* ═══════════════════════════════════════════
+   ENCHANTED SEA SCENE — Old Disney Style
+   
+   Тёплая ночная сцена: бархатное небо,
+   крупная сказочная луна, мягкие облака,
+   живописная вода, парусник из сказки.
+   
+   Стилистика: классический Disney 1940–1995
+   — Мягкие градиенты, тёплые тени
+   — Округлые формы, «рисованные» линии
+   — Приглушённое волшебство вместо неона
+   — Палитра: индиго, лаванда, золото, бирюза
+   ═══════════════════════════════════════════ */
+
+/* ── Контейнер сцены ── */
+.sea-scene {
+  width: 100%;
+  height: 185px;
+  border: none;
+  padding: 0;
+  margin-top: 16px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  transition: filter var(--duration-weather) ease;
+  contain: layout style;
+  box-shadow:
+    0 4px 20px rgba(20, 10, 45, 0.5),
+    0 1px 0 rgba(255, 220, 150, 0.08) inset;
+}
+
+.sea-scene::before,
+.sea-scene::after {
+  content: none;
+}
+
+/* ── Бархатное ночное небо ──
+   Классический Disney: глубокий индиго
+   с переходом в тёплый горизонт */
+.sky-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 55%;
+  background: linear-gradient(
+    180deg,
+    #0b0e2a 0%,        /* глубокая ночь */
+    #141840 15%,
+    #1c2455 28%,
+    #253068 40%,
+    #2e3c78 52%,
+    #3a4a82 62%,
+    #4d5a8a 72%,
+    #5e6890 80%,
+    #7a7ea0 88%,
+    #a08e8a 94%,        /* тёплый горизонт */
+    #c4a07a 100%
+  );
+  transition: background var(--duration-weather) ease;
+  z-index: 1;
+}
+
+/* ── Звёзды: крупные, «нарисованные» ──
+   Disney-звёзды — это не точки, а мягкие
+   четырёхлучевые блики с тёплым свечением */
+.sky-layer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    /* Крупные «диснеевские» звёзды — мягкие, с ореолом */
+    radial-gradient(3px 3px at 12% 14%, rgba(255, 248, 220, 0.95), transparent 70%),
+    radial-gradient(2px 2px at 12% 14%, #fff, transparent),
+    radial-gradient(2.5px 2.5px at 28% 8%, rgba(255, 248, 220, 0.9), transparent 70%),
+    radial-gradient(1.5px 1.5px at 28% 8%, #fff, transparent),
+    radial-gradient(3.5px 3.5px at 45% 22%, rgba(255, 240, 200, 0.85), transparent 70%),
+    radial-gradient(2px 2px at 45% 22%, #fff, transparent),
+    radial-gradient(2px 2px at 62% 10%, rgba(255, 248, 230, 0.8), transparent 70%),
+    radial-gradient(1px 1px at 62% 10%, #fff, transparent),
+    radial-gradient(3px 3px at 78% 18%, rgba(255, 245, 210, 0.9), transparent 70%),
+    radial-gradient(1.5px 1.5px at 78% 18%, #fff, transparent),
+    radial-gradient(2px 2px at 90% 6%, rgba(255, 248, 220, 0.85), transparent 70%),
+    radial-gradient(1px 1px at 90% 6%, #fff, transparent),
+    /* Средние звёзды */
+    radial-gradient(1.5px 1.5px at 8% 38%, rgba(255, 245, 220, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 20% 28%, rgba(255, 250, 230, 0.65), transparent),
+    radial-gradient(1.5px 1.5px at 38% 42%, rgba(255, 245, 215, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 52% 35%, rgba(255, 248, 225, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 68% 30%, rgba(255, 245, 220, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 85% 38%, rgba(255, 250, 230, 0.5), transparent);
+  animation: disneyTwinkle 5s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+/* Мелкая звёздная пыль */
+.sky-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1px 1px at 5% 20%, rgba(255, 240, 200, 0.5), transparent),
+    radial-gradient(1px 1px at 16% 45%, rgba(255, 245, 210, 0.4), transparent),
+    radial-gradient(1px 1px at 24% 18%, rgba(255, 240, 200, 0.45), transparent),
+    radial-gradient(1px 1px at 34% 32%, rgba(255, 245, 215, 0.35), transparent),
+    radial-gradient(1px 1px at 42% 12%, rgba(255, 240, 200, 0.5), transparent),
+    radial-gradient(1px 1px at 56% 48%, rgba(255, 245, 210, 0.3), transparent),
+    radial-gradient(1px 1px at 65% 22%, rgba(255, 240, 200, 0.4), transparent),
+    radial-gradient(1px 1px at 74% 42%, rgba(255, 245, 215, 0.35), transparent),
+    radial-gradient(1px 1px at 82% 12%, rgba(255, 240, 200, 0.45), transparent),
+    radial-gradient(1px 1px at 94% 32%, rgba(255, 245, 210, 0.4), transparent);
+  animation: disneyTwinkle2 7s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+@keyframes disneyTwinkle {
+  0%   { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@keyframes disneyTwinkle2 {
+  0%   { opacity: 1; }
+  100% { opacity: 0.55; }
+}
+
+/* ═══ СКАЗОЧНАЯ ЛУНА ═══
+   Большая, тёплая, с мягким ореолом —
+   как в «Русалочке» или «Питере Пэне» */
+
+.celestial-body {
+  position: absolute;
+  top: 6%;
+  right: 16%;
+  width: 36px;
+  height: 36px;
+  z-index: 2;
+  transition:
+    opacity var(--duration-weather) ease,
+    transform var(--duration-weather) ease,
+    filter var(--duration-weather) ease;
+}
+
+.sun-glow {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #fff8e8 0%,
+    #ffefca 20%,
+    #ffe4a8 40%,
+    rgba(255, 220, 150, 0.6) 55%,
+    rgba(255, 200, 120, 0.25) 70%,
+    rgba(255, 180, 100, 0.08) 85%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 12px rgba(255, 230, 160, 0.7),
+    0 0 35px rgba(255, 210, 130, 0.35),
+    0 0 70px rgba(255, 190, 100, 0.15),
+    0 0 120px rgba(255, 180, 80, 0.06);
+  animation: disneyMoonGlow 8s ease-in-out infinite;
+}
+
+/* Кратеры луны — тонкие тени */
+.sun-glow::before {
+  content: "";
+  position: absolute;
+  inset: 15%;
+  border-radius: 50%;
+  background:
+    radial-gradient(3px 3px at 35% 40%, rgba(220, 190, 130, 0.3), transparent 70%),
+    radial-gradient(4px 4px at 60% 30%, rgba(210, 180, 120, 0.25), transparent 70%),
+    radial-gradient(2px 2px at 50% 65%, rgba(215, 185, 125, 0.2), transparent 70%),
+    radial-gradient(3px 3px at 25% 60%, rgba(220, 190, 130, 0.15), transparent 70%);
+}
+
+@keyframes disneyMoonGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 12px rgba(255, 230, 160, 0.7),
+      0 0 35px rgba(255, 210, 130, 0.35),
+      0 0 70px rgba(255, 190, 100, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(255, 235, 170, 0.85),
+      0 0 45px rgba(255, 215, 140, 0.4),
+      0 0 90px rgba(255, 195, 110, 0.18);
+  }
+}
+
+/* ═══ МЯГКОЕ СВЕЧЕНИЕ ГОРИЗОНТА ═══
+   Вместо северного сияния — тёплый
+   лунный свет на горизонте, как в
+   классических Disney-задниках */
+
+.aurora-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: soft-light;
+}
+
+/* Мягкий лунный столб */
+.aurora-band {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  height: 100%;
+  filter: blur(20px);
+  will-change: transform;
+}
+
+.aurora-band-1 {
+  top: 30%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse 40% 80% at 75% 100%,
+    rgba(255, 220, 150, 0.25) 0%,
+    rgba(255, 200, 130, 0.12) 40%,
+    transparent 70%
+  );
+  animation: moonlightSway 12s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+/* Лёгкая лавандовая дымка — фирменный Disney */
+.aurora-band-2 {
+  top: 20%;
+  height: 60%;
+  background: radial-gradient(
+    ellipse 60% 70% at 50% 90%,
+    rgba(140, 130, 180, 0.15) 0%,
+    rgba(120, 110, 170, 0.08) 50%,
+    transparent 80%
+  );
+  animation: hazeShift 18s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+/* Тёплый отсвет у горизонта */
+.aurora-band-3 {
+  top: 50%;
+  height: 50%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(200, 160, 100, 0.1) 60%,
+    rgba(180, 130, 80, 0.15) 100%
+  );
+  animation: none;
+  opacity: 0.6;
+}
+
+/* Лучи лунного света — не нужны,
+   скрываем контейнер */
+.aurora-rays { display: none; }
+.aurora-ray  { display: none; }
+
+@keyframes moonlightSway {
+  0%, 100% { transform: translateX(0) scaleX(1); }
+  50%      { transform: translateX(15px) scaleX(1.05); }
+}
+
+@keyframes hazeShift {
+  0%, 100% { transform: translateX(0); opacity: 0.5; }
+  50%      { transform: translateX(-10px); opacity: 0.35; }
+}
+
+/* ── Горизонт ── */
+.horizon-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+   background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(210, 180, 130, 0.2) 15%,
+    rgba(235, 200, 145, 0.4) 40%,
+    rgba(255, 215, 155, 0.45) 55%,
+    rgba(235, 200, 145, 0.4) 70%,
+    rgba(210, 180, 130, 0.2) 85%,
+    transparent 100%
+  );
+  z-index: 3;
+  transition:
+    background var(--duration-weather) ease,
+    opacity var(--duration-weather) ease;
+   box-shadow:
+    0 0 8px rgba(255, 215, 155, 0.15),
+    0 2px 6px rgba(255, 210, 150, 0.08);
+}
+
+/* ═══ ОБЛАКА — МЯГКИЕ, ПУШИСТЫЕ ═══
+   Классический Disney: облака как
+   пухлые подушки, тёплые полутона,
+   лёгкая подсветка луной снизу */
+
+.clouds-container {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.cloud {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  will-change: transform;
+  transition:
+    opacity var(--duration-weather) ease,
+    transform 1s ease;
+}
+
+.cloud-puff {
+  border-radius: 50%;
+  /* Тёмно-лавандовые облака с тёплым подсветом */
+  background: radial-gradient(
+    ellipse at 50% 65%,
+    rgba(80, 75, 110, 0.55) 0%,
+    rgba(60, 55, 90, 0.5) 40%,
+    rgba(45, 40, 75, 0.45) 70%,
+    rgba(35, 30, 65, 0.35) 100%
+  );
+  box-shadow:
+    inset 0 -3px 6px rgba(200, 170, 120, 0.08),
+    inset 0 2px 4px rgba(10, 8, 25, 0.2),
+    0 2px 8px rgba(10, 8, 25, 0.15);
+  transition: background var(--duration-weather) ease;
+}
+
+/* Облако 1 — большое, переднеплановое */
+.cloud-1 {
+  top: 10%;
+  left: -15%;
+  animation: cloudDrift1 50s linear infinite;
+  opacity: 0.7;
+}
+.cloud-1 .cp-1 { width: 30px; height: 20px; margin-right: -10px; }
+.cloud-1 .cp-2 { width: 44px; height: 28px; margin-right: -12px; margin-top: -8px; }
+.cloud-1 .cp-3 { width: 34px; height: 22px; }
+
+/* Облако 2 */
+.cloud-2 {
+  top: 22%;
+  left: 20%;
+  animation: cloudDrift2 60s linear infinite;
+  opacity: 0.45;
+}
+.cloud-2 .cp-1 { width: 22px; height: 15px; margin-right: -7px; }
+.cloud-2 .cp-2 { width: 32px; height: 20px; margin-right: -9px; margin-top: -5px; }
+.cloud-2 .cp-3 { width: 26px; height: 17px; margin-right: -6px; }
+.cloud-2 .cp-4 { width: 20px; height: 13px; }
+
+/* Облако 3 — маленькое, далёкое */
+.cloud-3 {
+  top: 6%;
+  left: 55%;
+  animation: cloudDrift3 40s linear infinite;
+  opacity: 0.3;
+}
+.cloud-3 .cp-1 { width: 16px; height: 11px; margin-right: -5px; }
+.cloud-3 .cp-2 { width: 24px; height: 15px; margin-right: -6px; margin-top: -3px; }
+.cloud-3 .cp-3 { width: 15px; height: 10px; }
+
+/* Облако 4 — крохотное */
+.cloud-4 {
+  top: 32%;
+  left: 70%;
+  animation: cloudDrift4 65s linear infinite;
+  opacity: 0.22;
+}
+.cloud-4 .cp-1 { width: 14px; height: 10px; margin-right: -4px; }
+.cloud-4 .cp-2 { width: 22px; height: 14px; }
+
+/* Облако 5 */
+.cloud-5 {
+  top: 16%;
+  left: -25%;
+  animation: cloudDrift5 55s linear infinite;
+  opacity: 0.5;
+}
+.cloud-5 .cp-1 { width: 24px; height: 16px; margin-right: -7px; }
+.cloud-5 .cp-2 { width: 36px; height: 22px; margin-right: -9px; margin-top: -6px; }
+.cloud-5 .cp-3 { width: 28px; height: 18px; }
+
+/* Облака медленно дрейфуют */
+@keyframes cloudDrift1 {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(100vw + 120px)); }
+}
+@keyframes cloudDrift2 {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(100vw + 100px)); }
+}
+@keyframes cloudDrift3 {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(100vw + 80px)); }
+}
+@keyframes cloudDrift4 {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(100vw + 60px)); }
+}
+@keyframes cloudDrift5 {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(100vw + 140px)); }
+}
+
+/* Удаляем неоновое свечение облаков —
+   вместо него лёгкое мерцание лунного света */
+@keyframes cloudGlow {
+  0%, 100% {
+    box-shadow:
+      inset 0 -3px 6px rgba(200, 170, 120, 0.08),
+      inset 0 2px 4px rgba(10, 8, 25, 0.2);
+  }
+  50% {
+    box-shadow:
+      inset 0 -4px 8px rgba(210, 180, 130, 0.12),
+      inset 0 2px 4px rgba(10, 8, 25, 0.2);
+  }
+}
+
+
+/* ═══ ЧАЙКИ — РИСОВАННЫЕ СИЛУЭТЫ ═══
+   Мягкие, тёплые, как в «Русалочке» */
+
+.seagulls-container {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.seagull {
+  position: absolute;
+  color: rgba(200, 190, 210, 0.55);
+  transition: opacity var(--duration-weather) ease;
+  will-change: transform;
+  filter: none; /* убираем неоновый drop-shadow */
+}
+
+.seagull-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.seagull-1 {
+  top: 20%; left: 10%; width: 14px; height: 6px;
+  animation: seagullFly1 14s ease-in-out infinite;
+}
+.seagull-2 {
+  top: 12%; left: 40%; width: 10px; height: 4px;
+  opacity: 0.4;
+  animation: seagullFly2 18s ease-in-out infinite;
+}
+.seagull-3 {
+  top: 28%; left: 65%; width: 12px; height: 5px;
+  opacity: 0.45;
+  animation: seagullFly3 20s ease-in-out infinite;
+}
+
+@keyframes seagullFly1 {
+  0%, 100% { transform: translate(0, 0) scaleY(1); }
+  15%  { transform: translate(8px, -4px) scaleY(0.5); }
+  30%  { transform: translate(18px, -2px) scaleY(1.1); }
+  50%  { transform: translate(30px, -6px) scaleY(0.6); }
+  70%  { transform: translate(40px, 2px) scaleY(1); }
+  85%  { transform: translate(50px, -3px) scaleY(0.7); }
+}
+
+@keyframes seagullFly2 {
+  0%, 100% { transform: translate(0, 0) scaleY(1); }
+  25%  { transform: translate(-8px, -3px) scaleY(0.5); }
+  50%  { transform: translate(-15px, 1px) scaleY(1.1); }
+  75%  { transform: translate(-5px, -4px) scaleY(0.6); }
+}
+
+@keyframes seagullFly3 {
+  0%, 100% { transform: translate(0, 0) scaleY(1); }
+  20%  { transform: translate(12px, -5px) scaleY(0.5); }
+  45%  { transform: translate(25px, 0) scaleY(1); }
+  70%  { transform: translate(15px, -3px) scaleY(0.7); }
+}
+
+/* ═══ ВОДНАЯ ПОВЕРХНОСТЬ — ЖИВОПИСНАЯ ═══
+   Глубокая, тёмно-синяя, с тёплыми
+   лунными бликами — как нарисованная */
+
+.water-surface {
+  position: absolute;
+  top: 55%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.water-body {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    #0f715d 0%,
+    #0d6352 8%,
+    #0b5647 18%,
+    #0a4a3d 30%,
+    #083d32 45%,
+    #073229 60%,
+    #05271f 75%,
+    #041c16 88%,
+    #02120e 100%
+  );
+
+  transition: background var(--duration-weather) ease;
+}
+
+/* Лунная дорожка на воде */
+.water-body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 25% 80% at 75% 0%, rgba(200, 255, 230, 0.25) 0%, rgba(100, 240, 190, 0.15) 30%, rgba(50, 220, 160, 0.08) 50%, transparent 70%);
+
+  animation: moonReflection 10s ease-in-out infinite;
+}
+
+@keyframes moonReflection {
+  0%, 100% { opacity: 0.8; transform: scaleX(1); }
+  30%  { opacity: 1;   transform: scaleX(1.04); }
+  60%  { opacity: 0.6; transform: scaleX(0.96); }
+}
+
+/* ── Рябь — мягкие горизонтальные линии ── */
+.water-ripples {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.ripple-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  opacity: 0.5;
+  will-change: transform;
+  transition:
+    opacity var(--duration-weather) ease,
+    background 1.5s ease;
+}
+
+/* Тёплая палитра ряби */
+.rl-1 {
+  top: 8%;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(255, 220, 160, 0.08) 20%,
+    rgba(160, 210, 200, 0.1) 50%, transparent 80%);
+  animation: rippleShift 7s ease-in-out infinite;
+}
+.rl-2 {
+  top: 18%;
+  background: linear-gradient(90deg,
+    transparent 5%, rgba(160, 180, 210, 0.08) 30%,
+    rgba(255, 215, 150, 0.07) 60%, transparent 90%);
+  animation: rippleShift 8s ease-in-out infinite 0.6s;
+}
+.rl-3 {
+  top: 30%;
+  background: linear-gradient(90deg,
+    transparent 10%, rgba(140, 160, 200, 0.07) 40%,
+    transparent 70%);
+  animation: rippleShift 6s ease-in-out infinite 1.2s;
+}
+.rl-4 {
+  top: 42%;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(130, 150, 190, 0.06) 35%,
+    rgba(200, 190, 160, 0.05) 65%, transparent 100%);
+  animation: rippleShift 9s ease-in-out infinite 0.4s;
+}
+.rl-5 {
+  top: 55%;
+  background: linear-gradient(90deg,
+    transparent 15%, rgba(120, 140, 180, 0.05) 50%,
+    transparent 85%);
+  animation: rippleShift 7.5s ease-in-out infinite 1.8s;
+  opacity: 0.35;
+}
+.rl-6 {
+  top: 68%;
+  background: linear-gradient(90deg,
+    transparent 20%, rgba(110, 130, 170, 0.04) 55%,
+    transparent 90%);
+  animation: rippleShift 8.5s ease-in-out infinite 1s;
+  opacity: 0.25;
+}
+.rl-7 {
+  top: 82%;
+  background: linear-gradient(90deg,
+    transparent 25%, rgba(100, 120, 160, 0.03) 50%,
+    transparent 80%);
+  animation: rippleShift 10s ease-in-out infinite 1.5s;
+  opacity: 0.18;
+}
+
+@keyframes rippleShift {
+  0%, 100% { transform: translateX(0) scaleX(1);    opacity: 0.5; }
+  25%  { transform: translateX(6px) scaleX(1.01);   opacity: 0.65; }
+  50%  { transform: translateX(-4px) scaleX(0.99);  opacity: 0.4; }
+  75%  { transform: translateX(2px) scaleX(1.005);  opacity: 0.55; }
+}
+
+
+/* ── Лунные блики на воде ──
+   Тёплые золотистые искры вдоль лунной
+   дорожки — как мазки кисти аниматора */
+
+.water-glints {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  transition: opacity var(--duration-weather) ease;
+}
+
+.glint {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(0.5px);
+}
+
+/* Блики сконцентрированы вдоль лунной дорожки
+   (правая часть сцены, под луной) */
+.g-1 {
+  top: 6%; left: 68%; width: 3px; height: 2px;
+  background: rgba(255, 230, 170, 0.55);
+  animation: glintFlicker 4s ease-in-out infinite;
+}
+.g-2 {
+  top: 14%; left: 74%; width: 2.5px; height: 1.5px;
+  background: rgba(255, 220, 150, 0.45);
+  animation: glintFlicker 5s ease-in-out infinite 0.7s;
+}
+.g-3 {
+  top: 22%; left: 70%; width: 2px; height: 1.5px;
+  background: rgba(255, 225, 160, 0.4);
+  animation: glintFlicker 3.5s ease-in-out infinite 1.2s;
+}
+.g-4 {
+  top: 10%; left: 78%; width: 3px; height: 2px;
+  background: rgba(255, 235, 180, 0.5);
+  animation: glintFlicker 4.5s ease-in-out infinite 0.3s;
+}
+.g-5 {
+  top: 30%; left: 66%; width: 2px; height: 1.5px;
+  background: rgba(255, 215, 140, 0.35);
+  animation: glintFlicker 5.5s ease-in-out infinite 1.8s;
+}
+.g-6 {
+  top: 18%; left: 82%; width: 2px; height: 1.5px;
+  background: rgba(255, 225, 160, 0.3);
+  animation: glintFlicker 4.2s ease-in-out infinite 0.9s;
+}
+/* Пара бликов вне дорожки — редкие, тусклые */
+.g-7 {
+  top: 15%; left: 30%; width: 2px; height: 1.5px;
+  background: rgba(200, 200, 220, 0.2);
+  animation: glintFlicker 6s ease-in-out infinite 2s;
+}
+.g-8 {
+  top: 40%; left: 45%; width: 2px; height: 1.5px;
+  background: rgba(190, 195, 215, 0.15);
+  animation: glintFlicker 7s ease-in-out infinite 1.5s;
+}
+
+@keyframes glintFlicker {
+  0%, 100% { opacity: 0;   transform: scale(0.5); }
+  15%  { opacity: 0.85; transform: scale(1.3); }
+  30%  { opacity: 0;    transform: scale(0.7); }
+  55%  { opacity: 0.5;  transform: scale(1.1); }
+  75%  { opacity: 0;    transform: scale(0.6); }
+}
+
+/* ── Пена — лёгкая, живописная ──
+   Мягкие белёсые штрихи, как акварель */
+
+.foam-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.foam-streak {
+  position: absolute;
+  height: 1.5px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(200, 210, 230, 0.1),
+    rgba(220, 220, 240, 0.18),
+    rgba(200, 210, 230, 0.1),
+    transparent
+  );
+  opacity: 0.4;
+  transition: opacity var(--duration-weather) ease;
+}
+
+.fs-1 {
+  top: 4%; left: 8%; width: 55px;
+  animation: foamDrift 10s ease-in-out infinite;
+}
+.fs-2 {
+  top: 16%; left: 42%; width: 38px;
+  animation: foamDrift 13s ease-in-out infinite 3s;
+  opacity: 0.25;
+}
+.fs-3 {
+  top: 28%; left: 65%; width: 45px;
+  animation: foamDrift 15s ease-in-out infinite 5s;
+  opacity: 0.2;
+}
+
+@keyframes foamDrift {
+  0%, 100% { transform: translateX(0) scaleX(1);   opacity: 0.4; }
+  30%  { transform: translateX(8px) scaleX(1.08);   opacity: 0.55; }
+  60%  { transform: translateX(-4px) scaleX(0.95);  opacity: 0.25; }
+}
+
+/* ═══ ВОЛНЫ — ПЛАВНЫЕ, РИСОВАННЫЕ ═══
+   Мягкие синусоиды, как нарисованные
+   широкой кистью — тёмно-синие с
+   лёгким бирюзовым оттенком */
+
+.sea-waves {
+  position: absolute;
+  top: 53%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 4;
+  overflow: hidden;
+}
+
+.sea-wave {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 100%;
+  will-change: transform;
+  transition: opacity var(--duration-weather) ease;
+}
+
+/* Ближняя волна — самая заметная */
+.sw-1 {
+  top: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60'%3E%3Cpath d='M0 30 Q150 12 300 30 T600 30 T900 30 T1200 30 V60 H0Z' fill='rgba(30,50,80,0.12)'/%3E%3C/svg%3E")
+    repeat-x bottom;
+  background-size: 300px 20px;
+  animation: waveFlow 7s linear infinite;
+  opacity: 0.8;
+}
+
+.sw-2 {
+  top: 8%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60'%3E%3Cpath d='M0 30 Q150 16 300 30 T600 30 T900 30 T1200 30 V60 H0Z' fill='rgba(25,42,70,0.08)'/%3E%3C/svg%3E")
+    repeat-x bottom;
+  background-size: 350px 18px;
+  animation: waveFlow 9s linear infinite -2s;
+  opacity: 0.6;
+}
+
+.sw-3 {
+  top: 16%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60'%3E%3Cpath d='M0 30 Q150 19 300 30 T600 30 T900 30 T1200 30 V60 H0Z' fill='rgba(20,35,60,0.06)'/%3E%3C/svg%3E")
+    repeat-x bottom;
+  background-size: 400px 15px;
+  animation: waveFlow 12s linear infinite -4s;
+  opacity: 0.4;
+}
+
+.sw-4 {
+  top: 24%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60'%3E%3Cpath d='M0 30 Q150 22 300 30 T600 30 T900 30 T1200 30 V60 H0Z' fill='rgba(18,30,55,0.04)'/%3E%3C/svg%3E")
+    repeat-x bottom;
+  background-size: 450px 12px;
+  animation: waveFlow 15s linear infinite -6s;
+  opacity: 0.25;
+}
+
+@keyframes waveFlow {
+  from { transform: translateX(0); }
+  to   { transform: translateX(300px); }
+}
+
+/* ═══ ПАРУСНИК ИЗ СКАЗКИ ═══
+   Не призрак, а настоящий деревянный
+   кораблик — как из «Питера Пэна» или
+   «Русалочки». Тёплый силуэт с
+   мягкой тенью на воде */
+
+.ship.ship-editorial {
+  position: absolute;
+  right: -60px;
+  top: -78px;
+  width: 110px;
+  height: 90px;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.ship-drift-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.ship-bob {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 75%;
+  animation: shipBob 5s ease-in-out infinite;
+  /* Мягкая тень вместо неонового свечения */
+  filter:
+    drop-shadow(0 2px 4px rgba(10, 8, 25, 0.5))
+    drop-shadow(0 4px 8px rgba(10, 8, 25, 0.3));
+  will-change: transform;
+}
+
+/* Отражение корабля в воде —
+   тёплое, размытое пятно */
+.ship-bob::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -8px;
+  height: 16px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(20, 15, 40, 0.35) 0%,
+    rgba(15, 12, 35, 0.2) 40%,
+    rgba(10, 8, 25, 0.08) 70%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  z-index: -1;
+  animation: reflectionPulse 5s ease-in-out infinite;
+}
+
+@keyframes reflectionPulse {
+  0%, 100% { transform: scaleX(1) scaleY(1);    opacity: 0.6; }
+  50%      { transform: scaleX(1.2) scaleY(0.8); opacity: 0.3; }
+}
+
+/* Более плавное покачивание —
+   как настоящий кораблик на волнах */
+@keyframes shipBob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  20%  { transform: translateY(-1.5px) rotate(-0.3deg); }
+  40%  { transform: translateY(-3.5px) rotate(0.8deg); }
+  60%  { transform: translateY(-2px) rotate(1.2deg); }
+  80%  { transform: translateY(-0.5px) rotate(0deg); }
+}
+
+/* ═══ VOYAGE TRACK — КАРТА ПУТЕШЕСТВИЯ ═══
+   Стилизация под старинную карту:
+   пергаментные тона, чернильные линии */
+
+.voyage-track {
+  position: absolute;
+  bottom: 38px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 8;
+}
+
+.voyage-start,
+.voyage-end {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: right;
+}
+
+.voyage-start svg,
+.voyage-end svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: rgba(220, 195, 150, 0.6);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 2px rgba(200, 170, 120, 0.2));
+}
+
+.voyage-progress-bg {
+  flex: 1;
+  height: 1px;
+  background: rgba(180, 160, 130, 0.2);
+  position: relative;
+  overflow: visible;
+}
+
+.voyage-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(220, 190, 130, 0.6),
+    rgba(240, 210, 150, 0.7),
+    rgba(220, 195, 140, 0.6)
+  );
+  position: relative;
+  transition: width 0.6s ease;
+  box-shadow: 0 0 4px rgba(220, 190, 130, 0.15);
+}
+
+/* Маркер текущей позиции */
+.voyage-fill::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  background: rgba(15, 12, 30, 0.7);
+  border: 1.5px solid rgba(230, 200, 140, 0.8);
+  border-radius: 50%;
+  box-shadow:
+    0 0 5px rgba(230, 200, 140, 0.25),
+    0 0 10px rgba(230, 200, 140, 0.1);
+}
+
+/* ═══ CHECKPOINTS — ТОЧКИ НА КАРТЕ ═══ */
+.checkpoint {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(20, 16, 40, 0.5);
+  border: 1px solid rgba(180, 160, 130, 0.35);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+}
+
+.checkpoint.reached {
+  background: rgba(230, 200, 140, 0.85);
+  border-color: rgba(240, 215, 160, 1);
+  box-shadow:
+    0 0 4px rgba(230, 200, 140, 0.35),
+    0 0 8px rgba(230, 200, 140, 0.12);
+}
+
+.checkpoint.final {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+  border: 1.5px solid rgba(200, 170, 120, 0.6);
+  animation: finalMark 3s ease-in-out infinite;
+}
+
+@keyframes finalMark {
+  0%, 100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+  50%      { transform: translate(-50%, -50%) scale(1.12); opacity: 0.55; }
+}
+
+/* Тултипы в стиле пергамента */
+.checkpoint[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(25, 20, 15, 0.88);
+  color: rgba(230, 210, 170, 0.9);
+  font-size: 0.58rem;
+  padding: 4px 8px;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  border-radius: 3px;
+  border: 1px solid rgba(180, 160, 120, 0.2);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(10, 8, 5, 0.3);
+}
+
+/* ═══ HULL BAR — СОСТОЯНИЕ КОРАБЛЯ ═══
+   Деревянная палитра: от золотистого
+   (хорошо) через янтарный к красному */
+
+.hull-bar {
+  position: absolute;
+  bottom: -25px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 8;
+}
+
+.hull-label {
+  font-size: 0.55rem;
+  color: rgba(200, 180, 140, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.hull-segments {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.hull-segment {
+  height: 4px;
+  flex: 1;
+  background: rgba(150, 130, 100, 0.1);
+  border-radius: 1px;
+  transition:
+    background 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.hull-segment.active {
+  background: linear-gradient(
+    90deg,
+    rgba(180, 200, 140, 0.55),
+    rgba(200, 210, 150, 0.65)
+  );
+  box-shadow: 0 0 3px rgba(180, 200, 140, 0.15);
+}
+
+.hull-segment.warning {
+  background: linear-gradient(
+    90deg,
+    rgba(230, 190, 80, 0.55),
+    rgba(240, 170, 50, 0.65)
+  );
+  box-shadow: 0 0 3px rgba(230, 190, 80, 0.15);
+}
+
+.hull-segment.critical {
+  background: rgba(220, 80, 70, 0.55);
+  animation: hullPulse 1.6s ease-in-out infinite;
+  box-shadow: 0 0 4px rgba(220, 80, 70, 0.2);
+}
+
+@keyframes hullPulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+
+#hull-text {
+  font-size: 0.55rem;
+  color: rgba(200, 180, 140, 0.5);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ═══ WEATHER INDICATOR ═══
+   Стилизация под старинный компас /
+   записку на пергаменте */
+
+.weather-indicator {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.58rem;
+  color: rgba(220, 200, 160, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  /* Полупрозрачный «пергамент» */
+  background: rgba(25, 20, 15, 0.55);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(180, 160, 120, 0.15);
+  backdrop-filter: blur(6px);
+  box-shadow:
+    0 2px 8px rgba(10, 8, 5, 0.25),
+    inset 0 1px 0 rgba(220, 200, 160, 0.04);
+}
+
+.weather-indicator.visible { opacity: 1; }
+
+.weather-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+  filter: none; /* убираем неоновый glow */
+}
+
+.weather-name {
+  font-weight: 600;
+  font-size: 0.55rem;
+  text-shadow: none;
+}
+

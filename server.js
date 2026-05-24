@@ -1,6 +1,7 @@
 // ============================================
-// Kraken — сервер дебютного тренажёра v3.2
+// Kraken — сервер дебютного тренажёра v7
 // Node.js 22+, Express, Lichess Explorer API
+// Rating: Kraken v7 — eval-destination, path-quality, combo-depth
 // ============================================
 
 require('dotenv').config();
@@ -15,7 +16,6 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Заголовки для SharedArrayBuffer
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -36,35 +36,29 @@ app.get('/stockfish-18-lite-single.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'stockfish-18-lite-single.js'));
 });
 
-// Используем регулярное выражение для перехвата всех .wasm запросов
 app.get(/.*\.wasm$/, (req, res) => {
     const fileName = path.basename(req.url);
     const requestedFile = path.join(__dirname, fileName);
-
     console.log('🔍WASM запрос:', req.url, '→ищем:', requestedFile);
 
     if (fs.existsSync(requestedFile)) {
         res.setHeader('Content-Type', 'application/wasm');
         res.sendFile(requestedFile);
     } else {
-        //Ищем любой .wasm файл в корне
         const wasmFiles = fs.readdirSync(__dirname).filter(f => f.endsWith('.wasm'));
         console.log('🔍 Доступные .wasm файлы:', wasmFiles);
-        
         if (wasmFiles.length > 0) {
             console.log(`⚠️ ${fileName} не найден, отдаю ${wasmFiles[0]}`);
             res.setHeader('Content-Type', 'application/wasm');
             res.sendFile(path.join(__dirname, wasmFiles[0]));
         } else {
             console.error('❌ Нет .wasm файлов в папке!');
-            res.status(404).end();// ← ВАЖНО: .end() без тела, не send()
+            res.status(404).end();
         }
     }
 });
 
-
 app.use(express.static(__dirname));
-
 
 // ============================================
 // Конфигурация
@@ -84,9 +78,7 @@ const MIN_GAMES_TOTAL = 50;
 const RATINGS_FILE = path.join(__dirname, 'data', 'ratings.json');
 
 // ============================================
-// Хранилище рейтингов (файловое)
-// Формат нового файла: { userId: { rating, games, lastDeltas, updatedAt } }
-// Поддерживается миграция старого формата: { userId: number }
+// Хранилище рейтингов
 // ============================================
 let ratings = {};
 try {
@@ -95,7 +87,6 @@ try {
     }
     if (fs.existsSync(RATINGS_FILE)) {
         const raw = JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf8'));
-        // миграция: если значения — числа, оборачиваем в объекты
         for (const [uid, val] of Object.entries(raw)) {
             if (typeof val === 'number') {
                 ratings[uid] = { rating: val, games: 0, lastDeltas: [], updatedAt: Date.now() };
@@ -123,7 +114,7 @@ function saveRatingsDebounced() {
 }
 
 // ============================================
-// Кэш Lichess + дедупликация in-flight запросов
+// Кэш Lichess + дедупликация
 // ============================================
 const lichessCache = new Map();
 const inflight = new Map();
@@ -177,11 +168,8 @@ const lichessLimit = createLimiter(6);
 // ============================================
 function getLichessRatingBands(rating) {
     const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
-
-    // Для очень низких — вынужденно берём минимум двух нижних (данных ниже нет)
     if (rating < 1100) return [1000, 1200];
 
-    // Находим группу, в которую попадает игрок: allBands[idx] <= rating < allBands[idx+1]
     let idx = 0;
     for (let i = 0; i < allBands.length; i++) {
         if (allBands[i] <= rating) idx = i;
@@ -189,28 +177,18 @@ function getLichessRatingBands(rating) {
     }
 
     const main = allBands[idx];
-    const next = allBands[idx + 1]; // может быть undefined
-    const prev = allBands[idx - 1]; // может быть undefined
-
+    const next = allBands[idx + 1];
+    const prev = allBands[idx - 1];
     const result = [main];
-
-    // Шаг группы (обычно 200, между 2200 и 2500 — 300)
     const step = next !== undefined ? next - main : 200;
-
-    // Расстояние до верхней границы группы и до её начала
     const distToTop = next !== undefined ? next - rating : Infinity;
     const distToBottom = rating - main;
 
-    // Если игрок близко к верхней границе (в верхней трети) — добавляем соседа сверху
     if (next !== undefined && distToTop <= step / 3) {
         result.push(next);
-    }
-    // Если близко к нижней границе (в нижней трети) — добавляем соседа снизу
-    else if (prev !== undefined && distToBottom <= step / 3) {
+    } else if (prev !== undefined && distToBottom <= step / 3) {
         result.push(prev);
-    }
-    // Если в потолке (нет next) — добавляем соседа снизу для статистики
-    else if (next === undefined && prev !== undefined) {
+    } else if (next === undefined && prev !== undefined) {
         result.push(prev);
     }
 
@@ -218,12 +196,10 @@ function getLichessRatingBands(rating) {
 }
 
 // ============================================
-// Запрос к Lichess Explorer (с дедупликацией)
+// Запрос к Lichess Explorer
 // ============================================
-// Внутренний запрос без логики расширения
 async function fetchLichessRaw(fen, bands) {
     const cacheKey = `${fen}|${bands.join(',')}`;
-
     const cached = getCached(cacheKey);
     if (cached) {
         const total = (cached.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
@@ -248,7 +224,7 @@ async function fetchLichessRaw(fen, bands) {
     const p = lichessLimit(() => axios.get(url.toString(), {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'User-Agent': 'KrakenChessTrainer/3.2'
+            'User-Agent': 'KrakenChessTrainer/3.3'
         },
         timeout: LICHESS_TIMEOUT
     })).then(response => {
@@ -268,7 +244,6 @@ async function fetchLichessRaw(fen, bands) {
     return p;
 }
 
-// Расширяем набор bands соседями (по одному с каждой стороны)
 function expandBands(bands) {
     const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
     const set = new Set(bands);
@@ -279,17 +254,15 @@ function expandBands(bands) {
     return [...set].sort((a, b) => a - b);
 }
 
-// Главная функция — с адаптивным расширением
 async function fetchLichessExplorer(fen, rating) {
     let bands = getLichessRatingBands(rating);
     let data = await fetchLichessRaw(fen, bands);
     let total = (data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
 
-    // Если данных мало — расширяем окно (максимум 2 итерации)
     let attempts = 0;
     while (total < MIN_GAMES_FOR_BOOK && attempts < 2) {
         const expanded = expandBands(bands);
-        if (expanded.length === bands.length) break; // расширять некуда
+        if (expanded.length === bands.length) break;
         console.log(`⚠ Мало партий (${total} < ${MIN_GAMES_FOR_BOOK}), расширяем bands → [${expanded.join(',')}]`);
         bands = expanded;
         data = await fetchLichessRaw(fen, bands);
@@ -362,161 +335,352 @@ async function prefetchLikelyPositions(fen, rating, topN = PREFETCH_TOP_N) {
     } catch (e) { /* префетч не критичен */ }
 }
 
-
 // ============================================
-// KRAKEN RATING v4 — eval-based, progressive, combo-quality
-// ============================================
-
-// ============================================
-// KRAKEN RATING v5 — простая CPL-формула с комбо
+// KRAKEN RATING v7 — eval-destination, path-quality, combo-depth
 // ============================================
 
-function calculateRatingDelta(rating, session) {
-  const allMoves = (session.moves || []).filter(m => m.isUserMove);
-  if (allMoves.length < 2) return 0;
-
-  const r = Math.max(400, Math.min(3200, rating));
-  const n = allMoves.length;
-  const gamesPlayed = session.gamesPlayed || 0;
-
-  // ═══ 1.ОЖИДАЕМЫЙ CPL для рейтинга ═══
-  // ~90при 800, ~50 при 1200, ~25 при 1800, ~12 при 2500
-  const expectedCPL =8+ 182 / (1 + Math.exp((r - 800) / 400));
-
-  // ═══ 2. СРЕДНИЙ CPL ИГРОКА ═══
-  const totalCPL = allMoves.reduce((s, m) => s + (m.cpl || 0), 0);
-  const avgCPL = totalCPL / n;
-
-  // ═══ 3. БАЗОВАЯ ОЦЕНКА: сравнение с ожиданием ═══
-  // >0 если играл лучше ожидаемого, <0 если хуже
-  const cplDiff = expectedCPL - avgCPL;
-
-  // ═══ 4. ПРОГРЕССИВНАЯ ЧУВСТВИТЕЛЬНОСТЬ К ОШИБКАМ ═══
-  // Чем выше рейтинг, тем сильнее штраф за каждый пункт CPL
-  const sensitivity = 0.6 + (r / 2000);
-  //800→ 1.0, 1200 → 1.2, 1800 → 1.5, 2500 → 1.85
-
-  // ═══ 5. ПОДСЧЁТ ЗЕВКОВ (CPL > порога) ═══
-  // Порог зевка снижается сростом рейтинга
-  const blunderThreshold = Math.max(80, 300 - r * 0.08);
-  // 800 → 236, 1200 → 204, 1800 → 156, 2500 → 100
-
-  const blunders = allMoves.filter(m => (m.cpl || 0) > blunderThreshold);
-  const blunderCount = blunders.length;
-
-  // Штраф за зевки: прогрессивный
-  let blunderPenalty = 0;
-  for (const b of blunders) {
-    const severity = Math.min((b.cpl || 0) / blunderThreshold, 5);
-    blunderPenalty += severity * sensitivity;
-  }
-  // Множитель за количество зевков (3+ — больнее)
-  if (blunderCount >= 3) {
-    blunderPenalty *= 1 + (blunderCount - 2) * 0.2;
-  }
-
-  // ═══ 6. КОМБО-БОНУС ═══
-  // Считаем серии хороших ходов (CPL ≤ goodThreshold)
-  const goodThreshold = expectedCPL * 0.6;
-  
-  let combo = 0;
-  let maxCombo = 0;
-  let comboSeriesLengths = []; // все завершённые серии ≥ 3
-
-  for (const m of allMoves) {
-    const cpl = m.cpl || 0;
-    if (cpl <= goodThreshold) {
-      combo++;
-    } else {
-      //Ошибка — серия прерывается, комбо НЕ засчитывается
-      if (combo >=3) {
-        comboSeriesLengths.push(combo);
-      }
-      if (combo > maxCombo) maxCombo = combo;
-      combo = 0;
-    }
-  }
-  // Финализация последней серии
-  if (combo >= 3) comboSeriesLengths.push(combo);
-  if (combo > maxCombo) maxCombo = combo;
-
-  // Бонус: только за серии ≥ 3, которые НЕ были прерваны ошибкой
-  // (comboSeriesLengths содержит только завершённые серии)
-  let comboBonus = 0;
-  for (const len of comboSeriesLengths) {
-    // √длины × 1.5, но не больше 6за одну серию
-    comboBonus += Math.min(6, Math.sqrt(len) * 1.5);
-  }
-  // Общий лимит комбо-бонуса
-  comboBonus = Math.min(12, comboBonus);
-
-  // Бонус за идеальную партию (всеходы хорошие,≥ 4 хода)
-  const perfectGame = n >= 4 && allMoves.every(m => (m.cpl || 0) <= goodThreshold);
-  if (perfectGame) comboBonus += 3;
-
-  // ═══ 7. БОНУС ЗА ТЕОРИЮ ═══
-  const bookMoves = allMoves.filter(m => m.isBookMove).length;
-  const bookBonus = bookMoves > 0 ? Math.min(8, Math.sqrt(bookMoves) * 2) : 0;
-
-  // ═══ 8. СБОРКА ДЕЛЬТЫ ═══
-  const calibration = 1 + 0.5 * Math.max(0, 1 - gamesPlayed / 30);
-  const K = 20 * calibration;
-
-  let delta = K * (cplDiff / expectedCPL) * sensitivity;
-
-  // Если были зевки — бонусы НЕ применяются
-  if (blunderCount === 0) {
-    delta += comboBonus + bookBonus;
-  } else {
-    // Частичный книжный бонус если зевок был один и несильный
-    if (blunderCount === 1 && blunderPenalty < 3) {
-      delta += bookBonus * 0.3;
-    }
-    // Комбо-бонус полностью сгорает при любом зевке
-  }
-
-  delta -= blunderPenalty;
-
-  // Гарантия: грубый зевок (≥500CPL) = всегда минус
-  const hasGrossBlunder = allMoves.some(m => (m.cpl || 0) >= 500);
-  if (hasGrossBlunder && delta > 0) {
-    delta = Math.min(-3, -blunderPenalty * 0.5);
-  }
-
-  // ═══ 9. КОРОТКИЕ ПАРТИИ ═══
-  if (n < 6) {
-    delta *= 0.4+ 0.12 * n;
-  }
-
-  // ═══ 10. АНТИТИЛТ ═══
-  const recent = session.recentDeltas || [];
-  if (recent.length >= 3 && delta < 0) {
-    const lastThree = recent.slice(-3);
-    const totalLoss = lastThree.reduce((s, d) => s + Math.min(0, d), 0);
-    if (totalLoss < -30) {
-      delta *= 0.75; // смягчаем серию проигрышей
-    }
-  }
-
-  // ═══ 11. ГРАНИЦЫ ═══
-  delta = Math.max(-35, Math.min(22, delta));
-  if (rating + delta < 100) delta = 100 - rating;
-
-  delta = Math.round(delta);
-
-  // ═══ 12. ДИАГНОСТИКА ═══
-  console.log(
-    `📐 Kraken v5: r=${r} | avgCPL=${avgCPL.toFixed(1)} expCPL=${expectedCPL.toFixed(1)} | ` +
-    `cplDiff=${cplDiff.toFixed(1)} sens=${sensitivity.toFixed(2)} | ` +
-    `blunders=${blunderCount} penalty=${blunderPenalty.toFixed(1)} | ` +
-    `combo: max=${maxCombo} series=[${comboSeriesLengths}] bonus=${comboBonus.toFixed(1)} | ` +
-    `book=${bookMoves} bonus=${bookBonus.toFixed(1)} | ` +
-    `K=${K.toFixed(1)} | Δ=${delta >= 0 ? '+' : ''}${delta}`
-  );
-
-  return delta;
+/**
+ * Centipawns → Win Probability [0..1]
+ * Формула Lichess (более точная чем простая сигмоида)
+ */
+function evalToWinProb(cp) {
+    return 1 / (1 + Math.exp(-0.00368 * cp));
 }
+
+/**
+ * Win Probability → нормализованный score [-1..+1]
+ */
+function wpToScore(wp) {
+    return (wp - 0.5) * 2;
+}
+
+/**
+ * Безопасное получение eval с учётом мата
+ * Мат = ±10000, ограничиваем до ±1500 для формулы
+ */
+function safeEval(cp) {
+    if (cp === undefined || cp === null) return 0;
+    return Math.max(-1500, Math.min(1500, cp));
+}
+
+/**
+ * КОМПОНЕНТ 1: EVAL DESTINATION (60% веса)
+ *
+ * Главный принцип: чем лучше eval в конце дебюта, тем больше награда.
+ * Финальный eval — король. Дельта и провалы — второстепенны.
+ *
+ * Шкала (для играющего):
+ *   eval = 0.0  → score ≈ 0.0  (равенство — нейтрально)
+ *   eval = +0.5 → score ≈ 0.25 (небольшой перевес)
+ *   eval = +1.0 → score ≈ 0.45 (перевес)
+ *   eval = +1.5 → score ≈ 0.60 (серьёзный перевес)
+ *   eval = +2.0 → score ≈ 0.72 (большой перевес)
+ *   eval = +2.5 → score ≈ 0.80 (подавляющий)
+ *   eval = +3.0+→ score ≈ 0.85-0.95 (выиграно)
+ *   eval < 0    → штраф пропорционально
+ *
+ * Возвращает score от -1.0 до +1.0
+ */
+function calcDestinationScore(userMoves, userColor) {
+    const sign = userColor === 'white' ? 1 : -1;
+    const n = userMoves.length;
+
+    // ═══ Финальный eval (ГЛАВНЫЙ СИГНАЛ — 75% компонента) ═══
+    const lastMove = userMoves[n - 1];
+    const endEvalRaw = safeEval(lastMove.evalAfter ?? lastMove.evalBefore ?? 0);
+    const endEval = endEvalRaw * sign; // положительный = хорошо для игрока
+
+    // Нелинейная шкала: быстро растёт до +2, потом замедляется
+    // tanh(x * 0.45) даёт: 0→0, 1→0.42, 2→0.73, 2.5→0.81, 3→0.87, 5→0.98
+    const endEvalPawns = endEval / 100; // cp → pawns
+    const absoluteScore = Math.tanh(endEvalPawns * 0.45);
+
+    // ═══ Дельта от старта (бонус/штраф — 15% компонента) ═══
+    const firstMove = userMoves[0];
+    const startEval = safeEval(firstMove.evalBefore ?? 0) * sign;
+    const startPawns = startEval / 100;
+    const endPawns = endEval / 100;
+    const deltaPawns = endPawns - startPawns;
+
+    // Улучшил на 1 пешку → +0.3, ухудшил на 1 → -0.3
+    const deltaScore = Math.max(-1, Math.min(1, deltaPawns * 0.3));
+
+    // ═══ Штраф за провалы (10% компонента) ═══
+    let worstEvalPawns = endPawns;
+    for (const m of userMoves) {
+        const ev = safeEval((m.evalAfter ?? m.evalBefore ?? 0)) * sign / 100;
+        if (ev < worstEvalPawns) worstEvalPawns = ev;
+    }
+    // Штраф только если провал > 0.5 пешки от финала
+    const dip = endPawns - worstEvalPawns;
+    const dipPenalty = dip > 0.5 ? Math.min(0.3, (dip - 0.5) * 0.15) : 0;
+
+    // ═══ ИТОГО: 75% абсолют + 15% дельта - 10% провал ═══
+    const raw = absoluteScore * 0.75 + deltaScore * 0.15 - dipPenalty;
+    return Math.max(-1, Math.min(1, raw));
+}
+
+/**
+ * КОМПОНЕНТ 2: PATH QUALITY (30% веса)
+ *
+ * Каждый ход оценивается относительно ожидания для рейтинга.
+ * Поздние ходы весят больше (глубже в теорию = сложнее).
+ * Зевки — прогрессивный штраф.
+ *
+ * Возвращает объект с score от -1.0 до +1.0 и диагностику
+ */
+function calcPathQualityScore(userMoves, rating) {
+    if (userMoves.length === 0) {
+        return { score: 0, blunderCount: 0, blunderSeveritySum: 0, expectedCPL: 50, blunderThreshold: 150, avgCPL: 0 };
+    }
+
+    const r = Math.max(400, Math.min(3200, rating));
+    const n = userMoves.length;
+
+    // Ожидаемый CPL для рейтинга
+    // 800 → ~80, 1200 → ~45, 1600 → ~28, 2000 → ~18, 2500 → ~10
+    const expectedCPL = 6 + 180 / (1 + Math.exp((r - 700) / 350));
+
+    // Порог зевка
+    const blunderThreshold = Math.max(60, 300 - r * 0.1);
+
+    let weightedScore = 0;
+    let totalWeight = 0;
+    let blunderCount = 0;
+    let blunderSeveritySum = 0;
+
+    for (let i = 0; i < n; i++) {
+        const m = userMoves[i];
+        const cpl = m.cpl ?? 0;
+
+        // Вес хода: поздние ходы чуть важнее (1.0 → 1.5)
+        const moveWeight = 1.0 + 0.5 * (i / Math.max(1, n - 1));
+
+        // Score хода: CPL=0 → +1, CPL=expected → 0, CPL=2*expected → -1
+        const moveScore = Math.max(-1, Math.min(1, 1 - (cpl / expectedCPL)));
+
+        weightedScore += moveScore * moveWeight;
+        totalWeight += moveWeight;
+
+        // Зевки
+        if (cpl > blunderThreshold) {
+            blunderCount++;
+            blunderSeveritySum += Math.min(3, cpl / blunderThreshold);
+        }
+    }
+
+    let pathScore = totalWeight > 0 ? weightedScore / totalWeight : 0;
+
+    // Прогрессивный штраф за зевки
+    if (blunderCount > 0) {
+        const blunderPenalty = blunderSeveritySum * (1 + (blunderCount - 1) * 0.3) * 0.15;
+        pathScore -= blunderPenalty;
+    }
+
+    return {
+        score: Math.max(-1, Math.min(1, pathScore)),
+        blunderCount,
+        blunderSeveritySum,
+        expectedCPL,
+        blunderThreshold,
+        avgCPL: userMoves.reduce((s, m) => s + (m.cpl || 0), 0) / n
+    };
+}
+
+/**
+ * КОМПОНЕНТ 3: COMBO DEPTH (15% веса)
+ *
+ * Длинная серия точных ходов = глубокое знание линии.
+ * Самостоятельный компонент, НЕ множитель.
+ *
+ * Серия ≥2 точных ходов = комбо.
+ * Книжные ходы внутри комбо дают бонус.
+ * Perfect game = максимум.
+ *
+ * Возвращает score от 0 до +1.0
+ */
+function calcComboDepthScore(userMoves, expectedCPL) {
+    if (userMoves.length < 2) {
+        return { score: 0, maxCombo: 0, series: [], perfect: false, goodThreshold: 0 };
+    }
+
+    const n = userMoves.length;
+    const goodThreshold = expectedCPL * 0.6;
+
+    let currentCombo = 0;
+    let maxCombo = 0;
+    const series = [];
+    let bookInCombo = 0;
+
+    for (const m of userMoves) {
+        if ((m.cpl ?? 0) <= goodThreshold) {
+            currentCombo++;
+            if (m.isBookMove) bookInCombo++;
+        } else {
+            if (currentCombo >= 2) {
+                series.push({ length: currentCombo, bookMoves: bookInCombo });
+            }
+            maxCombo = Math.max(maxCombo, currentCombo);
+            currentCombo = 0;
+            bookInCombo = 0;
+        }
+    }
+    if (currentCombo >= 2) {
+        series.push({ length: currentCombo, bookMoves: bookInCombo });
+    }
+    maxCombo = Math.max(maxCombo, currentCombo);
+
+    const perfect = n >= 4 && userMoves.every(m => (m.cpl ?? 0) <= goodThreshold);
+
+    // Scoring серий
+    let comboRaw = 0;
+    for (const s of series) {
+        const lengthScore = Math.pow(s.length / n, 0.7) * s.length;
+        const bookBonus = s.bookMoves * 0.1;
+        comboRaw += lengthScore + bookBonus;
+    }
+
+    const maxPossible = Math.pow(1, 0.7) * n;
+    let score = maxPossible > 0 ? comboRaw / maxPossible : 0;
+
+    if (perfect) {
+        score = Math.max(score, 0.85);
+        score += 0.15;
+    }
+
+    return {
+        score: Math.min(1.0, score),
+        maxCombo,
+        series,
+        perfect,
+        goodThreshold
+    };
+}
+
+/**
+ * KRAKEN RATING v7 — главная функция
+ *
+ * Три столпа:
+ * 1. DESTINATION (55%) — куда пришёл по eval
+ * 2. PATH (30%)        — как шёл (точность ходов)
+ * 3. COMBO (15%)       — глубина знания линии
+ *
+ * K-фактор адаптивный. Границ нет — рейтинг свободный.
+ */
+function calculateRatingDelta(rating, session) {
+    const allSessionMoves = session.moves || [];
+    const userMoves = allSessionMoves.filter(m => m.isUserMove);
+
+    if (userMoves.length < 2) return 0;
+
+    const r = Math.max(400, Math.min(3200, rating));
+    const n = userMoves.length;
+    const gamesPlayed = session.gamesPlayed || 0;
+
+    const firstUserMove = userMoves[0];
+    const firstUserIndex = allSessionMoves.indexOf(firstUserMove);
+    const userColor = (firstUserIndex % 2 === 0) ? 'white' : 'black';
+
+    // ═══ 1. DESTINATION (60%) — финальный eval доминирует ═══
+    const destinationScore = calcDestinationScore(userMoves, userColor);
+
+    // ═══ 2. PATH QUALITY (25%) ═══
+    const pathResult = calcPathQualityScore(userMoves, r);
+    const pathScore = pathResult.score;
+
+    // ═══ 3. COMBO DEPTH (15%) ═══
+    const comboResult = calcComboDepthScore(userMoves, pathResult.expectedCPL);
+    const comboScore = comboResult.score > 0
+        ? comboResult.score
+        : (n >= 4 ? -0.2 : 0);
+
+    // ═══ НОВЫЕ ВЕСА ═══
+    const W_DEST = 0.60;  // было 0.55
+    const W_PATH = 0.25;  // было 0.30
+    const W_COMBO = 0.15; // без изменений
+
+    const compositeScore =
+        destinationScore * W_DEST +
+        pathScore * W_PATH +
+        comboScore * W_COMBO;
+
+    // ═══ K-ФАКТОР — увеличен ═══
+    const baseK = 36; // было 28
+
+    const calibrationFactor = 1 + 0.5 * Math.max(0, 1 - gamesPlayed / 30);
+    const lengthFactor = 0.6 + 0.4 * Math.min(1, n / 10);
+    const asymmetry = compositeScore < 0 ? 0.85 : 1.0;
+
+    const K = baseK * calibrationFactor * lengthFactor * asymmetry;
+
+    // ═══ СЫРАЯ ДЕЛЬТА ═══
+    let delta = K * compositeScore;
+
+    // ═══ БОНУС ЗА СИЛЬНЫЙ ФИНАЛЬНЫЙ EVAL ═══
+    // Если вышел из дебюта с eval > +1.5 — прямой бонус
+    const sign = userColor === 'white' ? 1 : -1;
+    const lastMove = userMoves[n - 1];
+    const finalEvalPawns = safeEval(lastMove.evalAfter ?? lastMove.evalBefore ?? 0) * sign / 100;
+
+    if (finalEvalPawns >= 1.5 && pathResult.blunderCount === 0) {
+        // +1.5 → +3, +2.0 → +5, +2.5 → +7, +3.0 → +8
+        const evalBonus = Math.min(10, (finalEvalPawns - 1.5) * 5);
+        delta += evalBonus;
+        console.log(`  🎯 Eval bonus: +${evalBonus.toFixed(1)} (final eval: ${finalEvalPawns.toFixed(1)})`);
+    }
+
+    // ═══ ЗАЩИТНЫЕ МЕХАНИЗМЫ (без изменений) ═══
+    const worstCPL = Math.max(0, ...userMoves.map(m => m.cpl || 0));
+    if (worstCPL >= 500 && delta > 0) {
+        delta = Math.min(-2, delta * -0.3);
+    }
+
+    const recentDeltas = session.recentDeltas || [];
+    if (recentDeltas.length >= 3 && delta < 0) {
+        const lastThree = recentDeltas.slice(-3);
+        if (lastThree.every(d => d < 0)) {
+            const totalLoss = lastThree.reduce((s, d) => s + d, 0);
+            if (totalLoss < -20) {
+                delta *= 0.65;
+            }
+        }
+    }
+
+    const bookMoves = userMoves.filter(m => m.isBookMove).length;
+    if (bookMoves > 0 && pathResult.blunderCount === 0) {
+        delta += Math.min(5, Math.sqrt(bookMoves) * 1.2);
+    }
+
+    delta = Math.round(delta);
+
+    // ═══ ДИАГНОСТИКА ═══
+    console.log('╔═══════════════════════════════════════════╗');
+    console.log('║         KRAKEN RATING v7.1 CALC           ║');
+    console.log('╚═══════════════════════════════════════════╝');
+    console.log(`  Рейтинг: ${r} | Цвет: ${userColor} | Ходов: ${n}`);
+    console.log(`  ── DESTINATION (${(W_DEST * 100).toFixed(0)}%) ──`);
+    console.log(`  Score: ${(destinationScore * 100).toFixed(1)}%`);
+    console.log(`  Final eval: ${finalEvalPawns.toFixed(2)} pawns (${(safeEval(lastMove.evalAfter ?? lastMove.evalBefore ?? 0))}cp)`);
+    console.log(`  Start eval: ${safeEval(userMoves[0].evalBefore ?? 0)}cp`);
+    console.log(`  ── PATH QUALITY (${(W_PATH * 100).toFixed(0)}%) ──`);
+    console.log(`  Score: ${(pathScore * 100).toFixed(1)}%`);
+    console.log(`  Avg CPL: ${pathResult.avgCPL.toFixed(1)} (ожидание: ${pathResult.expectedCPL.toFixed(1)})`);
+    console.log(`  Зевков: ${pathResult.blunderCount} (порог: ${pathResult.blunderThreshold.toFixed(0)}cp)`);
+    console.log(`  ── COMBO DEPTH (${(W_COMBO * 100).toFixed(0)}%) ──`);
+    console.log(`  Score: ${(comboScore * 100).toFixed(1)}%`);
+    console.log(`  Max combo: ${comboResult.maxCombo} | Perfect: ${comboResult.perfect}`);
+    console.log(`  ── СБОРКА ──`);
+    console.log(`  Composite: ${(compositeScore * 100).toFixed(1)}%`);
+    console.log(`  K=${K.toFixed(1)} (base=${baseK} cal=${calibrationFactor.toFixed(2)} len=${lengthFactor.toFixed(2)})`);
+    console.log(`  Book moves: ${bookMoves} | Worst CPL: ${worstCPL}`);
+    console.log(`  ═══ ИТОГО: delta = ${delta >= 0 ? '+' : ''}${delta} ═══`);
+    console.log('─────────────────────────────────────────────');
+
+    return delta;
+}
+
 module.exports = { calculateRatingDelta };
+
 // ============================================
 // API: /play-move
 // ============================================
@@ -656,13 +820,13 @@ app.get('/api/rating/:userId', (req, res) => {
 
 app.post('/api/rating/:userId/update', (req, res) => {
     const { userId } = req.params;
-    const { 
-        moves, openingDifficulty, recentDeltas, 
+    const {
+        moves, openingDifficulty, recentDeltas,
         mateBlunder, hangsQueen, repeatedBlunder,
-        maxCombo, comboHistory, perfectStreak 
+        maxCombo, comboHistory, perfectStreak
     } = req.body;
 
-// ═══ ДИАГНОСТИКА: что пришло с клиента ═══
+    // ═══ ДИАГНОСТИКА: что пришло с клиента ═══
     console.log('╔═══════════════════════════════════════╗');
     console.log('║   ВХОДНЫЕ ДАННЫЕ ОТ КЛИЕНТА          ║');
     console.log('╚═══════════════════════════════════════╝');
@@ -671,11 +835,10 @@ app.post('/api/rating/:userId/update', (req, res) => {
     console.log(`maxCombo=${maxCombo}, perfectStreak=${perfectStreak}`);
     if (Array.isArray(moves)) {
         moves.forEach((m, i) => {
-            console.log(`  ${i+1}. ${m.san} | CPL=${m.cpl} | book=${m.isBookMove} | rank=${m.popularityRank} | isUser=${m.isUserMove}`);
+            console.log(`  ${i + 1}. ${m.san} | CPL=${m.cpl} | evalBefore=${m.evalBefore ?? '?'} | evalAfter=${m.evalAfter ?? '?'} | book=${m.isBookMove} | rank=${m.popularityRank} | isUser=${m.isUserMove}`);
         });
     }
     console.log('────────────────────────────────────────');
-
 
     if (!Array.isArray(moves)) {
         return res.status(400).json({ error: 'moves must be array' });
@@ -698,7 +861,7 @@ app.post('/api/rating/:userId/update', (req, res) => {
         perfectStreak: !!perfectStreak
     });
 
-    const newRating = Math.max(400, Math.min(3200, oldRating + delta));
+    const newRating = oldRating + delta;
     const newDeltas = [...(existing.lastDeltas || []), delta].slice(-10);
 
     ratings[userId] = {
@@ -709,7 +872,7 @@ app.post('/api/rating/:userId/update', (req, res) => {
     };
     saveRatingsDebounced();
 
-    console.log(`📈 ${userId}: ${oldRating} → ${newRating} (Δ${delta >= 0 ? '+' : ''}${delta}) ходов=${moves.length}`);
+    console.log(`📈 ${userId}: ${oldRating} → ${newRating} (delta ${delta >= 0 ? '+' : ''}${delta}) ходов=${moves.length}`);
 
     res.json({
         oldRating,
@@ -739,8 +902,6 @@ app.post('/api/rating/:userId/reset', (req, res) => {
     res.json({ userId, rating, games: 0 });
 });
 
-
-
 // ============================================
 // API: статистика кэша
 // ============================================
@@ -756,7 +917,6 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-
 // ============================================
 // Диагностика Lichess при старте
 // ============================================
@@ -768,12 +928,11 @@ app.get('/api/stats', (req, res) => {
     console.log('   URL:', testUrl);
     console.log('   Токен:', token ? `${token.slice(0, 8)}...` : 'НЕ ЗАДАН');
 
-    // Тест 1: с токеном
     try {
         const resp = await axios.get(testUrl, {
             headers: {
                 'Authorization': token ? `Bearer ${token}` : undefined,
-                'User-Agent': 'KrakenChessTrainer/3.2',
+                'User-Agent': 'KrakenChessTrainer/3.3',
                 'Accept': 'application/json'
             },
             timeout: 10000
@@ -783,27 +942,25 @@ app.get('/api/stats', (req, res) => {
     } catch (e) {
         console.error(`❌ Тест с токеном ПРОВАЛЕН:`);
         if (e.response) {
-            console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);console.error(`   Body:`, JSON.stringify(e.response.data).slice(0, 200));
+            console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);
+            console.error(`   Body:`, JSON.stringify(e.response.data).slice(0, 200));
         } else {
             console.error(`   ${e.code || e.message}`);
         }
     }
 
-    // Тест 2: без токена
     try {
         const resp = await axios.get(testUrl, {
             headers: {
-                'User-Agent': 'KrakenChessTrainer/3.2',
+                'User-Agent': 'KrakenChessTrainer/3.3',
                 'Accept': 'application/json'
             },
             timeout: 10000
         });
         const total = (resp.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        //console.log(`✅ Тест без токена: ${resp.status}, ${total} партий`);
     } catch (e) {
-        //console.error(`❌ Тест без токена ПРОВАЛЕН:`);
         if (e.response) {
-           // console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);
+            // тихо
         } else {
             console.error(`   ${e.code || e.message}`);
         }
@@ -817,6 +974,7 @@ app.listen(PORT, () => {
     console.log(`🦑 Кракен пробудился! http://localhost:${PORT}`);
     console.log(`   Node ${process.version}`);
     console.log(`   Префетч: ${PREFETCH_ENABLED ? 'включён' : 'выключен'}`);
+    console.log(`   Рейтинг: Kraken v7 (eval-destination + path-quality + combo-depth)`);
 });
 
 process.on('SIGINT', () => {
@@ -825,5 +983,3 @@ process.on('SIGINT', () => {
     try { fs.writeFileSync(RATINGS_FILE, JSON.stringify(ratings, null, 2)); } catch {}
     process.exit(0);
 });
-
-

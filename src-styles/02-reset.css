@@ -1,0 +1,78 @@
+/* ═══════════════════════════════════════════
+   02 · RESET & BASE — DIGITAL KRAKEN
+   
+   Абиссальный сброс. Тьма океанского дна
+   заливает всё пространство. Тихо. Глубоко.
+   ═══════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--ff-system);
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 100vh;
+  overflow-x: hidden;
+
+  /* ── Абиссальный фон с лёгким свечением ── */
+  background-image:
+    radial-gradient(
+      ellipse 800px 600px at 50% 0%,
+      rgba(168, 85, 247, 0.04) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 600px 800px at 0% 50%,
+      rgba(0, 229, 255, 0.02) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 600px 800px at 100% 80%,
+      rgba(0, 255, 170, 0.015) 0%,
+      transparent 60%
+    );
+  background-attachment: fixed;
+}
+
+/* ── Скроллбары — щупальце в расщелине ── */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--c-abyss);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--c-kraken);
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-kraken-glow);
+}
+
+/* ── Выделение текста ── */
+
+::selection {
+  background: rgba(168, 85, 247, 0.3);
+  color: #fff;
+}

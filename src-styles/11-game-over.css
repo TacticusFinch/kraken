@@ -1,0 +1,1003 @@
+/* ═══════════════════════════════════════════════════
+   БОРТЖУРНАЛ КАПИТАНА — Game Over Modal
+   
+   Стиль: Old Disney Cartoon × Maritime Logbook
+   Steamboat Willie · Rubber-hose · Halftone
+   Тёплый песок #f3dfbf · Металл #7a8b99
+   Бирюза · Золото · Толстые контуры
+   ═══════════════════════════════════════════════════ */
+
+/* ══ Overlay — «Старая киноплёнка» ══ */
+.game-over-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  background:
+    /* Зерно плёнки — мелкие точки */
+    url("data:image/svg+xml,%3Csvg width='6' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.6' fill='%232a2520' opacity='0.04'/%3E%3C/svg%3E"),
+    /* Виньетка проектора */
+    radial-gradient(ellipse at 50% 45%,
+      rgba(243, 223, 191, 0.06) 0%,
+      transparent 55%),
+    radial-gradient(ellipse at center,
+      rgba(42, 37, 32, 0.60) 0%,
+      rgba(42, 37, 32, 0.92) 100%);
+
+  backdrop-filter: blur(0px) saturate(1) sepia(0);
+  transition:
+    opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    visibility 0.6s ease,
+    backdrop-filter 0.6s ease;
+}
+
+.game-over-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  backdrop-filter: blur(5px) saturate(1.1) sepia(0.15);
+  animation: projectorFlicker 4s ease-in-out 0.8s 1;
+}
+
+/* Мерцание старого проектора при появлении */
+@keyframes projectorFlicker {
+  0%, 100% { opacity: 1; }
+  2%  { opacity: 0.92; }
+  4%  { opacity: 1; }
+  8%  { opacity: 0.96; }
+  10% { opacity: 1; }
+}
+
+/* ══ Scroll-обёртка ══ */
+.game-over-scroll-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ══ Карточка — Страница бортжурнала ══ */
+.game-over-card {
+  position: relative;
+  padding: 0;
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+  color: #2a2520;
+
+  /* Пергамент бортжурнала */
+  background-color: #f3dfbf;
+  background-image:
+    /* Halftone — фирменная текстура Disney 1928 */
+    radial-gradient(circle,
+      rgba(42, 37, 32, 0.06) 1px, transparent 1px),
+    radial-gradient(circle,
+      rgba(42, 37, 32, 0.04) 1px, transparent 1px),
+    /* Пятно чернил — левый низ */
+    radial-gradient(ellipse at 15% 85%,
+      rgba(122, 139, 153, 0.07) 0%, transparent 45%),
+    /* Тёплый свет лампы каюты — правый верх */
+    radial-gradient(ellipse at 85% 15%,
+      rgba(210, 170, 90, 0.10) 0%, transparent 50%),
+    /* Солевой налёт — морская атмосфера */
+    radial-gradient(ellipse at 50% 50%,
+      rgba(100, 190, 190, 0.04) 0%, transparent 70%);
+  background-size:
+    6px 6px,
+    6px 6px,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  background-position:
+    0 0,
+    3px 3px,
+    0 0,
+    0 0,
+    0 0;
+
+  /* Толстый мультяшный контур */
+  border: 4px solid #2a2520;
+  border-radius: 22px;
+
+  box-shadow:
+    /* Двойная обводка — cartoon outline */
+    0 0 0 3px #f3dfbf,
+    0 0 0 7px #2a2520,
+    /* Жёсткая тень — как в Silly Symphonies */
+    8px 10px 0 rgba(42, 37, 32, 0.22),
+    /* Мягкий ambient */
+    0 24px 60px -12px rgba(42, 37, 32, 0.35),
+    /* Тёплое свечение пергамента изнутри */
+    inset 0 2px 16px rgba(210, 170, 90, 0.15),
+    inset 0 -4px 12px rgba(122, 139, 153, 0.06);
+
+  transform-origin: center bottom;
+  animation: logbookBounceIn 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Виньетка + царапины старой плёнки */
+.game-over-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background:
+    /* Угловая виньетка */
+    radial-gradient(ellipse at 0% 0%,
+      rgba(42, 37, 32, 0.09) 0%, transparent 35%),
+    radial-gradient(ellipse at 100% 100%,
+      rgba(42, 37, 32, 0.09) 0%, transparent 35%),
+    radial-gradient(ellipse at 100% 0%,
+      rgba(42, 37, 32, 0.05) 0%, transparent 25%),
+    radial-gradient(ellipse at 0% 100%,
+      rgba(42, 37, 32, 0.05) 0%, transparent 25%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.game-over-card::after {
+  content: none;
+}
+
+/* ══ Bounce-вход — журнал шлёпается на стол ══ */
+@keyframes logbookBounceIn {
+  0% {
+    opacity: 0;
+    transform: translateY(80px) scale(0.55) rotate(-4deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-16px) scale(1.06) rotate(1.5deg);
+  }
+  60% {
+    transform: translateY(6px) scale(0.97) rotate(-0.8deg);
+  }
+  78% {
+    transform: translateY(-3px) scale(1.015) rotate(0.3deg);
+  }
+  90% {
+    transform: translateY(1px) scale(0.998) rotate(0deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+/* ══ Скроллбар — в стиле линейки ══ */
+.game-over-card::-webkit-scrollbar {
+  width: 7px;
+}
+
+.game-over-card::-webkit-scrollbar-track {
+  background: rgba(122, 139, 153, 0.08);
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.game-over-card::-webkit-scrollbar-thumb {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #7a8b99 0px,
+      #7a8b99 3px,
+      transparent 3px,
+      transparent 5px
+    );
+  border-radius: 4px;
+  border: 1px solid rgba(42, 37, 32, 0.15);
+}
+
+/* ══ Masthead — Шапка бортжурнала ══ */
+.game-over-masthead {
+  position: relative;
+  padding: 26px 28px 16px;
+  border-bottom: 3px solid #2a2520;
+  z-index: 1;
+}
+
+/* Декоративная планка сверху — как переплёт журнала */
+.game-over-masthead::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 64px;
+  height: 13px;
+  background: #2a2520;
+  border-radius: 0 0 50% 50%;
+  box-shadow: 0 2px 0 rgba(243, 223, 191, 0.3);
+}
+
+/* ⚓️ Якоря по бокам планки */
+.game-over-masthead::after {
+  content: '⚓️';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  color: #f3dfbf;
+  z-index: 2;
+  animation: anchorSwing 4s ease-in-out infinite;
+}
+
+@keyframes anchorSwing {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  25%  { transform: translateX(-50%) rotate(6deg); }
+  75%  { transform: translateX(-50%) rotate(-6deg); }
+}
+
+.masthead-dateline {
+  font-family: var(--ff-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.35em;
+  color: #7a8b99;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.masthead-title {
+  font-family: var(--ff-gothic);
+  font-size: 1.85rem;
+  line-height: 1;
+  color: #2a2520;
+  margin: 0;
+  text-shadow:
+    2px 2px 0 rgba(42, 37, 32, 0.07),
+    -1px -1px 0 rgba(255, 248, 232, 0.4);
+  /* Rubber-hose squash & stretch при наведении */
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.masthead-title:hover {
+  transform: scaleX(1.04) scaleY(0.97) rotate(-0.8deg);
+}
+
+/* Орнамент с компасом */
+.masthead-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.masthead-ornament::before,
+.masthead-ornament::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(122, 139, 153, 0.35) 0px,
+      rgba(122, 139, 153, 0.35) 6px,
+      transparent 6px,
+      transparent 10px
+    );
+}
+
+.masthead-ornament-symbol {
+  font-size: 0.9rem;
+  color: #7a8b99;
+  line-height: 1;
+  animation: compassWobble 3.5s ease-in-out infinite;
+}
+
+@keyframes compassWobble {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20%  { transform: translateY(-3px) rotate(8deg); }
+  50%  { transform: translateY(0) rotate(-5deg); }
+  80%  { transform: translateY(1px) rotate(3deg); }
+}
+
+/* ══ Headline — Заголовок записи ══ */
+.game-over-headline {
+  position: relative;
+  padding: 18px 28px;
+  border-bottom: 2px dashed rgba(42, 37, 32, 0.15);
+  z-index: 1;
+}
+
+.headline-kicker {
+  font-family: var(--ff-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7a8b99;
+  margin-bottom: 6px;
+}
+
+.game-over-title {
+  font-family: var(--ff-serif);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.01em;
+  color: #2a2520;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Морские цвета для исходов */
+.game-over-title--victory {
+  color: #1a8a72;
+  text-shadow: 1px 1px 0 rgba(26, 138, 114, 0.12);
+}
+
+.game-over-title--defeat {
+  color: #b8443a;
+  text-shadow: 1px 1px 0 rgba(184, 68, 58, 0.10);
+}
+
+.game-over-title--neutral {
+  color: #2a2520;
+}
+
+.headline-sub {
+  font-family: var(--ff-serif-body);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: #7a8b99;
+  margin-top: 8px;
+  line-height: 1.45;
+}
+
+/* ══ Stars — Звёзды капитанского ранга ══ */
+.game-over-stars {
+  font-size: 1.5rem;
+  letter-spacing: 0.2em;
+  margin-bottom: 10px;
+}
+
+.game-over-stars span {
+  display: inline-block;
+  animation: starSplash 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  filter: drop-shadow(1px 1px 0 rgba(42, 37, 32, 0.15));
+}
+
+.game-over-stars span:nth-child(1) { animation-delay: 0.5s; }
+.game-over-stars span:nth-child(2) { animation-delay: 0.65s; }
+.game-over-stars span:nth-child(3) { animation-delay: 0.8s; }
+.game-over-stars span:nth-child(4) { animation-delay: 0.95s; }
+.game-over-stars span:nth-child(5) { animation-delay: 1.1s; }
+
+@keyframes starSplash {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-200deg);
+  }
+  50% {
+    transform: scale(1.4) rotate(15deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+/* ══ Illustration — Гравюра в журнале ══ */
+.game-over-illustration {
+  position: relative;
+  padding: 12px 0 16px;
+  z-index: 1;
+}
+
+.game-over-kraken-img {
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+  display: block;
+
+  /* Старая гравюра / мультяшный кадр */
+  filter:
+    grayscale(0.55)
+    contrast(1.35)
+    brightness(0.93)
+    sepia(0.3);
+  mix-blend-mode: multiply;
+
+  border: 3px solid #2a2520;
+  border-radius: 14px;
+  padding: 6px;
+  background:
+    /* Halftone внутри рамки */
+    radial-gradient(circle,
+      rgba(42, 37, 32, 0.04) 1px, transparent 1px),
+    rgba(255, 248, 232, 0.6);
+  background-size: 4px 4px, auto;
+
+  box-shadow:
+    /* Cartoon offset shadow */
+    5px 6px 0 rgba(42, 37, 32, 0.18),
+    inset 0 0 20px rgba(210, 170, 90, 0.08);
+
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Rubber-hose squash при наведении */
+.game-over-kraken-img:hover {
+  transform: scaleX(1.05) scaleY(0.97) rotate(-1.5deg);
+  filter:
+    grayscale(0.3)
+    contrast(1.3)
+    brightness(0.95)
+    sepia(0.2);
+}
+
+.illustration-caption {
+  font-family: var(--ff-serif-body);
+  font-style: italic;
+  font-size: 0.63rem;
+  color: #7a8b99;
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+
+/* ══ Rating Block — Рейтинг капитана ══ */
+.newspaper-rating-block {
+  position: relative;
+  margin: 0 28px;
+  padding: 20px 22px;
+  z-index: 1;
+
+  border-top: 3px solid #2a2520;
+  border-bottom: 3px solid #2a2520;
+  border-radius: 14px;
+
+  background:
+    /* Halftone */
+    radial-gradient(circle,
+      rgba(122, 139, 153, 0.05) 1px, transparent 1px),
+    /* Тёплый пергамент */
+    linear-gradient(175deg,
+      rgba(255, 248, 232, 0.6) 0%,
+      rgba(243, 223, 191, 0.3) 100%);
+  background-size: 4px 4px, auto;
+}
+
+/* Декоративные волны сверху */
+.newspaper-rating-block::before {
+  content: '〰️〰️〰️';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.4rem;
+  letter-spacing: 0.1em;
+  color: rgba(122, 139, 153, 0.3);
+}
+
+.rating-block-label {
+  font-family: var(--ff-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #7a8b99;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.newspaper-rating-block .rating-delta {
+  font-family: var(--ff-serif);
+  font-size: 2.8rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-align: center;
+  text-shadow:
+    3px 3px 0 rgba(42, 37, 32, 0.07),
+    -1px -1px 0 rgba(255, 255, 255, 0.2);
+  animation: ratingSlam 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both;
+}
+
+/* Цифра «шлёпается» как штамп */
+@keyframes ratingSlam {
+  0% {
+    transform: scale(2.5) rotate(-8deg);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(0.9) rotate(2deg);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.1) rotate(-1deg);
+  }
+  80% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.rating-delta--positive { color: #1a8a72; }
+.rating-delta--negative { color: #b8443a; }
+.rating-delta--zero     { color: #7a8b99; }
+
+.newspaper-rating-block .rating-transition {
+  font-family: var(--ff-mono);
+  font-size: 0.75rem;
+  color: #7a8b99;
+  text-align: center;
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+
+.newspaper-rating-block .rating-transition b {
+  color: #2a2520;
+  font-weight: 700;
+}
+/* ══ Categories — Классификация ══ */
+.game-over-categories {
+  position: relative;
+  padding: 14px 28px;
+  border-top: 2px dashed rgba(42, 37, 32, 0.12);
+  z-index: 1;
+}
+
+.categories-title {
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7a8b99;
+  margin-bottom: 10px;
+}
+
+.game-over-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ══ Voyage Stat Rows — Строки вахтенного журнала ══ */
+.voyage-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 6px;
+  border-bottom: 1.5px dotted rgba(122, 139, 153, 0.22);
+  border-radius: 6px;
+  transition:
+    background 0.2s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.voyage-stat-row:hover {
+  background: rgba(122, 139, 153, 0.06);
+  transform: translateX(2px);
+}
+
+.voyage-stat-row:last-child {
+  border-bottom: none;
+}
+
+.voyage-stat-label {
+  font-family: var(--ff-serif-body);
+  font-size: 1rem;
+  color: #7a8b99;
+}
+
+.voyage-stat-value {
+  font-family: var(--ff-serif);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2a2520;
+  font-variant-numeric: tabular-nums;
+}
+
+.voyage-stat-value--bold {
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+.voyage-stat-value--critical {
+  color: #b8443a;
+  font-weight: 900;
+}
+
+/* Цвета категорий — морская / мультяшная палитра */
+.cat-theory      { color: #2a7a9a; } /* Глубокая бирюза */
+.cat-good        { color: #1a8a72; } /* Морская зелень */
+.cat-inaccuracy  { color: #b09030; } /* Старое золото */
+.cat-mistake     { color: #c07530; } /* Ржавчина */
+.cat-blunder     { color: #b8443a; } /* Красный буй */
+.cat-gross       { color: #7a4a9a; } /* Чернила кальмара */
+.cat-catastrophe {
+  color: #6a1a1a;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(106, 26, 26, 0.12);
+}
+
+/* ══ Combo Section ══ */
+.game-over-combo {
+  position: relative;
+  padding: 4px 0;
+  z-index: 1;
+}
+
+/* ══ Voyage Section — Итоги плавания ══ */
+.game-over-voyage {
+  position: relative;
+  padding: 14px 28px;
+  border-top: 2px dashed rgba(42, 37, 32, 0.12);
+  z-index: 1;
+}
+
+.voyage-summary-title {
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7a8b99;
+  margin-bottom: 8px;
+}
+/* ══ Achievements — Медали капитана ══ */
+.game-over-achievements {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  z-index: 1;
+  position: relative;
+}
+
+.achievement-badge {
+  font-size: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 3px solid #2a2520;
+  border-radius: 50%;
+  cursor: default;
+
+  background:
+    /* Cartoon highlight — блик на медали */
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.55) 0%, transparent 55%),
+    /* Тёплый металл */
+    linear-gradient(145deg,
+      #f3dfbf 0%,
+      rgba(210, 170, 90, 0.25) 100%);
+
+  box-shadow:
+    3px 4px 0 rgba(42, 37, 32, 0.20),
+    inset 0 -3px 5px rgba(42, 37, 32, 0.08),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease;
+}
+
+/* Rubber-hose stretch при наведении */
+.achievement-badge:hover {
+  transform: scale(1.28) rotate(-10deg) scaleX(1.05);
+  box-shadow:
+    5px 6px 0 rgba(42, 37, 32, 0.24),
+    inset 0 -3px 5px rgba(42, 37, 32, 0.08);
+}
+
+/* Staggered cartoon pop-in */
+.achievement-badge:nth-child(1) { animation: badgeSplat 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.0s both; }
+.achievement-badge:nth-child(2) { animation: badgeSplat 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.12s both; }
+.achievement-badge:nth-child(3) { animation: badgeSplat 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.24s both; }
+.achievement-badge:nth-child(4) { animation: badgeSplat 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.36s both; }
+.achievement-badge:nth-child(5) { animation: badgeSplat 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.48s both; }
+.achievement-badge:nth-child(6) { animation: badgeSplat 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.60s both; }
+
+@keyframes badgeSplat {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(200deg);
+  }
+  45% {
+    transform: scale(1.35) rotate(-15deg);
+  }
+  65% {
+    transform: scale(0.88) rotate(5deg);
+  }
+  82% {
+    transform: scale(1.08) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* ══ Penalties — Штрафы ══ */
+.penalty-line {
+  font-family: var(--ff-mono);
+  font-size: 0.7rem;
+  color: #b8443a;
+  text-align: center;
+  padding: 8px 28px;
+  letter-spacing: 0.05em;
+  z-index: 1;
+  position: relative;
+}
+
+/* ══ Worst Move — Роковой ход ══ */
+.worst-move-row {
+  position: relative;
+  margin: 10px 28px;
+  padding: 13px 18px;
+  text-align: left;
+  z-index: 1;
+
+  background:
+    radial-gradient(circle,
+      rgba(184, 68, 58, 0.04) 1px, transparent 1px),
+    rgba(184, 68, 58, 0.05);
+  background-size: 4px 4px, auto;
+
+  border: 2.5px solid rgba(184, 68, 58, 0.30);
+  border-left: 5px solid #b8443a;
+  border-radius: 0 12px 12px 0;
+
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.worst-move-row:hover {
+  transform: translateX(4px) rotate(-0.3deg);
+}
+
+.worst-move-row .label {
+  font-family: var(--ff-mono);
+  font-size: 0.53rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #b8443a;
+}
+
+.worst-move-row .value {
+  font-family: var(--ff-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b8443a;
+  margin-top: 3px;
+}
+
+/* ══ Defeat Tip — Наставление капитану ══ */
+.defeat-tip {
+  position: relative;
+  font-family: var(--ff-serif-body);
+  font-style: italic;
+  font-size: 1rem;
+  color: #4d7358;
+  line-height: 1.5;
+  text-align: left;
+  padding: 14px 18px 14px 24px;
+  margin: 14px 28px;
+  z-index: 1;
+
+  border: 2px solid rgba(122, 139, 153, 0.18);
+  border-left: 5px solid #7a8b99;
+  border-radius: 0 12px 12px 0;
+
+  background:
+    radial-gradient(circle,
+      rgba(122, 139, 153, 0.03) 1px, transparent 1px),
+    rgba(122, 139, 153, 0.03);
+  background-size: 4px 4px, auto;
+}
+
+/* Открывающая кавычка — «перо капитана» */
+.defeat-tip::before {
+  content: '201C';
+  font-family: var(--ff-serif);
+  font-size: 2.4rem;
+  position: absolute;
+  top: -2px;
+  left: 7px;
+  color: rgba(122, 139, 153, 0.18);
+  line-height: 1;
+}
+/* ══ Buttons — Приказы капитана ══ */
+.game-over-buttons {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 20px 28px 28px;
+  border-top: 3px solid #2a2520;
+  z-index: 1;
+}
+
+.game-over-buttons button {
+  flex: 1;
+  font-family: var(--ff-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 14px 16px;
+  cursor: pointer;
+
+  border: 3px solid #2a2520;
+  border-radius: 12px;
+  background: #f3dfbf;
+  color: #2a2520;
+
+  box-shadow: 4px 5px 0 rgba(42, 37, 32, 0.20);
+
+  transition:
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+/* Hover — чернильная инверсия */
+.game-over-buttons button:hover {
+  background: #2a2520;
+  color: #f3dfbf;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 5px 7px 0 rgba(42, 37, 32, 0.25);
+}
+
+/* Active — кнопка «вдавлена» как клавиша пишущей машинки */
+.game-over-buttons button:active {
+  transform: translateY(3px) scale(0.98);
+  box-shadow: 1px 1px 0 rgba(42, 37, 32, 0.2);
+}
+
+.game-over-buttons .btn-primary-action {
+  background: #2a2520;
+  color: #f3dfbf;
+  font-weight: 700;
+  box-shadow: 4px 5px 0 rgba(42, 37, 32, 0.30);
+}
+
+.game-over-buttons .btn-primary-action:hover {
+  background: #7a8b99;
+  border-color: #7a8b99;
+  color: #f3dfbf;
+  box-shadow: 4px 5px 0 rgba(122, 139, 153, 0.25);
+}
+
+/* ══ Section Ornament — Морской разделитель ══ */
+.section-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 28px;
+  gap: 12px;
+  z-index: 1;
+  position: relative;
+}
+
+.section-ornament::before,
+.section-ornament::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(122, 139, 153, 0.28) 0px,
+      rgba(122, 139, 153, 0.28) 8px,
+      transparent 8px,
+      transparent 14px
+    );
+}
+
+.section-ornament-glyph {
+  font-size: 0.72rem;
+  color: #7a8b99;
+  opacity: 0.65;
+  animation: glyphRock 5s ease-in-out infinite;
+}
+
+/* Покачивание как на волне */
+@keyframes glyphRock {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  15%  { transform: rotate(6deg) translateY(-1px); }
+  30%  { transform: rotate(-4deg) translateY(1px); }
+  50%  { transform: rotate(0deg) translateY(0); }
+  65%  { transform: rotate(3deg) translateY(-1px); }
+  80%  { transform: rotate(-2deg); }
+}
+
+/* ══ Defeat Effects — Шторм ══ */
+.game-over-card.result-defeat .game-over-title {
+  animation: stormShake 3.5s ease-in-out infinite;
+}
+
+@keyframes stormShake {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  90%  { transform: rotate(-2deg) scale(1.01); }
+  92%  { transform: rotate(2deg); }
+  94%  { transform: rotate(-1.5deg); }
+  96%  { transform: rotate(1deg); }
+  98%  { transform: rotate(-0.3deg); }
+}
+
+.game-over-card.result-defeat {
+  animation:
+    logbookBounceIn 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    defeatStorm 5s ease-in-out 1.3s infinite;
+}
+
+@keyframes defeatStorm {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px #f3dfbf,
+      0 0 0 7px #2a2520,
+      8px 10px 0 rgba(42, 37, 32, 0.22),
+      0 24px 60px -12px rgba(42, 37, 32, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px #f3dfbf,
+      0 0 0 7px #b8443a,
+      8px 10px 0 rgba(184, 68, 58, 0.14),
+      0 24px 60px -12px rgba(184, 68, 58, 0.20),
+      0 0 35px rgba(184, 68, 58, 0.05);
+  }
+}
+
+/* ══ Victory Effects — Попутный ветер ══ */
+.result-victory .game-over-card,
+.game-over-card.result-victory {
+  animation:
+    logbookBounceIn 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    victoryBreeze 4s ease-in-out 1.3s infinite;
+}
+
+@keyframes victoryBreeze {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px #f3dfbf,
+      0 0 0 7px #2a2520,
+      8px 10px 0 rgba(42, 37, 32, 0.22),
+      0 24px 60px -12px rgba(42, 37, 32, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px #f3dfbf,
+      0 0 0 7px #1a8a72,
+      8px 10px 0 rgba(26, 138, 114, 0.12),
+      0 24px 60px -12px rgba(26, 138, 114, 0.18),
+      0 0 45px rgba(26, 138, 114, 0.05);
+  }
+}
+
+/* Victory — заголовок «дышит» от радости */
+.game-over-card.result-victory .game-over-title,
+.result-victory .game-over-title {
+  animation: captainJoy 2.2s ease-in-out infinite;
+}
+
+@keyframes captainJoy {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25%  { transform: scale(1.02) rotate(0.3deg); }
+  50%  { transform: scale(1.03) rotate(0deg); }
+  75%  { transform: scale(1.01) rotate(-0.3deg); }
+}

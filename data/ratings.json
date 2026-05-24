@@ -19,30 +19,37 @@
     "updatedAt": 1777044714232
   },
   "u_8oh9lkfimod48jyi": {
-    "rating": 2029,
-    "games": 72,
+    "rating": 1877,
+    "games": 69,
     "lastDeltas": [
-      22,
-      22,
-      21,
-      0,
-      -35,
-      -35,
-      21,
+      -14,
+      11,
       15,
-      -18,
-      13
+      -16,
+      1,
+      0,
+      -1,
+      5,
+      16,
+      23
     ],
-    "updatedAt": 1778577309766
+    "updatedAt": 1779609912663
   },
   "u_im5pt5vfmozk5waf": {
-    "rating": 1229,
-    "games": 3,
+    "rating": 1627,
+    "games": 30,
     "lastDeltas": [
-      -12,
-      19,
-      22
+      7,
+      10,
+      9,
+      7,
+      -2,
+      4,
+      12,
+      5,
+      0,
+      6
     ],
-    "updatedAt": 1778410301621
+    "updatedAt": 1779596761474
   }
 }

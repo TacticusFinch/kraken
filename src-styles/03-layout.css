@@ -1,0 +1,44 @@
+/* ═══════════════════════════════════════════
+   03 · LAYOUT — DIGITAL KRAKEN
+   
+   Каркас батискафа. Три отсека:
+   левый борт — правый борт — центральный
+   обзорный иллюминатор.
+   ═══════════════════════════════════════════ */
+
+.app {
+  display: grid;
+  grid-template-columns: var(--w-side) var(--w-column) var(--w-side);
+  grid-template-rows: auto 1fr;
+  gap: 0 var(--gap);
+  align-items: start;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.board-column {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.side-panel {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-self: start;
+}
+
+.analysis-panel {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-self: start;
+}
