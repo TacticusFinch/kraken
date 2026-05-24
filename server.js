@@ -902,6 +902,43 @@ app.post('/api/rating/:userId/reset', (req, res) => {
     res.json({ userId, rating, games: 0 });
 });
 
+
+// server.js — добавьте этот роут
+
+app.post('/api/lichess-import', async (req, res) => {
+    const { pgn } = req.body;
+
+    if (!pgn || typeof pgn !== 'string') {
+        return res.status(400).json({ error: 'PGN is required' });
+    }
+
+    try {
+        const response = await fetch('https://lichess.org/api/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: 'pgn=' + encodeURIComponent(pgn)
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Lichess import error:', response.status, text);
+            return res.status(502).json({ error: 'Lichess rejected import', status: response.status });
+        }
+
+        const data = await response.json();
+        // Lichess возвращает { id: "xxxxx", url: "https://lichess.org/xxxxx" }
+        res.json({ url: data.url || `https://lichess.org/${data.id}` });
+    } catch (err) {
+        console.error('Lichess import proxy error:', err);
+        res.status(502).json({ error: 'Failed to reach Lichess' });
+    }
+});
+
+
+
 // ============================================
 // API: статистика кэша
 // ============================================

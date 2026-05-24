@@ -953,6 +953,7 @@ function showUnifiedModal(mood) {
 function closeUnifiedModal() {
     DOM.modal.removeClass('show');
 }
+
 // ============================================
 // UI — обновление статуса и рейтинга
 // ============================================
@@ -1578,30 +1579,47 @@ appendMoveToNotation(result, 'opponent', false);
 function showLichessAnalysisButton(pgn) {
     if (!DOM.lichessBtn) return;
 
-    if (!lichessForm) {
-        lichessForm = document.createElement('form');
-        lichessForm.method = 'POST';
-        lichessForm.action = 'https://lichess.org/import';
-        lichessForm.target = '_blank';
-        lichessForm.style.display = 'none';
-
-        lichessPgnInput = document.createElement('input');
-        lichessPgnInput.type = 'hidden';
-        lichessPgnInput.name = 'pgn';
-
-        lichessForm.appendChild(lichessPgnInput);
-        document.body.appendChild(lichessForm);
-    }
-
     DOM.lichessBtn.href = '#';
-    DOM.lichessBtn.onclick = function (e) {
+    DOM.lichessBtn.onclick = async function(e) {
         e.preventDefault();
-        lichessPgnInput.value = pgn;
-        lichessForm.submit();
+
+        // Показываем что идёт загрузка
+        const btn = DOM.lichessBtn;
+        const originalText = btn.textContent;
+        btn.textContent = '⏳ Открываем Lichess...';
+        btn.style.pointerEvents = 'none';
+
+        try {
+            const resp = await fetch(API_BASE + '/api/lichess-import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pgn })
+            });
+
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+            const data = await resp.json();
+
+            if (data.url) {
+                // Открываем прямо страницу анализа партии на Lichess
+                window.open(data.url, '_blank');
+            } else {
+                throw new Error('No URL returned');
+            }
+        } catch (err) {
+            console.error('Lichess import failed:', err);
+            // Фоллбэк — открываем analysis board с PGN в URL
+            // (без полной нотации, но хотя бы не ломается)
+            window.open('https://lichess.org/analysis', '_blank');
+            updateStatus('⚠️ Не удалось импортировать в Lichess');
+        } finally {
+            btn.textContent = originalText;
+            btn.style.pointerEvents = '';
+        }
     };
+
     DOM.lichessBtn.classList.add('visible');
 }
-
 // ============================================
 // Переключатель темы
 // ============================================
