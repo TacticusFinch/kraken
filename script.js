@@ -1576,41 +1576,32 @@ appendMoveToNotation(result, 'opponent', false);
 // ============================================
 
 // script.js — замените showLichessAnalysisButton
+// script.js — замените всю функцию showLichessAnalysisButton
 function showLichessAnalysisButton(pgn) {
     if (!DOM.lichessBtn) return;
 
     DOM.lichessBtn.href = '#';
-    DOM.lichessBtn.onclick = async function(e) {
+    DOM.lichessBtn.onclick = function(e) {
         e.preventDefault();
-        try {
-            // Открываем окно ДО async-операции (важно для браузера!)
-            const newWindow = window.open('', '_blank');
-            
-            const resp = await fetch(API_BASE + '/api/lichess-redirect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pgn })
-            });
-            const data = await resp.json();
-            
-            if (newWindow) {
-                newWindow.location.href = data.url;
-            }
-        } catch(err) {
-            // Фолбэк: прямая форма
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'https://lichess.org/import';
-            form.target = '_blank';
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'pgn';
-            input.value = pgn;
-            form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-        }
+
+        // Создаём скрытую форму и сабмитим синхронно — без async
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://lichess.org/import';
+        form.target = '_blank';
+        form.style.display = 'none';
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'pgn';
+        input.value = pgn;
+
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+        
+        // Чистим за собой
+        setTimeout(() => document.body.removeChild(form), 1000);
     };
     DOM.lichessBtn.classList.add('visible');
 }
