@@ -1575,29 +1575,42 @@ appendMoveToNotation(result, 'opponent', false);
 // Lichess
 // ============================================
 
+// script.js — замените showLichessAnalysisButton
 function showLichessAnalysisButton(pgn) {
     if (!DOM.lichessBtn) return;
 
-    if (!lichessForm) {
-        lichessForm = document.createElement('form');
-        lichessForm.method = 'POST';
-        lichessForm.action = 'https://lichess.org/import';
-        lichessForm.target = '_blank';
-        lichessForm.style.display = 'none';
-
-        lichessPgnInput = document.createElement('input');
-        lichessPgnInput.type = 'hidden';
-        lichessPgnInput.name = 'pgn';
-
-        lichessForm.appendChild(lichessPgnInput);
-        document.body.appendChild(lichessForm);
-    }
-
     DOM.lichessBtn.href = '#';
-    DOM.lichessBtn.onclick = function (e) {
+    DOM.lichessBtn.onclick = async function(e) {
         e.preventDefault();
-        lichessPgnInput.value = pgn;
-        lichessForm.submit();
+        try {
+            // Открываем окно ДО async-операции (важно для браузера!)
+            const newWindow = window.open('', '_blank');
+            
+            const resp = await fetch(API_BASE + '/api/lichess-redirect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pgn })
+            });
+            const data = await resp.json();
+            
+            if (newWindow) {
+                newWindow.location.href = data.url;
+            }
+        } catch(err) {
+            // Фолбэк: прямая форма
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://lichess.org/import';
+            form.target = '_blank';
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'pgn';
+            input.value = pgn;
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
     };
     DOM.lichessBtn.classList.add('visible');
 }
