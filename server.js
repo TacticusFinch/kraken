@@ -31,18 +31,9 @@ const stockfishHeaders = (req, res, next) => {
     next();
 };
 
-app.post('/lichess-redirect', (req, res) => {
-    const pgn = (req.body.pgn || '').replace(/"/g, '&quot;');
-    res.send(`
-        <html><body>
-        <form id="f" method="POST" action="https://lichess.org/import">
-            <input type="hidden" name="pgn" value="${pgn}">
-        </form>
-        <script>document.getElementById('f').submit();</script>
-        </body></html>
-    `);
+app .all('/lichess-redirect', (req, res) => {
+ res.status(410).send('Deprecated: use direct POST to https://lichess.org/import from client');
 });
-
 
 app.get('/sf-worker2.js', stockfishHeaders, (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
