@@ -26,17 +26,36 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/sf-worker2.js', (req, res) => {
+const stockfishHeaders = (req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    next();
+};
+
+app.post('/lichess-redirect', (req, res) => {
+    const pgn = (req.body.pgn || '').replace(/"/g, '&quot;');
+    res.send(`
+        <html><body>
+        <form id="f" method="POST" action="https://lichess.org/import">
+            <input type="hidden" name="pgn" value="${pgn}">
+        </form>
+        <script>document.getElementById('f').submit();</script>
+        </body></html>
+    `);
+});
+
+
+app.get('/sf-worker2.js', stockfishHeaders, (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
     res.sendFile(path.join(__dirname, 'sf-worker2.js'));
 });
 
-app.get('/stockfish-18-lite-single.js', (req, res) => {
+app.get('/stockfish-18-lite-single.js', stockfishHeaders, (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
     res.sendFile(path.join(__dirname, 'stockfish-18-lite-single.js'));
 });
 
-app.get(/.*\.wasm$/, (req, res) => {
+app.get(/.*\.wasm$/, stockfishHeaders, (req, res) => {
     const fileName = path.basename(req.url);
     const requestedFile = path.join(__dirname, fileName);
     console.log('🔍WASM запрос:', req.url, '→ищем:', requestedFile);

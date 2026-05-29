@@ -1575,7 +1575,6 @@ appendMoveToNotation(result, 'opponent', false);
 // Lichess
 // ============================================
 
-// script.js — замените showLichessAnalysisButton
 function showLichessAnalysisButton(pgn) {
     if (!DOM.lichessBtn) return;
 
@@ -1583,23 +1582,24 @@ function showLichessAnalysisButton(pgn) {
     DOM.lichessBtn.onclick = function(e) {
         e.preventDefault();
 
+        // ↓ ИЗМЕНИТЬ action на свой сервер вместо lichess.org напрямую
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'https://lichess.org/import';
+        form.action = '/lichess-redirect';
         form.target = '_blank';
         form.style.display = 'none';
 
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'pgn';
-        input.value = pgn;  // ← просто pgn, без encodeURIComponent
+        input.value = pgn;
 
         form.appendChild(input);
         document.body.appendChild(form);
         form.submit();
         setTimeout(() => document.body.removeChild(form), 1000);
     };
-    DOM.lichessBtn.classList.add('visible');
+	DOM.lichessBtn.classList.add('visible');
 }
 
 // ============================================
