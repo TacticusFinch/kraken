@@ -967,20 +967,6 @@ app.get('/api/stats', (req, res) => {
     }
 })();
 
-
-// ============================================
-// API: Lichess redirect
-// ============================================
-app.post('/api/lichess-redirect', (req, res) => {
-    const { pgn } = req.body;
-    if (!pgn) return res.status(400).json({ error: 'No PGN' });
-    
-    res.json({ 
-        url: `https://lichess.org/import?pgn=${encodeURIComponent(pgn)}`
-    });
-});
-
-
 // ============================================
 // Запуск
 // ============================================

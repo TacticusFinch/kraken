@@ -1576,7 +1576,6 @@ appendMoveToNotation(result, 'opponent', false);
 // ============================================
 
 // script.js — замените showLichessAnalysisButton
-// script.js — замените всю функцию showLichessAnalysisButton
 function showLichessAnalysisButton(pgn) {
     if (!DOM.lichessBtn) return;
 
@@ -1584,7 +1583,6 @@ function showLichessAnalysisButton(pgn) {
     DOM.lichessBtn.onclick = function(e) {
         e.preventDefault();
 
-        // Создаём скрытую форму и сабмитим синхронно — без async
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = 'https://lichess.org/import';
@@ -1594,13 +1592,11 @@ function showLichessAnalysisButton(pgn) {
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'pgn';
-        input.value = pgn;
+        input.value = pgn;  // ← просто pgn, без encodeURIComponent
 
         form.appendChild(input);
         document.body.appendChild(form);
         form.submit();
-        
-        // Чистим за собой
         setTimeout(() => document.body.removeChild(form), 1000);
     };
     DOM.lichessBtn.classList.add('visible');
