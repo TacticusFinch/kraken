@@ -21,24 +21,26 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.sendStatus(200);
-    
-    // same-origin-allow-popups разрешает открытие внешних окон
-    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     next();
 });
 
+// COOP/COEP — только для файлов Stockfish
 app.get('/sf-worker2.js', (req, res) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     res.setHeader('Content-Type', 'application/javascript');
     res.sendFile(path.join(__dirname, 'sf-worker2.js'));
 });
 
 app.get('/stockfish-18-lite-single.js', (req, res) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     res.setHeader('Content-Type', 'application/javascript');
     res.sendFile(path.join(__dirname, 'stockfish-18-lite-single.js'));
 });
-
 app.get(/.*\.wasm$/, (req, res) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');    
     const fileName = path.basename(req.url);
     const requestedFile = path.join(__dirname, fileName);
     console.log('🔍WASM запрос:', req.url, '→ищем:', requestedFile);
