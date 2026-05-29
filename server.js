@@ -31,9 +31,29 @@ const stockfishHeaders = (req, res, next) => {
     next();
 };
 
-app .all('/lichess-redirect', (req, res) => {
- res.status(410).send('Deprecated: use direct POST to https://lichess.org/import from client');
+app .post('/lichess-redirect', (req, res) => {
+ const pgn = String(req.body.pgn || '');
+
+ res.type('html').send(`<!doctype html>
+<html>
+ <body>
+ <script>
+ const pgn = ${JSON.stringify(pgn)};
+ const f = document.createElement('form');
+ f.method = 'POST';
+ f.action = 'https://lichess.org/import';
+ const i = document.createElement('input');
+ i.type = 'hidden';
+ i.name = 'pgn';
+ i.value = pgn;
+ f.appendChild(i);
+ document.body.appendChild(f);
+ f.submit();
+ </script>
+ </body>
+</html>`);
 });
+
 
 app.get('/sf-worker2.js', stockfishHeaders, (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');

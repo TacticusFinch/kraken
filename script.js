@@ -1576,30 +1576,30 @@ appendMoveToNotation(result, 'opponent', false);
 // ============================================
 
 function showLichessAnalysisButton(pgn) {
-    if (!DOM.lichessBtn) return;
+ if (!DOM.lichessBtn) return;
 
-    DOM.lichessBtn.href = '#';
-    DOM.lichessBtn.onclick = function(e) {
-        e.preventDefault();
+ const API_BASE = 'http://localhost:3000'; // замени на свой backend URL DOM.lichessBtn.href = '#';
+ DOM.lichessBtn.onclick = function (e) {
+ e.preventDefault();
 
-        // ↓ ИЗМЕНИТЬ action на свой сервер вместо lichess.org напрямую
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/lichess-redirect';
-        form.target = '_blank';
-        form.style.display = 'none';
+ const form = document.createElement('form');
+ form.method = 'POST';
+ form.action = `${API_BASE}/lichess-redirect`;
+ form.target = '_blank';
+ form.style.display = 'none';
 
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'pgn';
-        input.value = pgn;
+ const input = document.createElement('input');
+ input.type = 'hidden';
+ input.name = 'pgn';
+ input.value = pgn || '';
 
-        form.appendChild(input);
-        document.body.appendChild(form);
-        form.submit();
-        setTimeout(() => document.body.removeChild(form), 1000);
-    };
-	DOM.lichessBtn.classList.add('visible');
+ form.appendChild(input);
+ document.body.appendChild(form);
+ form.submit();
+ form.remove();
+ };
+
+ DOM.lichessBtn.classList.add('visible');
 }
 
 // ============================================
