@@ -2369,178 +2369,287 @@ button:hover {
   display: none; /* ← вернуть display:none */
 }
 
+/* ── Спрайт ── */
 .kraken-sprite {
   position: absolute;
   background-image: url('animation/kraken_sprite.png');
-  background-size: 800% 100%;
+  background-size: 700% 100%;
   background-position: 0% 0;
   background-repeat: no-repeat;
   opacity: 0;
   pointer-events: none;
   z-index: 11;
   transform-origin: center bottom;
+  filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
 }
 
-/*─── Активное состояние ─── */
+/* ── Обычная атака ── */
 .kraken-attack.active .kraken-sprite {
   animation:
-    krakenFrames 2.4s steps(7) forwards,
-    krakenRise 2.4s ease-out forwards,
-    krakenFade 2.4s ease-out forwards;
+    krakenFrames   2.4s steps(6)  forwards,
+    krakenEmerge   2.4s ease-out  forwards,
+    krakenFade     2.4s ease-out  forwards;
 }
 
+/* ── Blunder-атака ── */
 .kraken-attack.active .kraken-sprite.blunder {
   animation:
-    krakenFrames 2s steps(7) forwards,
-    krakenRiseBlunder 2s cubic-bezier(0.2, 0.8, 0.3, 1) forwards,
-    krakenFadeBlunder 2s ease-out forwards;
+    krakenFrames        2s steps(6)                          forwards,
+    krakenEmergeBlunder 2s cubic-bezier(0.15, 0.9, 0.25, 1) forwards,
+    krakenFadeBlunder   2s ease-out                          forwards;
 }
 
-/* Смена кадров спрайта */
 @keyframes krakenFrames {
-  from { background-position: 0% 0; }
-  to   { background-position: 700% 0; }
+  from { background-position:   0% 0; }
+  to   { background-position: 100% 0; }
 }
 
-/* Всплытие — обычная ошибка */
-@keyframes krakenRise {
-  0%   { transform: translateX(-50%) translateY(20px) scale(0.3); }
-  15%  { transform: translateX(-50%) translateY(-10px) scale(1.05) rotate(3deg); }
-  30%  { transform: translateX(-50%) translateY(-15px) scale(1) rotate(-1deg); }
-  60%  { transform: translateX(-50%) translateY(-12px) scale(1) rotate(0deg); }
-  100% { transform: translateX(-50%) translateY(-8px) scale(0.95); }
+@keyframes krakenEmerge {
+  0%   { transform: translateX(-50%) translateY(30px) scale(0.1); }
+  12%  { transform: translateX(-50%) translateY(-4px) scale(0.75) rotate(2.5deg); }
+  24%  { transform: translateX(-50%) translateY(-10px) scale(0.68) rotate(-1.5deg); }
+  45%  { transform: translateX(-50%) translateY(-8px) scale(0.71) rotate(0.5deg); }
+  70%  { transform: translateX(-50%) translateY(-6px) scale(0.7); }
+  100% { transform: translateX(-50%) translateY(-4px) scale(0.64); }
 }
 
-/* Всплытие — blunder */
-@keyframes krakenRiseBlunder {
-  0%   { transform: translateX(-50%) translateY(30px) scale(0.2) rotate(-5deg); }
-  10%  { transform: translateX(-50%) translateY(-20px) scale(1.2) rotate(5deg); }
-  25%  { transform: translateX(-50%) translateY(-25px) scale(1.1) rotate(-3deg); }
-  50%  { transform: translateX(-50%) translateY(-18px) scale(1.05) rotate(2deg); }
-  100% { transform: translateX(-50%) translateY(-10px) scale(1); }
+@keyframes krakenEmergeBlunder {
+  0%   { transform: translateX(-50%) translateY(40px) scale(0.07) rotate(-8deg); }
+  8%   { transform: translateX(-50%) translateY(-22px) scale(0.9) rotate(6deg); }
+  18%  { transform: translateX(-50%) translateY(-16px) scale(0.78) rotate(-4deg); }
+  35%  { transform: translateX(-50%) translateY(-12px) scale(0.74) rotate(2.5deg); }
+  60%  { transform: translateX(-50%) translateY(-9px) scale(0.71); }
+  100% { transform: translateX(-50%) translateY(-6px) scale(0.7); }
 }
 
-/* Прозрачность */
 @keyframes krakenFade {
-  0%   { opacity: 0; }
-  10%  { opacity: 1; }
-  70%  { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  4% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  20% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 12px rgba(140, 60, 255, 0.4));
+  }
+  40% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 6px rgba(140, 60, 255, 0.2));
+  }
+  55% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 10px rgba(160, 80, 255, 0.35));
+  }
+  70% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  85% {
+    opacity: 0.5;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  100% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
 }
 
 @keyframes krakenFadeBlunder {
-  0%   { opacity: 0; }
-  5%   { opacity: 1; }
-  80%  { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  3% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  10% {
+    opacity: 1;
+    filter: sepia(1) saturate(4) hue-rotate(240deg) brightness(0.9)
+            drop-shadow(0 0 18px rgba(200, 50, 255, 0.6));
+  }
+  30% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85)
+            drop-shadow(0 0 10px rgba(180, 60, 255, 0.35));
+  }
+  50% {
+    opacity: 1;
+    filter: sepia(1) saturate(3.5) hue-rotate(240deg) brightness(0.9)
+            drop-shadow(0 0 14px rgba(200, 80, 255, 0.5));
+  }
+  70% {
+    opacity: 1;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  85% {
+    opacity: 0.4;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
+  100% {
+    opacity: 0;
+    filter: sepia(1) saturate(3) hue-rotate(240deg) brightness(0.85);
+  }
 }
 
-/* Свечение blunder */
-.kraken-sprite.blunder {
-  filter:
-    drop-shadow(0 0 12px rgba(255, 100, 100, 0.5))drop-shadow(0 0 25px rgba(255, 50, 50, 0.3))
-    contrast(1.2);
-}
+.kraken-sprite.blunder { }
 
 /* Тень под кракеном */
 .kraken-sprite::after {
   content: '';
   position: absolute;
-  bottom: -5%;
-  left: 20%;
-  width: 60%;
-  height: 15%;
-  background: rgba(0, 0, 0, 0.5);
+  bottom: -6%;
+  left: 22%;
+  width: 56%;
+  height: 12%;
+  background: radial-gradient(
+    ellipse,
+    rgba(60, 10, 80, 0.45) 0%,
+    rgba(40, 5, 60, 0.2) 60%,
+    transparent 100%
+  );
   filter: blur(8px);
   border-radius: 50%;
   z-index: -1;
 }
 
-/* ─── Волновые линии ─── */
-.kraken-wave-line {
-  position: absolute;
-  top: var(--y);
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent0%,
-    rgba(255, 255, 255, 0.15) 20%,
-    rgba(255, 255, 255, 0.35) 50%,
-    rgba(255, 255, 255, 0.15) 80%,
-    transparent 100%
-  );
-  opacity: 0;
-  transform: scaleX(0);
-  transform-origin: center;
+/* ══════════════════════════════════════════
+   ТРЯСКА КОРАБЛЯ — агрессивная, по severity
+   ══════════════════════════════════════════ */
+
+/* Базовая (mistake) — ощутимый удар */
+.ship-bob.under-attack {
+  animation: shipStruck 3.2s ease-out forwards !important;
+  transform-origin: center bottom !important;
 }
 
-.kraken-attack.active .kraken-wave-line {
-  animation: krakenWaveLine var(--dur) ease-out var(--delay) forwards;
+/* Blunder — сильнее */
+.ship-bob.under-attack[data-severity="blunder"] {
+  animation: shipStruckHard 3.5s ease-out forwards !important;
 }
 
-@keyframes krakenWaveLine {
-  0%   { transform: scaleX(0); opacity: 0; }
-  30%  { transform: scaleX(1); opacity: 0.7; }
-  100% { transform: scaleX(1.3); opacity: 0; }
+/* Gross blunder — жёсткий */
+.ship-bob.under-attack[data-severity="grossBlunder"] {
+  animation: shipStruckBrutal 4s ease-out forwards !important;
 }
 
-/* ─── Кляксы ─── */
-.kraken-blot {
-  position: absolute;
-  background: radial-gradient(
-    circle,
-    rgba(20, 20, 40, 0.8) 0%,
-    rgba(10, 10, 30, 0.4) 70%,
-    transparent 100%
-  );
-  border-radius: 50%;
-  opacity: 0;
+/* Catastrophe — почти опрокидывание */
+.ship-bob.under-attack[data-severity="catastrophe"] {
+  animation: shipStruckCatastrophe 5s ease-out forwards !important;
 }
 
-.kraken-attack.active .kraken-blot {
-  animation: krakenBlotFly var(--dur) ease-out var(--delay) forwards;
+/* ── Mistake — базовый удар ── */
+@keyframes shipStruck {
+  0%   { transform: translateY(0) rotate(0deg); }
+  3%   { transform: translateY(-14px) rotate(4deg); }
+  8%   { transform: translateY(10px) rotate(-22deg); }
+  16%  { transform: translateY(-6px) rotate(18deg); }
+  26%  { transform: translateY(5px) rotate(-12deg); }
+  38%  { transform: translateY(-3px) rotate(8deg); }
+  52%  { transform: translateY(2px) rotate(-5deg); }
+  68%  { transform: translateY(-1px) rotate(3deg); }
+  82%  { transform: translateY(0) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
-@keyframes krakenBlotFly {
-  0% {
-    transform: translate(0, 0) rotate(0deg) scale(0);opacity: 0;
-  }
-  15% {
-    opacity: 0.9;
-    transform: translate(calc(var(--tx) * 0.2), calc(var(--ty) * 0.2))
-               rotate(calc(var(--rot) * 0.3)) scale(1.3);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.4);
-  }
+/* ── Blunder — сильный удар ── */
+@keyframes shipStruckHard {
+  0%   { transform: translateY(0) rotate(0deg); }
+  2%   { transform: translateY(-18px) rotate(5deg); }
+  6%   { transform: translateY(14px) rotate(-32deg); }
+  12%  { transform: translateY(-10px) rotate(28deg); }
+  20%  { transform: translateY(8px) rotate(-22deg); }
+  30%  { transform: translateY(-6px) rotate(16deg); }
+  42%  { transform: translateY(5px) rotate(-11deg); }
+  55%  { transform: translateY(-3px) rotate(7deg); }
+  68%  { transform: translateY(2px) rotate(-4deg); }
+  80%  { transform: translateY(-1px) rotate(2deg); }
+  92%  { transform: translateY(0) rotate(-0.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
-/* ─── Подпись ─── */
-.kraken-caption {
-  position: absolute;
-  bottom: 8%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.5rem;
-  color: rgba(200, 200, 200, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  opacity: 0;
-  white-space: nowrap;
+/* ── Gross Blunder — жёсткий удар ── */
+@keyframes shipStruckBrutal {
+  0%   { transform: translateY(0) rotate(0deg); }
+  1.5% { transform: translateY(-24px) rotate(7deg); }
+  5%   { transform: translateY(18px) rotate(-42deg); }
+  10%  { transform: translateY(-14px) rotate(36deg); }
+  17%  { transform: translateY(12px) rotate(-30deg); }
+  25%  { transform: translateY(-9px) rotate(22deg); }
+  35%  { transform: translateY(7px) rotate(-16deg); }
+  46%  { transform: translateY(-5px) rotate(11deg); }
+  58%  { transform: translateY(3px) rotate(-7deg); }
+  70%  { transform: translateY(-2px) rotate(4deg); }
+  82%  { transform: translateY(1px) rotate(-2deg); }
+  92%  { transform: translateY(0) rotate(0.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
-.kraken-attack.active .kraken-caption {
-  animation: captionFadeIn 2.4s ease forwards0.5s;
+/* ── Catastrophe — почти опрокидывание ── */
+@keyframes shipStruckCatastrophe {
+  0%   { transform: translateY(0) rotate(0deg); }
+  1%   { transform: translateY(-30px) rotate(10deg); }
+  4%   { transform: translateY(24px) rotate(-55deg); }
+  8%   { transform: translateY(-18px) rotate(48deg); }
+  13%  { transform: translateY(16px) rotate(-42deg); }
+  19%  { transform: translateY(-12px) rotate(34deg); }
+  26%  { transform: translateY(10px) rotate(-26deg); }
+  34%  { transform: translateY(-8px) rotate(20deg); }
+  43%  { transform: translateY(6px) rotate(-14deg); }
+  53%  { transform: translateY(-4px) rotate(10deg); }
+  64%  { transform: translateY(3px) rotate(-6deg); }
+  75%  { transform: translateY(-2px) rotate(3deg); }
+  86%  { transform: translateY(1px) rotate(-1.5deg); }
+  94%  { transform: translateY(0) rotate(0.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
-@keyframes captionFadeIn {
-  0%   { opacity: 0; transform: translateX(-50%) translateY(5px); }
-  30%  { opacity: 0.6; transform: translateX(-50%) translateY(0); }
-  75%  { opacity: 0.6; }
-  100% { opacity: 0; }
+/* ══════════════════════════════
+   ТРЯСКА СЦЕНЫ — тоже по severity
+   ══════════════════════════════ */
+
+.sea-scene.under-attack {
+  animation: sceneImpact 1.2s cubic-bezier(0.2, 0.6, 0.3, 1);
+}
+
+@keyframes sceneImpact {
+  0%   { transform: translate(0, 0); }
+  3%   { transform: translate(-14px, 10px) rotate(-1.2deg); }
+  8%   { transform: translate(16px, -8px) rotate(1deg); }
+  15%  { transform: translate(-12px, 6px) rotate(-0.8deg); }
+  24%  { transform: translate(10px, -5px) rotate(0.6deg); }
+  35%  { transform: translate(-7px, 4px) rotate(-0.4deg); }
+  48%  { transform: translate(5px, -3px) rotate(0.2deg); }
+  62%  { transform: translate(-3px, 2px) rotate(-0.1deg); }
+  78%  { transform: translate(1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ── Корабль — жёсткая раскачка ── */
+.ship-bob.under-attack {
+  animation: shipStruck 3.2s ease-out forwards !important;
+}
+
+@keyframes shipStruck {
+  0%   { transform: translateY(0) rotate(0deg); }
+  3%   { transform: translateY(-12px) rotate(3deg); }
+  8%   { transform: translateY(8px) rotate(32deg); }
+  16%  { transform: translateY(-5px) rotate(-25deg); }
+  24%  { transform: translateY(7px) rotate(28deg); }
+  33%  { transform: translateY(-4px) rotate(-18deg); }
+  42%  { transform: translateY(5px) rotate(15deg); }
+  52%  { transform: translateY(-3px) rotate(-10deg); }
+  62%  { transform: translateY(3px) rotate(7deg); }
+  72%  { transform: translateY(-1px) rotate(-4deg); }
+  82%  { transform: translateY(1px) rotate(2deg); }
+  92%  { transform: translateY(0) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
 /*═══════════════════════════════════
@@ -4042,18 +4151,24 @@ letter-spacing: 0.02em;
 }
 
 /* ═══ Панель порта ═══ */
+/* ═══ Панель порта (Стиль старинной морской карты) ═══ */
 .voyage-port-panel {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     max-height: 55%;
-    background: linear-gradient(180deg, rgba(20, 18, 15, 0.92), rgba(30, 25, 18, 0.98));
-    border-top: 2px solid #c8a96e;
-    border-radius: 12px 12px 0 0;
+    /* Текстура выцветшего архивного пергамента */
+    background: linear-gradient(180deg, #f3e8cb 0%, #e9dbb6 100%);
+    /* Двойная рамка, характерная для старых навигационных карт */
+    border-top: 3px double #5c432d;
+    border-radius: 14px 14px 0 0;
     z-index: 10;
     overflow-y: auto;
     transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(10px);padding: 12px;
+    /* Плавное разворачивание свитка карты */
+    transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+    padding: 14px;
+    /* Тяжелая тень, отделяющая панель от нижних слоев */
+    box-shadow: 0 -8px 28px rgba(43, 33, 24, 0.35);
 }
 
 .voyage-port-panel.visible {
@@ -4064,75 +4179,125 @@ letter-spacing: 0.02em;
     transform: translateY(100%);
 }
 
+/* Кнопка закрытия в виде винтажного штампа */
 .vpp-close-btn {
     position: absolute;
-    top: 8px; right: 10px;
-    background: none;
-    border: none;
-    color: #c8a96e;
-    font-size: 1.2rem;
+    top: 10px; right: 12px;
+    background: transparent;
+    border: 1px solid #7c5d3f;
+    /* Глубокий кофейно-черный цвет для идеальной читаемости */
+    color: #312115;
+    font-size: 1.1rem;
+    font-weight: bold;
     cursor: pointer;
     z-index: 11;
-    padding: 4px 8px;
-    border-radius: 4px;transition: background 0.2s;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
 }
 
 .vpp-close-btn:hover {
-    background: rgba(200, 169, 110, 0.2);
+    /* Инверсия при наведении: кнопка заливается чернилами */
+    background: #312115;
+    color: #f3e8cb;
+    border-color: #312115;
+    box-shadow: 0 2px 6px rgba(43, 33, 24, 0.2);
 }
 
 .vpp-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(200, 169, 110, 0.3);
-    margin-bottom: 10px;
+    gap: 10px;
+    padding-bottom: 10px;
+    /* Разделитель в виде пунктирного навигационного маршрута */
+    border-bottom: 1px dashed rgba(49, 33, 21, 0.35);
+    margin-bottom: 12px;
 }
 
 .vpp-icon {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    /* Цвет жжёной умбры */
+    color: #5c432d;
+    filter: drop-shadow(0.5px 0.5px 0px rgba(255, 255, 255, 0.6));
 }
 
+/* Название порта (Каллиграфический стиль судового журнала) */
 .vpp-name {
-    font-size: 1.1rem;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 1.15rem;
     font-weight: 700;
-    color: #e8d5a3;
+    /* Максимально контрастный чернильный цвет */
+    color: #120b05;
+    letter-spacing: 0.02em;
+    /* Легкая светлая подложка для эффекта объема на бумаге */
+    text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.7);
 }
 
+/* Отметка звезд порта (Имитация портового сургучного оттиска) */
 .vpp-stars {
     margin-left: auto;
-    color: #ffd700;
-    font-size: 0.85rem;
-    font-weight: 600;
+    color: #9e1b1b; /* Благородный сургучно-красный */
+    font-size: 0.9rem;
+    font-weight: 700;
+    background: rgba(158, 27, 27, 0.06);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(158, 27, 27, 0.25);
 }
 
 .vpp-body {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
-/* ═══ Карточка дебюта ═══ */
+/* Кастомизация полосы прокрутки (скроллбара) под стиль карты */
+.voyage-port-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.voyage-port-panel::-webkit-scrollbar-track {
+    background: rgba(49, 33, 21, 0.05);
+    border-radius: 3px;
+}
+
+.voyage-port-panel::-webkit-scrollbar-thumb {
+    background: rgba(92, 67, 45, 0.4);
+    border-radius: 3px;
+}
+
+.voyage-port-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(92, 67, 45, 0.7);
+}
+
+
+/* ═══ Карточка дебюта (Старая морская карта / Пергамент) ═══ */
 .voyage-opening-card {
     position: relative;
-    background: rgba(40, 35, 28, 0.9);
-    border: 1px solid rgba(200, 169, 110, 0.3);
+    /* Светлый оттенок старой бумаги для идеального контраста черного текста */
+    background: #faf4e3;
+    /* Четкая коричневая рамка вместо блеклого золота */
+    border: 1px solid #bda88a;
     border-radius: 8px;
     padding: 10px 12px;
     cursor: pointer;
+    box-shadow: 0 2px 6px rgba(53, 40, 28, 0.1);
     transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
+/* Эффект выдвижения карты при наведении */
 .voyage-opening-card.unlocked:hover {
-    border-color: #c8a96e;
+    border-color: #61462d;
     transform: translateX(4px);
-    box-shadow: 0 2px 12px rgba(200, 169, 110, 0.2);
+    background: #ffffff;
+    box-shadow: -4px 4px 12px rgba(53, 40, 28, 0.2);
 }
 
 .voyage-opening-card.locked {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
+    background: #e3d9bf;
+    border-color: rgba(97, 70, 45, 0.2);
 }
 
 .voc-top {
@@ -4142,43 +4307,55 @@ letter-spacing: 0.02em;
     margin-bottom: 4px;
 }
 
+/* Код ECO (как архивный шифр на полях) */
 .voc-eco {
     font-size: 0.7rem;
-    color: #888;
+    color: #4a3b2c;
     font-family: monospace;
-    background: rgba(255,255,255,0.08);
+    font-weight: bold;
+    background: rgba(97, 70, 45, 0.1);
     padding: 1px 5px;
     border-radius: 3px;
 }
 
+/* Цвет (белые/черные фигуры) */
 .voc-color {
     font-size: 0.75rem;
+    color: #2b1f15;
+    font-weight: 500;
 }
 
+/* Метки сложности (Стилизованы под старинные портовые штампы и сургуч) */
 .voc-diff {
     margin-left: auto;
     font-size: 0.65rem;
     padding: 1px 6px;
-    border-radius: 8px;
-    font-weight: 600;
+    border-radius: 4px; /* Более строгие углы для эффекта штампа */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.diff-easy{ background: #2d5a2d; color: #7ddf7d; }
-.diff-medium  { background: #5a5a2d; color: #dfdf7d; }
-.diff-hard    { background: #5a3d2d; color: #dfad7d; }
-.diff-expert{ background: #5a2d2d; color: #df7d7d; }
-.diff-master  { background: #4a2d5a; color: #c87ddf; }
+/* Цвета штампов: приглушенные, глубокие, как старые чернила */
+.diff-easy   { background: #d0e1d0; color: #1e3f1e; border: 1px solid #a3c4a3; }
+.diff-medium { background: #e6e6c5; color: #42421a; border: 1px solid #c7c793; }
+.diff-hard   { background: #ecdcc3; color: #52371c; border: 1px solid #d1b694; }
+.diff-expert { background: #f2cbd0; color: #5c1e24; border: 1px solid #df9da5; }
+.diff-master { background: #ebd1f5; color: #431c52; border: 1px solid #d4a3e8; }
 
+/* Главное название (Чернильное каллиграфическое начертание) */
 .voc-name {
-    font-size: 0.9rem;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: #e8d5a3;
+    color: #120b05; /* Максимально темный коричнево-черный цвет */
     margin-bottom: 2px;
 }
 
+/* Описание дебюта */
 .voc-desc {
     font-size: 0.7rem;
-    color: #999;
+    color: #4f4235; /* Смягченный кофейный цвет для читаемости текста мелкого кегля */
     line-height: 1.3;
     margin-bottom: 6px;
 }
@@ -4189,39 +4366,48 @@ letter-spacing: 0.02em;
     justify-content: space-between;
 }
 
+/* Звезды (Имитация отметок портового цензора) */
 .voc-stars {
     font-size: 0.75rem;
     letter-spacing: 1px;
+    color: #b52a2a; /* Сургучно-красный цвет звезд вместо блеклого золота */
 }
 
+/* Попытки */
 .voc-attempts {
     font-size: 0.65rem;
-    color: #777;
+    color: #6e5e4f;
+    font-weight: 500;
 }
 
+/* Заблокированная карточка (Покрывается плотной архивной калькой) */
 .voc-lock {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(43, 35, 26, 0.45); /* Полупрозрачная сепия */
     border-radius: 8px;
-    color: #c8a96e;
+    color: #ffffff;
     font-size: 0.8rem;
-    font-weight: 600;
-    backdrop-filter: blur(2px);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    backdrop-filter: blur(1.5px);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 /* ═══ Подсветка карты при смене дебюта ═══ */
+/* Стилизовано под "вспышку молнии" над морем или старой картой */
 #opening-map-container.flash-hint {
     animation: mapFlash 1.5s ease;
 }
 
 @keyframes mapFlash {
-    0%   { filter: brightness(1); }
-    30%  { filter: brightness(1.3); }
-    100% { filter: brightness(1); }
+    0%   { filter: brightness(1) sepia(0); }
+    25%  { filter: brightness(1.25) sepia(0.15) contrast(1.1); box-shadow: inset 0 0 40px rgba(97, 70, 45, 0.3); }
+    100% { filter: brightness(1) sepia(0); }
 }
 
 /* theme-toggle.css — стили переключателя */
@@ -4355,4 +4541,395 @@ html.theme-transitioning *::after {
                 color 0.4s ease,
                 border-color 0.4s ease,
                 box-shadow 0.4s ease !important;
+}
+
+/* ═══════════════════════════════════════════
+12 · VOYAGE MAP
+
+Приключенческая карта с портами,
+маршрутами, кораблём, панелью выбора.
+═══════════════════════════════════════════ */
+
+/* ── Слои маршрутов и портов ── */
+.voyage-routes-layer,
+.voyage-ports-layer {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+pointer-events: none;
+opacity: 0;
+transition: opacity var(--duration-normal) ease;
+}
+
+.voyage-routes-layer { z-index: 2; }
+.voyage-ports-layer { z-index: 3; }
+
+.voyage-routes-layer.active,
+.voyage-ports-layer.active {
+opacity: 1;
+}
+
+.voyage-ports-layer.active {
+pointer-events: auto;
+}
+
+/* ── Порт ── */
+.voyage-port {
+position: absolute;
+transform: translate(-50%, -50%);
+text-align: center;
+cursor: pointer;
+transition:
+transform var(--duration-fast) ease,
+filter 0.3s ease;
+z-index: 4;
+}
+
+.voyage-port:hover {
+transform: translate(-50%, -50%) scale(1.15);
+}
+
+.voyage-port.locked:hover {
+  transform: translate(-50%, -50%) scale(1.03);
+}
+
+.voyage-port.current .vport-icon {
+  animation: portPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes portPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3)); }
+  50% { transform: scale(1.2); filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.7)); }
+}
+
+.vport-icon {
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.vport-name {
+  font-family: var(--ff-serif-body);
+  font-size: 0.65rem;
+  color: var(--c-parchment-dark);
+  font-weight: 700;
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(0, 0, 0, 0.5);
+  margin-top: 2px;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+.vport-stars {
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+.vport-lock {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  font-size: 0.7rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+/* ── Корабль на карте ── */
+.voyage-ship {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 1.8rem;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    left 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity var(--duration-normal) ease;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.7));
+}
+
+.voyage-ship img {
+  width: 50px;
+  height: auto;
+  display: block;
+}
+
+.voyage-ship.active {
+  opacity: 1;
+  animation: shipBob 3s ease-in-out infinite;
+}
+
+/* ── Счётчик звёзд ── */
+.voyage-stars-counter {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, rgba(42, 32, 18, 0.92), rgba(28, 22, 12, 0.95));
+  color: #ffd700;
+  padding: 6px 14px;
+  border: 1px solid var(--c-parchment-dark);
+  font-family: var(--ff-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  z-index: 6;
+  opacity: 0;
+  transition: opacity var(--duration-normal) ease;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(200, 169, 110, 0.15);
+}
+
+.voyage-stars-counter.active {
+  opacity: 1;
+}
+
+/* ── Панель порта ── */
+.voyage-port-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 55%;
+  background: linear-gradient(
+    180deg,
+    rgba(36, 28, 18, 0.94) 0%,
+    rgba(24, 18, 10, 0.98) 100%
+  );
+  border-top: 2px solid var(--c-parchment-dark);
+  z-index: 10;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 16px 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.voyage-port-panel.visible {
+  transform: translateY(0);
+}
+
+.voyage-port-panel.hidden {
+  transform: translateY(100%);
+}
+
+.voyage-port-panel.closing {
+  transform: translateY(100%);
+  opacity: 0;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.8, 1),
+    opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* Кнопка закрытия */
+.vpp-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--c-parchment-dark);
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 11;
+  padding: 4px 8px;
+  transition:
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+}
+
+.vpp-close-btn:hover {
+  color: var(--c-parchment);
+  border-color: var(--c-parchment-dark);
+}
+
+/* Заголовок панели */
+.vpp-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(200, 169, 110, 0.25);
+  margin-bottom: 12px;
+}
+
+.vpp-icon {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.vpp-name {
+  font-family: var(--ff-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--c-parchment);
+  letter-spacing: 0.02em;
+}
+
+.vpp-stars {
+  margin-left: auto;
+  color: #ffd700;
+  font-size: 0.85rem;
+  font-weight: 600;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.vpp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Карточка дебюта ── */
+.voyage-opening-card {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(50, 40, 28, 0.85),
+    rgba(38, 30, 20, 0.9)
+  );
+  border: 1px solid rgba(200, 169, 110, 0.25);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast),
+    transform var(--duration-fast),
+    box-shadow var(--duration-fast);
+}
+
+.voyage-opening-card.unlocked:hover {
+  border-color: var(--c-parchment-dark);
+  transform: translateX(4px);
+  box-shadow:
+    0 2px 16px rgba(200, 169, 110, 0.15),
+    inset 0 0 0 1px rgba(200, 169, 110, 0.1);
+}
+
+.voyage-opening-card.selected {
+  border-color: #ffd700;
+  background: linear-gradient(
+    135deg,
+    rgba(60, 50, 30, 0.95),
+    rgba(45, 35, 20, 0.95)
+  );
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+}
+
+.voyage-opening-card.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Верхняя строка карточки */
+.voc-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.voc-eco {
+  font-size: 0.65rem;
+  color: var(--c-parchment-dark);
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border: 1px solid rgba(200, 169, 110, 0.2);
+}
+
+.voc-color {
+  font-size: 0.75rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.voc-diff {
+  margin-left: auto;
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid;
+}
+
+/* Уровни сложности */
+.diff-easy   { background: rgba(45, 90, 45, 0.3);  color: #7ddf7d; border-color: rgba(125, 223, 125, 0.4); }
+.diff-medium { background: rgba(90, 90, 45, 0.3);  color: #dfdf7d; border-color: rgba(223, 223, 125, 0.4); }
+.diff-hard   { background: rgba(90, 61, 45, 0.3);  color: #dfad7d; border-color: rgba(223, 173, 125, 0.4); }
+.diff-expert { background: rgba(90, 45, 45, 0.3);  color: #df7d7d; border-color: rgba(223, 125, 125, 0.4); }
+.diff-master { background: rgba(74, 45, 90, 0.3);  color: #c87ddf; border-color: rgba(200, 125, 223, 0.4); }
+
+.voc-name {
+  font-family: var(--ff-serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--c-parchment);
+  margin-bottom: 2px;
+}
+
+.voc-desc {
+  font-family: var(--ff-serif-body);
+  font-size: 0.7rem;
+  color: var(--c-parchment-dark);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+
+.voc-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voc-stars {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.voc-attempts {
+  font-size: 0.6rem;
+  color: rgba(200, 169, 110, 0.5);
+  font-family: var(--ff-serif-body);
+}
+
+.voc-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(10, 8, 5, 0.75);
+  color: var(--c-parchment-dark);
+  font-family: var(--ff-serif-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  backdrop-filter: blur(2px);
+}
+
+.voc-lock::before {
+  content: '🔒';
+  font-size: 1.2rem;
+}
+
+/* ── Анимация появления карточек ── */
+.voyage-port-panel.visible .voyage-opening-card {
+  animation: cardSlideIn 0.3s ease backwards;
+}
+
+.voyage-port-panel.visible .voyage-opening-card:nth-child(1) { animation-delay: 0.05s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(2) { animation-delay: 0.1s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(3) { animation-delay: 0.15s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(4) { animation-delay: 0.2s; }
+.voyage-port-panel.visible .voyage-opening-card:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
