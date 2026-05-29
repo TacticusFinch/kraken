@@ -1578,13 +1578,13 @@ appendMoveToNotation(result, 'opponent', false);
 function showLichessAnalysisButton(pgn) {
  if (!DOM.lichessBtn) return;
 
- const API_BASE = 'http://localhost:3000'; // замени на свой backend URL DOM.lichessBtn.href = '#';
+ const API_BASE = 'https://kraken-qslu.onrender.com'; // замени на свой backend URL DOM.lichessBtn.href = '#';
  DOM.lichessBtn.onclick = function (e) {
  e.preventDefault();
 
  const form = document.createElement('form');
  form.method = 'POST';
- form.action = `${API_BASE}/lichess-redirect`;
+ form.action = `https://kraken-qslu.onrender.com`;
  form.target = '_blank';
  form.style.display = 'none';
 

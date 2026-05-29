@@ -31,29 +31,34 @@ const stockfishHeaders = (req, res, next) => {
     next();
 };
 
-app .post('/lichess-redirect', (req, res) => {
- const pgn = String(req.body.pgn || '');
+app .post('/lichess-redirect', async (req, res) => {
+ try {
+ const pgn = String(req.body.pgn || '').trim();
+ if (!pgn) return res.status(400).send('PGN is empty');
 
- res.type('html').send(`<!doctype html>
-<html>
- <body>
- <script>
- const pgn = ${JSON.stringify(pgn)};
- const f = document.createElement('form');
- f.method = 'POST';
- f.action = 'https://lichess.org/import';
- const i = document.createElement('input');
- i.type = 'hidden';
- i.name = 'pgn';
- i.value = pgn;
- f.appendChild(i);
- document.body.appendChild(f);
- f.submit();
- </script>
- </body>
-</html>`);
+ const body = new URLSearchParams({ pgn }).toString();
+
+ const r = await axios.post('https://lichess.org/import', body, {
+ headers: {
+ 'Content-Type': 'application/x-www-form-urlencoded',
+ 'User-Agent': 'KrakenChessTrainer/3.3'
+ },
+ maxRedirects:0,
+ validateStatus: s => s >=200 && s <400,
+ timeout:10000 });
+
+ // Lichess обычно отвечает редиректом на страницу партии/анализа const loc = r.headers.location;
+ if (loc) {
+ const url = loc.startsWith('http') ? loc : `https://lichess.org${loc}`;
+ return res.redirect(302, url);
+ }
+
+ // fallback: если вдруг вернулся html return res.send(r.data);
+ } catch (e) {
+ console.error('lichess-redirect error:', e.response?.status, e.message);
+ return res.status(502).send('Failed to import PGN to Lichess');
+ }
 });
-
 
 app.get('/sf-worker2.js', stockfishHeaders, (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
