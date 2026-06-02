@@ -22,6 +22,7 @@
 
     <!-- Компоненты -->
     <link rel="stylesheet" href="position-editor.css">
+    <link rel="stylesheet" href="treasure.css">
 
     <!-- Предотвращение FOUC (мигания) -->
     <script>
@@ -463,7 +464,7 @@
   "></div>
 
   <!-- Подпись -->
-  <div class="kraken-caption">— from the depths —</div>
+  <div class="kraken-caption">— Выпускайте Кракена! —</div>
 
 </div>
 
@@ -491,7 +492,12 @@
                     <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 170, 0, 0.85)" />
                 </marker>
             </defs>
-        </svg><!-- КАРТА ДЕБЮТОВ — поверх доски -->
+        </svg>
+
+	<!-- ═══ TREASURE HUNT: подсказка ═══ -->
+        <div id="treasure-hint" class="treasure-hint"></div>
+
+	<!-- КАРТА ДЕБЮТОВ — поверх доски -->
         <div id="opening-map-container" class="opening-map-container">
             <img src="animation/map.png" alt="Карта дебютов" class="opening-map-img" id="opening-map-img">
             <div class="map-overlay-gradient"></div>
@@ -521,6 +527,19 @@
         <div class="combo-bar-bg">
             <div id="combo-fill" style="width: 0%"></div>
         </div></div>
+
+ <!-- ═══ ПАНЕЛЬ СОКРОВИЩ ═══ -->
+ <div id="treasure-panel" class="treasure-panel hidden">
+        <span class="treasure-panel-icon">🗺️</span>
+        <span class="treasure-panel-label">Сокровища:</span>
+        <span id="treasure-counter" class="treasure-counter-value">0</span>
+        <span class="treasure-panel-separator">•</span>
+        <span class="treasure-panel-pts-icon">⚜️</span>
+        <span id="treasure-points" class="treasure-points-value">0</span>
+        <span id="treasure-streak" class="treasure-streak"></span>
+    </div>
+
+
 
     <!-- Нотация -->
     <div class="notation-box">
@@ -557,11 +576,15 @@
 <div id="achievement-container"></div>
 <div id="voyage-overlay"></div>
 
+<!-- ═══ TREASURE HUNT: оверлей найденного сокровища ═══ -->
+<div id="treasure-overlay" class="treasure-overlay"></div>
+
 
 <script src="sounds.js"></script>
 <script src="voyage.js"></script>
 <script src="map.js"></script>
 <script src="position-editor.js"></script>
+<script src="treasure.js"></script>
 <script src="script.js"></script>
 
 
@@ -635,6 +658,13 @@
           <span class="voyage-stat-value voyage-stat-value--bold" id="go-combo-value">0ходов</span>
         </div>
       </div>
+
+
+     <!-- ═══ СОКРОВИЩА (скрыт если нет находок) ═══ -->
+      <section class="game-over-treasure hidden" id="go-treasure-section">
+        <!-- Заполняется из JS -->
+      </section>
+
 
       <!-- ═══ ДАННЫЕ ПЛАВАНИЯ (скрыты если нет VoyageEngine) ═══ -->
       <section class="game-over-voyage hidden" id="go-voyage-section">

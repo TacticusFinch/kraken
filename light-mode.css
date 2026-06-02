@@ -4933,3 +4933,285 @@ transform: translate(-50%, -50%) scale(1.15);
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* === Treasure Hunt === */
+
+.treasure-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  color: #ffd700;
+}
+
+.treasure-panel.hidden {
+  display: none;
+}
+
+.treasure-panel-icon {
+  font-size: 18px;
+}
+
+.treasure-panel-pts::before {
+  content: '⚜️ ';
+}
+
+.treasure-streak {
+  display: none;
+  color: #ff6b35;
+  font-weight: 700;
+}
+
+.treasure-streak.visible {
+  display: inline;
+}
+
+/* Подсказка */
+.treasure-hint {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #ffd700;
+  border-radius: 20px;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.treasure-hint-visible {
+  opacity: 1;
+}
+
+@keyframes treasure-shimmer {
+  0%, 100% { text-shadow: 0 0 4px rgba(255, 215, 0, 0.3); }
+  50% { text-shadow: 0 0 12px rgba(255, 215, 0, 0.8); }
+}
+
+.treasure-shimmer {
+  animation: treasure-shimmer 1s ease-in-out 2;
+}
+
+.treasure-missed {
+  color: #ff8a65;
+}
+
+.treasure-missed b {
+  color: #fff;
+}
+
+@keyframes treasure-missed-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.treasure-missed-anim {
+  animation: treasure-missed-pulse 0.8s ease 2;
+}
+
+/* Оверлей найденного сокровища */
+.treasure-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.treasure-overlay-visible {
+  opacity: 1;
+}
+
+/* Карточка найденного сокровища */
+@keyframes treasure-appear {
+  0% {
+    transform: scale(0.3) rotate(-10deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.treasure-found-card {
+  background: linear-gradient(135deg, #0d1b2a, #1b2838);
+  border: 2px solid #ffd700;
+  border-radius: 16px;
+  padding: 24px 32px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
+  animation: treasure-appear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-width: 240px;
+  max-width: 340px;
+}
+
+/* Тиры сокровищ */
+.treasure-tier-3 {
+  border-color: #e040fb;
+  box-shadow: 0 0 40px rgba(224, 64, 251, 0.5);
+  background: linear-gradient(135deg, #1a0a2e, #2d1b4e);
+}
+
+.treasure-tier-2 {
+  border-color: #ffd700;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
+}
+
+.treasure-tier-1 {
+  border-color: #b0bec5;
+  box-shadow: 0 0 30px rgba(176, 190, 197, 0.3);
+}
+
+.treasure-tier-0 {
+  border-color: #ff7043;
+  box-shadow: 0 0 25px rgba(255, 112, 67, 0.3);
+}
+
+.treasure-icon-large {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.treasure-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.treasure-name {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.treasure-move {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: #fff;
+  margin: 8px 0;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.treasure-details {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 8px;
+}
+
+.treasure-details span {
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.treasure-streak-badge {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ff6b35;
+  animation: treasure-shimmer 1s ease-in-out infinite;
+}
+
+/* Секция в модалке результатов */
+.treasure-missed-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.treasure-missed-item {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 3px 0;
+}
+
+.treasure-missed-item b {
+  color: #ffd700;
+}
+
+/* Тёмная тема — корректировки */
+[data-theme="light"] .treasure-found-card {
+  background: linear-gradient(135deg, #f5f0e8, #e8e0d0);
+  color: #1a1a2e;
+  border-color: #c8a000;
+}
+
+[data-theme="light"] .treasure-title {
+  color: #8b6914;
+}
+
+[data-theme="light"] .treasure-move {
+  color: #1a1a2e;
+  text-shadow: none;
+}
+
+[data-theme="light"] .treasure-hint {
+  background: rgba(255, 255, 255, 0.95);
+  color: #8b6914;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .treasure-panel {
+  background: linear-gradient(135deg, #f5f0e8, #ebe3d3);
+  border-color: rgba(200, 160, 0, 0.4);
+  color: #8b6914;
+}
+
+/* Адаптив */
+@media (max-width: 600px) {
+  .treasure-found-card {
+    padding: 16px 20px;
+    min-width: 200px;
+    max-width: 280px;
+  }
+
+  .treasure-icon-large {
+    font-size: 36px;
+  }
+
+  .treasure-move {
+    font-size: 22px;
+  }
+
+  .treasure-details {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .treasure-hint {
+    font-size: 12px;
+    bottom: 48px;
+  }
+}
+

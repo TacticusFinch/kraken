@@ -5,7 +5,8 @@
 // --- Константы ---
 const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://kraken-qslu.onrender.com';
 const EVAL_DEPTH = 15;
-const NUM_ENGINES = 2;
+const EVAL_DEPTH_FAST = 10;
+const NUM_ENGINES = 3;
 const EVAL_TIMEOUT_MS = 6000;
 const MAX_MOVES_OUT_OF_BOOK = 2;
 const MAX_MOVES_OUT_OF_BOOK_FEN = 10;
@@ -35,6 +36,35 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchMoved = false;
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+// --- Warm-up сервера и предзагрузка ---
+function warmUpServer() {
+    fetch(API_BASE + '/health', { method: 'GET' }).catch(() => {});
+}
+
+const openingBookCache = new Map();
+const BOOK_CACHE_TTL = 30 * 60 * 1000;
+
+async function preloadOpeningBook() {
+    const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    try {
+        const resp = await fetch(API_BASE + '/get-move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fen: startFen, rating: userRating })
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            openingBookCache.set(startFen, { data, timestamp: Date.now() });
+        }
+    } catch (e) { /* тихо */ }
+}
+
+function prefetchEvaluation(fen) {
+    getEngineEvaluation(fen, EVAL_DEPTH).catch(() => {});
+}
+
+
 
 // --- Пользовательские данные ---
 let userRating = 1200;
@@ -333,10 +363,11 @@ function getEngineBestMoveAdaptive(fen, depth) {
     });
 }
 
-async function computeCPL(fenBefore, fenAfter, playerTurnBefore) {
+async function computeCPL(fenBefore, fenAfter, playerTurnBefore, depth) {
+    const evalDepth = depth || EVAL_DEPTH;
     const [evalBefore, evalAfter] = await Promise.all([
-        getEngineEvaluation(fenBefore),
-        getEngineEvaluation(fenAfter)
+        getEngineEvaluation(fenBefore, evalDepth),
+        getEngineEvaluation(fenAfter, evalDepth)
     ]);
 
     const sign = playerTurnBefore === 'w' ? 1 : -1;
@@ -391,7 +422,7 @@ async function playMoveOnServer(fen, san, rating) {
             body: JSON.stringify({ fen, san, rating })
         });
         if (!response.ok) {
-            console.warn('/play-move: HTTP ${response.status}');
+            console.warn(`/play-move: HTTP ${response.status}`);
             return { check: { inBook: false, rank: 99 }, reply: null, gameOver: false };
         }
         return await response.json();
@@ -470,7 +501,7 @@ async function processPlayerMove(move, fenBefore) {
             setTimeout(() => applyOpponentReply(serverData.reply), 120);
         } else {
             movesOutOfBook++;
-            updateStatus('📚 Вне книги (${movesOutOfBook}/${MAX_MOVES_OUT_OF_BOOK})');
+            updateStatus(`📚 Вне книги (${movesOutOfBook}/${MAX_MOVES_OUT_OF_BOOK})`);
             const maxOutOfBook = isCustomFENSession ? MAX_MOVES_OUT_OF_BOOK_FEN : MAX_MOVES_OUT_OF_BOOK;
             if (movesOutOfBook >= maxOutOfBook) {
                 updateStatus('📚 Тренировка завершена');
@@ -493,54 +524,71 @@ async function analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, pl
     sessionStats.pendingAnalysis++;
 
     try {
-        const { cpl, isMateBlunder, evalBefore, evalAfter } = await computeCPL(fenBefore, fenAfter, playerTurnBefore);
+        // ===== Фаза 1: быстрое окрашивание =====
+        const fastCPL = await computeCPL(fenBefore, fenAfter, playerTurnBefore, EVAL_DEPTH_FAST);
+
+        // Предварительная категория без данных книги — окрашиваем сразу
+        const prelimCategory = categorizeMove(fastCPL.cpl, false);
+        updateMoveCategory(move.san, prelimCategory, true);
+
+        // ===== Параллельно ждём сервер =====
         const serverData = await serverDataPromise;
         const bookInfo = serverData.check || { inBook: false, rank: 99, moveCount: 0 };
         const popularityRank = bookInfo.rank || 99;
 
-        if (isMateBlunder) sessionStats.mateBlunder = true;
+        // Уточняем категорию с данными книги
+        const isBookMoveFast = bookInfo.inBook && bookInfo.rank <= 3 &&
+            (bookInfo.moveCount || 0) >= 50 && fastCPL.cpl <= 50;
+        const fastCategory = categorizeMove(fastCPL.cpl, isBookMoveFast);
 
-        const isBookMove = bookInfo.inBook && bookInfo.rank <= 3 &&
-            (bookInfo.moveCount || 0) >= 50 && cpl <= 50;
-        const category = categorizeMove(cpl, isBookMove);
+        if (fastCategory !== prelimCategory) {
+            updateMoveCategory(move.san, fastCategory, true);
+        }
 
-        if (category === 'theory' || category === 'good') {
+        // Комбо и фидбек — сразу по быстрой оценке
+        if (fastCPL.isMateBlunder) sessionStats.mateBlunder = true;
+
+        if (fastCategory === 'theory' || fastCategory === 'good') {
             sessionStats.combo++;
             if (sessionStats.combo > sessionStats.maxCombo) {
                 sessionStats.maxCombo = sessionStats.combo;
             }
-        } else if (isComboBreaker(category)) {
+        } else if (isComboBreaker(fastCategory)) {
             if (sessionStats.combo >= 2) {
                 sessionStats.comboHistory.push(sessionStats.combo);
             }
             sessionStats.combo = 0;
         }
 
-        showComboFeedback(sessionStats.combo, category, cpl);
+        showComboFeedback(sessionStats.combo, fastCategory, fastCPL.cpl);
 
-        if (cpl > 200 && blunderHistory[fenBefore]) sessionStats.repeatedBlunder = true;
-        if (cpl > 200) {
+        if (fastCPL.cpl > 200 && blunderHistory[fenBefore]) sessionStats.repeatedBlunder = true;
+        if (fastCPL.cpl > 200) {
             blunderHistory[fenBefore] = true;
             localStorage.setItem('blunderHistory', JSON.stringify(blunderHistory));
         }
-        if (cpl >= 700 && move.piece === 'q') sessionStats.hangsQueen = true;
+        if (fastCPL.cpl >= 700 && move.piece === 'q') sessionStats.hangsQueen = true;
 
-        sessionStats.moves.push({
-            cpl: Math.round(cpl), moveNumber, popularityRank,
-            fen: fenBefore, san: move.san, isBookMove, isUserMove: true,
+        // Записываем в статистику с быстрыми данными
+        const moveRecord = {
+            cpl: Math.round(fastCPL.cpl), moveNumber, popularityRank,
+            fen: fenBefore, san: move.san, isBookMove: isBookMoveFast, isUserMove: true,
             combo: sessionStats.combo,
-            evalBefore: Math.round(evalBefore),
-            evalAfter: Math.round(evalAfter)
-        });
-        sessionStats.categories[category]++;
+            evalBefore: Math.round(fastCPL.evalBefore),
+            evalAfter: Math.round(fastCPL.evalAfter)
+        };
+        sessionStats.moves.push(moveRecord);
+        sessionStats.categories[fastCategory]++;
 
+        // Voyage — сразу
         if (typeof VoyageEngine !== 'undefined' && !VoyageEngine.state.isGameOver) {
             const oppPop = VoyageEngine.getOpponentLastPopularity();
             const popularityPercent = bookInfo.moveCount
                 ? ((bookInfo.moveCount || 0) / Math.max(1, bookInfo.totalGames || 1)) * 100 : 50;
 
             VoyageEngine.processPlayerMove({
-                cpl, category, isBookMove, popularityRank, popularityPercent,
+                cpl: fastCPL.cpl, category: fastCategory, isBookMove: isBookMoveFast,
+                popularityRank, popularityPercent,
                 san: move.san, moveNumber, opponentLastPopularity: oppPop
             });
 
@@ -550,7 +598,47 @@ async function analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, pl
         }
 
         updateLiveStats();
-        updateMoveCategory(move.san, category, true);
+
+        // ===== Фаза 2: точный дорасчёт (фоновый, не блокирует UI) =====
+        computeCPL(fenBefore, fenAfter, playerTurnBefore, EVAL_DEPTH)
+            .then(fullCPL => {
+                const isBookMoveFull = bookInfo.inBook && bookInfo.rank <= 3 &&
+                    (bookInfo.moveCount || 0) >= 50 && fullCPL.cpl <= 50;
+                const fullCategory = categorizeMove(fullCPL.cpl, isBookMoveFull);
+
+                // Обновить окрашивание если категория изменилась
+                if (fullCategory !== fastCategory) {
+                    // Убираем старую категорию, ставим новую
+                    const historyEl = DOM.moveHistory[0];
+                    if (historyEl) {
+                        const allMoves = historyEl.querySelectorAll('.move-san.' + fastCategory);
+                        for (let i = allMoves.length - 1; i >= 0; i--) {
+                            if (allMoves[i].dataset.san === move.san) {
+                                allMoves[i].classList.remove(fastCategory);
+                                allMoves[i].classList.add(fullCategory);
+                                break;
+                            }
+                        }
+                    }
+
+                    // Корректируем счётчики категорий
+                    sessionStats.categories[fastCategory]--;
+                    sessionStats.categories[fullCategory]++;
+                    updateLiveStats();
+                }
+
+                // Обновить запись
+                moveRecord.cpl = Math.round(fullCPL.cpl);
+                moveRecord.evalBefore = Math.round(fullCPL.evalBefore);
+                moveRecord.evalAfter = Math.round(fullCPL.evalAfter);
+                moveRecord.isBookMove = isBookMoveFull;
+
+                if (fullCPL.isMateBlunder) sessionStats.mateBlunder = true;
+            })
+            .catch(err => {
+                console.warn('Фаза 2 анализа не удалась:', err);
+            });
+
     } catch (err) {
         console.error('Ошибка фонового анализа:', err);
     } finally {
@@ -578,6 +666,9 @@ function applyOpponentReply(san) {
     board.position(game.fen(), true);
     playMoveSound(result);
     appendMoveToNotation(result, 'opponent', false);
+
+    // Предвычисляем оценку пока игрок думает
+    prefetchEvaluation(game.fen());
 
     if (typeof VoyageEngine !== 'undefined') {
         VoyageEngine.setOpponentMovePopularity(50);
@@ -665,7 +756,8 @@ function tryExecutePremove() {
 function scheduleEndSession() {
     if (!sessionActive) return;
     if (sessionStats.pendingAnalysis === 0) {
-        endSession();
+        // Даём фазе 2 немного времени на дорасчёт
+        setTimeout(() => endSession(), 800);
     } else {
         pendingEndSession = true;
         updateStatus('⏳ Анализ партии...');
@@ -971,46 +1063,6 @@ if (DOM.gamesDisplay && DOM.gamesDisplay.length) DOM.gamesDisplay[0].textContent
 // ============================================
 
 let liveStatsScheduled = false;
-
-function updateLiveStats() {
-if (liveStatsScheduled) return;
-liveStatsScheduled = true;
-
-requestAnimationFrame(() => {
-liveStatsScheduled = false;
-
-const moves = sessionStats.moves;
-let moveCount = 0, goodMoves = 0, blunders = 0;
-
-for (let i = 0; i < moves.length; i++) {
-const m = moves[i];
-if (!m.isUserMove) continue;
-moveCount++;
-if (m.cpl <= 50) goodMoves++;
-if (m.cpl > 200) blunders++;
-}
-
-DOM.statMoves[0].textContent = moveCount;
-DOM.statBestCombo[0].textContent = sessionStats.maxCombo;
-
-if (moveCount > 0) {
-const accuracy = Math.round((goodMoves / moveCount) * 100);
-const accEl = DOM.statAccuracy[0];
-accEl.textContent = accuracy + '%';
-accEl.style.color = accuracy >= 90 ? '#39ff7a'
-: accuracy >= 70 ? '#ffde59'
-: accuracy >= 50 ? '#ffab40' : '#ff5c5c';
-} else {
-DOM.statAccuracy[0].textContent = '—';
-DOM.statAccuracy[0].style.color = '#fff';
-}
-
-const blunderEl = DOM.statBlunders[0];
-blunderEl.textContent = blunders;
-blunderEl.style.color = blunders > 0 ? '#ff2e93' : '#fff';
-});
-}
-
 function resetLiveStats() {
     if (!DOM.statMoves || !DOM.statMoves.length) return;
     DOM.statMoves[0].textContent = '0';
@@ -1207,17 +1259,25 @@ historyEl.scrollTop = historyEl.scrollHeight;
 }
 
 function updateMoveCategory(san, category, isUserMove) {
-if (!isUserMove) return;
-const historyEl = DOM.moveHistory[0];
-if (!historyEl) return;
+    if (!isUserMove) return;
+    const historyEl = DOM.moveHistory[0];
+    if (!historyEl) return;
 
-const pendingElements = historyEl.querySelectorAll('.move-san.pending[data-san="' + san + '"]');
-if (pendingElements.length > 0) {
-const el = pendingElements[pendingElements.length - 1];
-el.classList.remove('pending');
-el.classList.add(category);
+    const allPending = historyEl.querySelectorAll('.move-san.pending');
+    let target = null;
+    for (let i = allPending.length - 1; i >= 0; i--) {
+        if (allPending[i].dataset.san === san) {
+            target = allPending[i];
+            break;
+        }
+    }
+
+    if (target) {
+        target.classList.remove('pending');
+        target.classList.add(category);
+    }
 }
-}
+
 
 // ============================================
 // Подсветка клеток — нативный DOM
@@ -1293,20 +1353,20 @@ return;
 }
 
 if (waitingForOpponent) {
-if (piece && isOwnPiece(piece)) {
-clearClickHighlight();
-selectedSquare = square;
-highlightClickSquare(square);
-lastTapAction = 'select';
-return;
-}
-premoveData = { source: from, target: square };
-highlightPremove(from, square);
-updateStatus('⏩ Предход: ' + source + '→' + target);
-clearClickHighlight();
-selectedSquare = null;
-lastTapAction = 'premove';
-return;
+    if (piece && isOwnPiece(piece)) {
+        clearClickHighlight();
+        selectedSquare = square;
+        highlightClickSquare(square);
+        lastTapAction = 'select';
+        return;
+    }
+    premoveData = { source: from, target: square };
+    highlightPremove(from, square);
+    updateStatus('⏩ Предход: ' + from + '→' + square);  // ✅ from и square
+    clearClickHighlight();
+    selectedSquare = null;
+    lastTapAction = 'premove';
+    return;
 }
 
 if (piece && isOwnPiece(piece)) {
@@ -1376,25 +1436,52 @@ return true;
 // ============================================
 
 async function makeFirstWhiteMove() {
+    updateStatus('⏳ Загружаю дебют...');
+    const fen = game.fen();
+
     try {
-        const response = await fetch(`${API_BASE}/get-move`, {   // ← исправлено
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fen: game.fen(), rating: userRating })
-        });
-        const data = await response.json();
+        // Проверяем предзагруженный кэш
+        const cached = openingBookCache.get(fen);
+        let data;
+
+        if (cached && Date.now() - cached.timestamp < BOOK_CACHE_TTL) {
+            data = cached.data;
+        } else {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            const response = await fetch(`${API_BASE}/get-move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fen, rating: userRating }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            data = await response.json();
+
+            // Сохраняем в кэш
+            openingBookCache.set(fen, { data, timestamp: Date.now() });
+        }
 
         if (data.move) {
             const result = game.move(data.move);
             if (result) {
                 board.position(game.fen(), true);
                 appendMoveToNotation(result, 'opponent', false);
+                playMoveSound(result);
+
+                // Предвычисляем оценку позиции пока игрок думает
+                prefetchEvaluation(game.fen());
             }
         }
     } catch (e) {
-        console.error('makeFirstWhiteMove error:', e);
+        console.warn('Книга недоступна, используем движок:', e.message);
+        await makeEngineReply();
+        return;
     }
+
     waitingForOpponent = false;
+    updateStatus('♟ Ваш ход!');
 }
 
 function startGame() {
@@ -1578,13 +1665,12 @@ appendMoveToNotation(result, 'opponent', false);
 function showLichessAnalysisButton(pgn) {
  if (!DOM.lichessBtn) return;
 
- const API_BASE = 'https://kraken-qslu.onrender.com'; // замени на свой backend URL DOM.lichessBtn.href = '#';
  DOM.lichessBtn.onclick = function (e) {
  e.preventDefault();
 
  const form = document.createElement('form');
  form.method = 'POST';
- form.action = `https://kraken-qslu.onrender.com`;
+ form.action = 'https://lichess.org/api/import';
  form.target = '_blank';
  form.style.display = 'none';
 
@@ -1601,7 +1687,6 @@ function showLichessAnalysisButton(pgn) {
 
  DOM.lichessBtn.classList.add('visible');
 }
-
 // ============================================
 // Переключатель темы
 // ============================================
@@ -1878,7 +1963,9 @@ $(document).ready(async function () {
     }, { once: true });
 
     initEngines();
+    warmUpServer();
     await loadRatingFromServer();
+    preloadOpeningBook();
 
     setTimeout(testSkillLevelSupport, 3000);
 
