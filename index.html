@@ -1,50 +1,50 @@
 <!DOCTYPE html>
 <html lang="ru" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#f5f0e8">
-    <title>Kraken Chess Trainer</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f5f0e8">
+<title>Kraken Chess Trainer</title>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Special+Elite&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Special+Elite&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 
-    <!-- Chessboard.js -->
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+<!-- Chessboard.js -->
+<link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
 
-    <!-- Светлая тема (по умолчанию) -->
-    <link rel="stylesheet" href="light-mode.css">
+<!-- Светлая тема (по умолчанию) -->
+<link rel="stylesheet" href="light-mode.css">
 
-    <!-- Тёмная тема (отключена по умолчанию) -->
-    <link rel="stylesheet" href="styles.css" id="dark-theme-link" disabled>
+<!-- Тёмная тема (отключена по умолчанию) -->
+<link rel="stylesheet" href="styles.css" id="dark-theme-link" disabled>
 
-    <!-- Компоненты -->
-    <link rel="stylesheet" href="position-editor.css">
-    <link rel="stylesheet" href="treasure.css">
+<!-- Компоненты -->
+<link rel="stylesheet" href="position-editor.css">
+<link rel="stylesheet" href="treasure.css">
 
-    <!-- Предотвращение FOUC (мигания) -->
-    <script>
-        // Мгновенно применяем сохранённую тему ДО рендера
-        (function() {
-            var theme = localStorage.getItem('kraken-theme');
-            if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                theme = 'dark';
-            }
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                // Включаем тёмный CSS
-                var link = document.getElementById('dark-theme-link');
-                if (link) link.removeAttribute('disabled');
-            }
-        })();
-    </script>
+<!-- Предотвращение FOUC (мигания) -->
+<script>
+// Мгновенно применяем сохранённую тему ДО рендера
+(function() {
+var theme = localStorage.getItem('kraken-theme');
+if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+theme = 'dark';
+}
+if (theme === 'dark') {
+document.documentElement.setAttribute('data-theme', 'dark');
+// Включаем тёмный CSS
+var link = document.getElementById('dark-theme-link');
+if (link) link.removeAttribute('disabled');
+}
+})();
+</script>
 
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 </head>
 
 <body>
@@ -53,523 +53,559 @@
 
 <div class="app">
 
-    <!-- ═══ Колонка 1: Панель управления ═══ -->
-    <aside class="side-panel">
+<!-- ═══ Колонка 1: Панель управления ═══ -->
+<aside class="side-panel">
 
-        <div class="info-card">
-            <!-- ... остальной код без изменений ... -->
-            <div id="rating-display">
-                <div class="rating-main">
-                    <span class="label">Рейтинг</span>
-                    <span id="rating-value">2000</span>
-                </div>
-            </div>
-        </div>
+<div class="info-card">
+<!-- ... остальной код без изменений ... -->
+<div id="rating-display">
+<div class="rating-main">
+<span class="label">Рейтинг</span>
+<span id="rating-value">2000</span>
+</div>
+</div>
+</div>
 
-        <div class="controls-wrapper">
-            <div class="control-group">
-                <label>Начальный рейтинг</label>
-                <select id="startRating">
-                    <option value="1000">Юнга — 1000</option>
-                    <option value="1400" selected>Матрос — 1400</option>
-                    <option value="1800">Капитан — 1800</option>
-                    <option value="2200">Морской волк — 2200</option>
-                </select>
-            </div>
+<div class="controls-wrapper">
+<div class="control-group">
+<label>Начальный рейтинг</label>
+<select id="startRating">
+<option value="1000">Юнга — 1000</option>
+<option value="1400" selected>Матрос — 1400</option>
+<option value="1800">Капитан — 1800</option>
+<option value="2200">Морской волк — 2200</option>
+</select>
+</div>
 
-            <div class="control-group">
-                <label>Играть за</label>
-                <select id="playerColor">
-                    <option value="white">Белые</option>
-                    <option value="black">Чёрные</option>
-                </select>
-            </div>
+<div class="control-group">
+<label>Играть за</label>
+<select id="playerColor">
+<option value="white">Белые</option>
+<option value="black">Чёрные</option>
+</select>
+</div>
 
-            <div class="btn-row">
-                <button class="btn-secondary" id="applyRating">Применить</button></div>
-            	<button class="btn-start" onclick="startGame()">Быстрый рейс</button>
-        </div>
+<div class="btn-row">
+<button class="btn-secondary" id="applyRating">Применить</button></div>
+<button class="btn-start" onclick="startGame()">Быстрый рейс</button>
+</div>
 
-        <!--═══ Морская сцена ═══ -->
+<!--═══ Морская сцена ═══ -->
 <div class="sea-scene">
 <!-- Небо с градиентом -->
-    <div class="sky-layer">
-        <!-- Горизонт -->
-        <div class="horizon-line"></div>
-        
-        <!-- Солнце/Луна -->
-        <div class="celestial-body" id="celestial-body">
-            <div class="sun-glow"></div>
-        </div>
-        
-        <!-- Облака -->
-        <div class="clouds-container">
-            <div class="cloud cloud-1">
-                <div class="cloud-puff cp-1"></div>
-                <div class="cloud-puff cp-2"></div>
-                <div class="cloud-puff cp-3"></div>
-            </div>
-            <div class="cloud cloud-2">
-                <div class="cloud-puff cp-1"></div>
-                <div class="cloud-puff cp-2"></div>
-                <div class="cloud-puff cp-3"></div>
-                <div class="cloud-puff cp-4"></div>
-            </div>
-            <div class="cloud cloud-3">
-                <div class="cloud-puff cp-1"></div>
-                <div class="cloud-puff cp-2"></div>
-                <div class="cloud-puff cp-3"></div>
-            </div>
-            <div class="cloud cloud-4">
-                <div class="cloud-puff cp-1"></div>
-                <div class="cloud-puff cp-2"></div>
-            </div>
-            <div class="cloud cloud-5">
-                <div class="cloud-puff cp-1"></div>
-                <div class="cloud-puff cp-2"></div>
-                <div class="cloud-puff cp-3"></div>
-            </div>
-        </div>
-        
-        <!-- Чайки -->
-        <div class="seagulls-container">
-            <div class="seagull seagull-1">
-                <svg viewBox="0 0 30 12" class="seagull-svg">
-                    <path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
-                </svg>
-            </div>
-            <div class="seagull seagull-2">
-                <svg viewBox="0 0 30 12" class="seagull-svg">
-                    <path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
-                </svg>
-            </div>
-            <div class="seagull seagull-3">
-                <svg viewBox="0 0 30 12" class="seagull-svg">
-                    <path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
-                </svg>
-            </div>
-        </div>
-    </div>
+<div class="sky-layer">
+<!-- Горизонт -->
+<div class="horizon-line"></div>
 
-    <div class="horizon-haze"></div>
+<!-- Солнце/Луна -->
+<div class="celestial-body" id="celestial-body">
+<div class="sun-glow"></div>
+</div>
 
-    <!-- Водная поверхность -->
-    <div class="water-surface">
-        <!-- Основная вода -->
-        <div class="water-body"></div>
-        
-        <!-- Рябь на воде -->
-        <div class="water-ripples">
-            <div class="ripple-line rl-1"></div>
-            <div class="ripple-line rl-2"></div>
-            <div class="ripple-line rl-3"></div>
-            <div class="ripple-line rl-4"></div>
-            <div class="ripple-line rl-5"></div>
-            <div class="ripple-line rl-6"></div>
-            <div class="ripple-line rl-7"></div>
-        </div>
-        
-        <!-- Блики на воде -->
-        <div class="water-glints">
-            <div class="glint g-1"></div>
-            <div class="glint g-2"></div>
-            <div class="glint g-3"></div>
-            <div class="glint g-4"></div>
-            <div class="glint g-5"></div>
-            <div class="glint g-6"></div>
-            <div class="glint g-7"></div>
-            <div class="glint g-8"></div>
-        </div>
-        
-        <!-- Пена на волнах -->
-        <div class="foam-layer">
-            <div class="foam-streak fs-1"></div>
-            <div class="foam-streak fs-2"></div>
-            <div class="foam-streak fs-3"></div>
-        </div>
-    </div>
+<!-- Облака -->
+<div class="clouds-container">
+<div class="cloud cloud-1">
+<div class="cloud-puff cp-1"></div>
+<div class="cloud-puff cp-2"></div>
+<div class="cloud-puff cp-3"></div>
+</div>
+<div class="cloud cloud-2">
+<div class="cloud-puff cp-1"></div>
+<div class="cloud-puff cp-2"></div>
+<div class="cloud-puff cp-3"></div>
+<div class="cloud-puff cp-4"></div>
+</div>
+<div class="cloud cloud-3">
+<div class="cloud-puff cp-1"></div>
+<div class="cloud-puff cp-2"></div>
+<div class="cloud-puff cp-3"></div>
+</div>
+<div class="cloud cloud-4">
+<div class="cloud-puff cp-1"></div>
+<div class="cloud-puff cp-2"></div>
+</div>
+<div class="cloud cloud-5">
+<div class="cloud-puff cp-1"></div>
+<div class="cloud-puff cp-2"></div>
+<div class="cloud-puff cp-3"></div>
+</div>
+</div>
 
-    <!-- Волны (переработанные) -->
-    <div class="sea-waves">
-        <div class="sea-wave sw-1"></div>
-        <div class="sea-wave sw-2"></div>
-        <div class="sea-wave sw-3"></div>
-        <div class="sea-wave sw-4"></div></div>
+<!-- Чайки -->
+<div class="seagulls-container">
+<div class="seagull seagull-1">
+<svg viewBox="0 0 30 12" class="seagull-svg">
+<path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+</svg>
+</div>
+<div class="seagull seagull-2">
+<svg viewBox="0 0 30 12" class="seagull-svg">
+<path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+</svg>
+</div>
+<div class="seagull seagull-3">
+<svg viewBox="0 0 30 12" class="seagull-svg">
+<path d="M0 8 Q7 2 15 6 Q23 2 30 8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+</svg>
+</div>
+</div>
+</div>
 
-    <!-- Погодные эффекты -->
-    <div class="weather-layer" id="weather-layer">
-        
-        <!-- Дождь (косой, для шторма) -->
-        <div class="rain-container">
-            <div class="raindrop" style="--x: 5%; --delay: 0s; --duration: 0.4s;"></div>
-            <div class="raindrop" style="--x: 10%; --delay: 0.08s; --duration: 0.35s;"></div>
-            <div class="raindrop" style="--x: 15%; --delay: 0.16s; --duration: 0.45s;"></div>
-            <div class="raindrop" style="--x: 20%; --delay: 0.03s; --duration: 0.38s;"></div>
-            <div class="raindrop" style="--x: 25%; --delay: 0.22s; --duration: 0.42s;"></div>
-            <div class="raindrop" style="--x: 30%; --delay: 0.11s; --duration: 0.36s;"></div>
-            <div class="raindrop" style="--x: 35%; --delay: 0.28s; --duration: 0.4s;"></div>
-            <div class="raindrop" style="--x: 40%; --delay: 0.05s; --duration: 0.44s;"></div>
-            <div class="raindrop" style="--x: 45%; --delay: 0.18s; --duration: 0.37s;"></div>
-            <div class="raindrop" style="--x: 50%; --delay: 0.33s; --duration: 0.41s;"></div>
-            <div class="raindrop" style="--x: 55%; --delay: 0.07s; --duration: 0.39s;"></div>
-            <div class="raindrop" style="--x: 60%; --delay: 0.25s; --duration: 0.43s;"></div>
-            <div class="raindrop" style="--x: 65%; --delay: 0.14s; --duration: 0.36s;"></div>
-            <div class="raindrop" style="--x: 70%; --delay: 0.31s; --duration: 0.4s;"></div>
-            <div class="raindrop" style="--x: 75%; --delay: 0.02s; --duration: 0.38s;"></div>
-            <div class="raindrop" style="--x: 80%; --delay: 0.2s; --duration: 0.42s;"></div>
-            <div class="raindrop" style="--x: 85%; --delay: 0.09s; --duration: 0.35s;"></div>
-            <div class="raindrop" style="--x: 90%; --delay: 0.27s; --duration: 0.44s;"></div>
-            <div class="raindrop" style="--x: 95%; --delay: 0.15s; --duration: 0.37s;"></div>
-            <div class="raindrop" style="--x: 100%; --delay: 0.35s; --duration: 0.4s;"></div>
-            <div class="raindrop" style="--x: 8%; --delay: 0.12s; --duration: 0.36s;"></div>
-            <div class="raindrop" style="--x: 22%; --delay: 0.29s; --duration: 0.41s;"></div>
-            <div class="raindrop" style="--x: 38%; --delay: 0.06s; --duration: 0.39s;"></div>
-            <div class="raindrop" style="--x: 52%; --delay: 0.23s; --duration: 0.43s;"></div>
-            <div class="raindrop" style="--x: 68%; --delay: 0.1s; --duration: 0.37s;"></div>
-            <div class="raindrop" style="--x: 82%; --delay: 0.32s; --duration: 0.4s;"></div>
-            <div class="raindrop" style="--x: 48%; --delay: 0.04s; --duration: 0.35s;"></div>
-            <div class="raindrop" style="--x: 62%; --delay: 0.19s; --duration: 0.42s;"></div>
-            <div class="raindrop" style="--x: 78%; --delay: 0.26s; --duration: 0.38s;"></div>
-            <div class="raindrop" style="--x: 33%; --delay: 0.13s; --duration: 0.44s;"></div>
-        </div>
+<div class="horizon-haze"></div>
 
-        <!-- Ветер — брызги и порывы -->
-        <div class="wind-container">
-            <div class="wind-gust wg-1"></div>
-            <div class="wind-gust wg-2"></div>
-            <div class="wind-gust wg-3"></div>
-            <div class="wind-gust wg-4"></div>
-            <div class="wind-spray ws-1"></div>
-            <div class="wind-spray ws-2"></div>
-            <div class="wind-spray ws-3"></div>
-            <div class="wind-spray ws-4"></div>
-            <div class="wind-spray ws-5"></div>
-        </div>
+<!-- Водная поверхность -->
+<div class="water-surface">
+<!-- Основная вода -->
+<div class="water-body"></div>
 
-        <!-- Туман — многослойный -->
-        <div class="fog-container">
-            <div class="fog-layer fog-deep"></div>
-            <div class="fog-layer fog-mid"></div>
-            <div class="fog-layer fog-near"></div>
-            <div class="fog-tendril ft-1"></div>
-            <div class="fog-tendril ft-2"></div>
-            <div class="fog-tendril ft-3"></div></div>
+<!-- Рябь на воде -->
+<div class="water-ripples">
+<div class="ripple-line rl-1"></div>
+<div class="ripple-line rl-2"></div>
+<div class="ripple-line rl-3"></div>
+<div class="ripple-line rl-4"></div>
+<div class="ripple-line rl-5"></div>
+<div class="ripple-line rl-6"></div>
+<div class="ripple-line rl-7"></div>
+</div>
 
-        <!-- Молнии (для шторма) -->
-        <div class="lightning-container">
-            <div class="lightning-bolt lb-1">
-                <svg viewBox="0 0 40 100" class="bolt-svg">
-                    <path d="M20 0 L15 35 L25 38 L12 70 L22 72 L8 100" fill="none" stroke="white" stroke-width="2"/>
-                </svg>
-            </div>
-            <div class="lightning-bolt lb-2">
-                <svg viewBox="0 0 40 100" class="bolt-svg">
-                    <path d="M18 0 L22 30 L14 33 L26 65 L16 68 L28 100" fill="none" stroke="white" stroke-width="1.5"/>
-                </svg>
-            </div>
-            <div class="lightning-flash"></div>
-        </div>
-    </div>
+<!-- Блики на воде -->
+<div class="water-glints">
+<div class="glint g-1"></div>
+<div class="glint g-2"></div>
+<div class="glint g-3"></div>
+<div class="glint g-4"></div>
+<div class="glint g-5"></div>
+<div class="glint g-6"></div>
+<div class="glint g-7"></div>
+<div class="glint g-8"></div>
+</div>
 
-    <!-- Индикатор погоды (перенесён влево-вниз) -->
-    <div class="weather-indicator" id="weather-indicator">
-        <span class="weather-icon" id="weather-icon">☀️</span>
-        <span class="weather-name" id="weather-name">Штиль</span>
-    </div>
+<!-- Пена на волнах -->
+<div class="foam-layer">
+<div class="foam-streak fs-1"></div>
+<div class="foam-streak fs-2"></div>
+<div class="foam-streak fs-3"></div>
+</div>
+</div>
 
-    <!-- Маршрут -->
-    <div class="voyage-track">
-        <!-- Порт отправления — якорь -->
-        <div class="voyage-start">
-            <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="6" r="2.5"/>
-                <line x1="12" y1="8.5" x2="12" y2="21"/>
-                <path d="M5 15c0 3.87 3.13 7 7 7s7-3.13 7-7"/><line x1="8" y1="11" x2="16" y2="11"/>
-            </svg>
-        </div>
+<!-- Волны (переработанные) -->
+<div class="sea-waves">
+<div class="sea-wave sw-1"></div>
+<div class="sea-wave sw-2"></div>
+<div class="sea-wave sw-3"></div>
+<div class="sea-wave sw-4"></div></div>
 
-        <!-- Прогресс -->
-        <div class="voyage-progress-bg">
-            <div id="voyage-fill" class="voyage-fill" style="width:0%">
+<!-- Погодные эффекты -->
+<div class="weather-layer" id="weather-layer">
 
+<!-- Дождь (косой, для шторма) -->
+<div class="rain-container">
+<div class="raindrop" style="--x: 5%; --delay: 0s; --duration: 0.4s;"></div>
+<div class="raindrop" style="--x: 10%; --delay: 0.08s; --duration: 0.35s;"></div>
+<div class="raindrop" style="--x: 15%; --delay: 0.16s; --duration: 0.45s;"></div>
+<div class="raindrop" style="--x: 20%; --delay: 0.03s; --duration: 0.38s;"></div>
+<div class="raindrop" style="--x: 25%; --delay: 0.22s; --duration: 0.42s;"></div>
+<div class="raindrop" style="--x: 30%; --delay: 0.11s; --duration: 0.36s;"></div>
+<div class="raindrop" style="--x: 35%; --delay: 0.28s; --duration: 0.4s;"></div>
+<div class="raindrop" style="--x: 40%; --delay: 0.05s; --duration: 0.44s;"></div>
+<div class="raindrop" style="--x: 45%; --delay: 0.18s; --duration: 0.37s;"></div>
+<div class="raindrop" style="--x: 50%; --delay: 0.33s; --duration: 0.41s;"></div>
+<div class="raindrop" style="--x: 55%; --delay: 0.07s; --duration: 0.39s;"></div>
+<div class="raindrop" style="--x: 60%; --delay: 0.25s; --duration: 0.43s;"></div>
+<div class="raindrop" style="--x: 65%; --delay: 0.14s; --duration: 0.36s;"></div>
+<div class="raindrop" style="--x: 70%; --delay: 0.31s; --duration: 0.4s;"></div>
+<div class="raindrop" style="--x: 75%; --delay: 0.02s; --duration: 0.38s;"></div>
+<div class="raindrop" style="--x: 80%; --delay: 0.2s; --duration: 0.42s;"></div>
+<div class="raindrop" style="--x: 85%; --delay: 0.09s; --duration: 0.35s;"></div>
+<div class="raindrop" style="--x: 90%; --delay: 0.27s; --duration: 0.44s;"></div>
+<div class="raindrop" style="--x: 95%; --delay: 0.15s; --duration: 0.37s;"></div>
+<div class="raindrop" style="--x: 100%; --delay: 0.35s; --duration: 0.4s;"></div>
+<div class="raindrop" style="--x: 8%; --delay: 0.12s; --duration: 0.36s;"></div>
+<div class="raindrop" style="--x: 22%; --delay: 0.29s; --duration: 0.41s;"></div>
+<div class="raindrop" style="--x: 38%; --delay: 0.06s; --duration: 0.39s;"></div>
+<div class="raindrop" style="--x: 52%; --delay: 0.23s; --duration: 0.43s;"></div>
+<div class="raindrop" style="--x: 68%; --delay: 0.1s; --duration: 0.37s;"></div>
+<div class="raindrop" style="--x: 82%; --delay: 0.32s; --duration: 0.4s;"></div>
+<div class="raindrop" style="--x: 48%; --delay: 0.04s; --duration: 0.35s;"></div>
+<div class="raindrop" style="--x: 62%; --delay: 0.19s; --duration: 0.42s;"></div>
+<div class="raindrop" style="--x: 78%; --delay: 0.26s; --duration: 0.38s;"></div>
+<div class="raindrop" style="--x: 33%; --delay: 0.13s; --duration: 0.44s;"></div>
+</div>
 
-	    <!-- Корабль -->
-                <div id="ship" class="ship ship-editorial">
-  <div class="ship-drift-shell">
-    <div class="ship-bob">
+<!-- Ветер — брызги и порывы -->
+<div class="wind-container">
+<div class="wind-gust wg-1"></div>
+<div class="wind-gust wg-2"></div>
+<div class="wind-gust wg-3"></div>
+<div class="wind-gust wg-4"></div>
+<div class="wind-spray ws-1"></div>
+<div class="wind-spray ws-2"></div>
+<div class="wind-spray ws-3"></div>
+<div class="wind-spray ws-4"></div>
+<div class="wind-spray ws-5"></div>
+</div>
+
+<!-- Туман — многослойный -->
+<div class="fog-container">
+<div class="fog-layer fog-deep"></div>
+<div class="fog-layer fog-mid"></div>
+<div class="fog-layer fog-near"></div>
+<div class="fog-tendril ft-1"></div>
+<div class="fog-tendril ft-2"></div>
+<div class="fog-tendril ft-3"></div></div>
+
+<!-- Молнии (для шторма) -->
+<div class="lightning-container">
+<div class="lightning-bolt lb-1">
+<svg viewBox="0 0 40 100" class="bolt-svg">
+<path d="M20 0 L15 35 L25 38 L12 70 L22 72 L8 100" fill="none" stroke="white" stroke-width="2"/>
+</svg>
+</div>
+<div class="lightning-bolt lb-2">
+<svg viewBox="0 0 40 100" class="bolt-svg">
+<path d="M18 0 L22 30 L14 33 L26 65 L16 68 L28 100" fill="none" stroke="white" stroke-width="1.5"/>
+</svg>
+</div>
+<div class="lightning-flash"></div>
+</div>
+</div>
+
+<!-- Индикатор погоды (перенесён влево-вниз) -->
+<div class="weather-indicator" id="weather-indicator">
+<span class="weather-icon" id="weather-icon">☀️</span>
+<span class="weather-name" id="weather-name">Штиль</span>
+</div>
+
+<!-- Маршрут -->
+<div class="voyage-track">
+<!-- Порт отправления — якорь -->
+<div class="voyage-start">
+<svg viewBox="0 0 24 24">
+<circle cx="12" cy="6" r="2.5"/>
+<line x1="12" y1="8.5" x2="12" y2="21"/>
+<path d="M5 15c0 3.87 3.13 7 7 7s7-3.13 7-7"/><line x1="8" y1="11" x2="16" y2="11"/>
+</svg>
+</div>
+
+<!-- Прогресс -->
+<div class="voyage-progress-bg">
+<div id="voyage-fill" class="voyage-fill" style="width:0%">
+
+<!-- Корабль -->
+<div id="ship" class="ship ship-editorial">
+<div class="ship-drift-shell">
+<div class="ship-bob">
 <svg viewBox="0 0 250 150" xmlns="http://w3.org">
-  <!-- ОТРАЖЕНИЕ -->
-  <ellipse cx="125" cy="116" rx="90" ry="3" fill="#1a1a1a" opacity="0.4" filter="blur(6px)"/>
-  
-  <!-- КОРПУС -->
-  <path d="M32 100 L218 100 L210 115 L40 115 Z" fill="#1B2631" stroke="#000000" stroke-width="0.3"/> 
-  <path d="M225 85 L25 85 L32 105 L218 105 Z" fill="#2C3E50" stroke="#1A242F" stroke-width="0.5"/>
+<!-- ОТРАЖЕНИЕ -->
+<ellipse cx="125" cy="116" rx="90" ry="3" fill="#1a1a1a" opacity="0.4" filter="blur(6px)"/>
 
-  <!-- НАЗВАНИЕ: ДВОЙНОЙ КОНТРАСТ -->
-  <!-- Тень для объема и четкости -->
-  <text x="125" y="100.5" 
-        font-family="Impact, Charcoal, sans-serif" 
-        font-size="12" 
-        fill="#000000" 
-        text-anchor="middle" 
-        letter-spacing="8" 
-        opacity="0.8">БИСКВИТ</text>
-  <!-- Основные белые буквы -->
-  <text x="125" y="100" 
-        font-family="Impact, Charcoal, sans-serif" 
-        font-size="12" 
-        fill="#FFFFFF" 
-        text-anchor="middle" 
-        letter-spacing="8">БИСКВИТ</text>
+<!-- КОРПУС -->
+<path d="M32 100 L218 100 L210 115 L40 115 Z" fill="#1B2631" stroke="#000000" stroke-width="0.3"/>
+<path d="M225 85 L25 85 L32 105 L218 105 Z" fill="#2C3E50" stroke="#1A242F" stroke-width="0.5"/>
 
-  <!-- ЯРКАЯ КРАСНАЯ ЛИНИЯ -->
-  <path d="M25 85 L225 85 L223 87.5 L27 87.5 Z" fill="#D32F2F"/> 
-  
-  <!-- ПАЛУБА -->
-  <path d="M225 85 L25 85 L28 82 L222 82 Z" fill="#B0BEC5" stroke="#78909C" stroke-width="0.3"/>
-  
-  <!-- РУБКА -->
-  <rect x="75" y="65" width="100" height="17" rx="1" fill="#FFFFFF" stroke="#D32F2F" stroke-width="0.6"/>
-  
-  <!-- ОКНА -->
-  <g fill="#1A237E">
-    <rect x="157" y="69" width="8" height="10" rx="0.5" />
-    <rect x="135" y="69" width="8" height="10" rx="0.5" />
-    <rect x="113" y="69" width="8" height="10" rx="0.5" />
-  </g>
+<!-- НАЗВАНИЕ: ДВОЙНОЙ КОНТРАСТ -->
+<!-- Тень для объема и четкости -->
+<text x="125" y="100.5"
+font-family="Impact, Charcoal, sans-serif"
+font-size="12"
+fill="#000000"
+text-anchor="middle"
+letter-spacing="8"
+opacity="0.8">БИСКВИТ</text>
+<!-- Основные белые буквы -->
+<text x="125" y="100"
+font-family="Impact, Charcoal, sans-serif"
+font-size="12"
+fill="#FFFFFF"
+text-anchor="middle"
+letter-spacing="8">БИСКВИТ</text>
 
-  <!-- ТРУБЫ -->
-  <g fill="#212121">
-    <rect x="135" y="25" width="12" height="30" />
-    <rect x="105" y="25" width="12" height="30" />
-    <rect x="135" y="32" width="12" height="5" fill="#D32F2F" />
-    <rect x="105" y="32" width="12" height="5" fill="#D32F2F" />
-  </g>
+<!-- ЯРКАЯ КРАСНАЯ ЛИНИЯ -->
+<path d="M25 85 L225 85 L223 87.5 L27 87.5 Z" fill="#D32F2F"/>
 
-  <!-- МАЧТЫ -->
-  <g stroke="#2C3E50" stroke-width="0.8">
-    <line x1="200" y1="20" x2="200" y2="82" />
-    <line x1="50" y1="40" x2="50" y2="82" />
-  </g>
+<!-- ПАЛУБА -->
+<path d="M225 85 L25 85 L28 82 L222 82 Z" fill="#B0BEC5" stroke="#78909C" stroke-width="0.3"/>
 
-  <!-- ШЛЮПКА -->
-  <path d="M105 78 L85 78 L88 82 L102 82 Z" fill="#D32F2F" />
+<!-- РУБКА -->
+<rect x="75" y="65" width="100" height="17" rx="1" fill="#FFFFFF" stroke="#D32F2F" stroke-width="0.6"/>
 
-  <!-- ФЛАГ -->
-  <path d="M50 40 L30 45 L50 50 Z" fill="#FFFFFF" stroke="#D32F2F" stroke-width="0.4">
-    <animate attributeName="d" values="M50 40 L30 45 L50 50 Z; M50 40 L35 48 L50 52 Z; M50 40 L30 45 L50 50 Z" dur="3s" repeatCount="indefinite" />
-  </path>
+<!-- ОКНА -->
+<g fill="#1A237E">
+<rect x="157" y="69" width="8" height="10" rx="0.5" />
+<rect x="135" y="69" width="8" height="10" rx="0.5" />
+<rect x="113" y="69" width="8" height="10" rx="0.5" />
+</g>
+
+<!-- ТРУБЫ -->
+<g fill="#212121">
+<rect x="135" y="25" width="12" height="30" />
+<rect x="105" y="25" width="12" height="30" />
+<rect x="135" y="32" width="12" height="5" fill="#D32F2F" />
+<rect x="105" y="32" width="12" height="5" fill="#D32F2F" />
+</g>
+
+<!-- МАЧТЫ -->
+<g stroke="#2C3E50" stroke-width="0.8">
+<line x1="200" y1="20" x2="200" y2="82" />
+<line x1="50" y1="40" x2="50" y2="82" />
+</g>
+
+<!-- ШЛЮПКА -->
+<path d="M105 78 L85 78 L88 82 L102 82 Z" fill="#D32F2F" />
+
+<!-- ФЛАГ -->
+<path d="M50 40 L30 45 L50 50 Z" fill="#FFFFFF" stroke="#D32F2F" stroke-width="0.4">
+<animate attributeName="d" values="M50 40 L30 45 L50 50 Z; M50 40 L35 48 L50 52 Z; M50 40 L30 45 L50 50 Z" dur="3s" repeatCount="indefinite" />
+</path>
 </svg>
 
-
-
-
-
-    </div>
-  </div>
+</div>
+</div>
 </div>
 <!-- Вставить после .sky-layer, перед .water-surface -->
 
 <div class="aurora-container">
-  <!-- Три основные полосы -->
-  <div class="aurora-band aurora-band-1"></div>
-  <div class="aurora-band aurora-band-2"></div>
-  <div class="aurora-band aurora-band-3"></div>
+<!-- Три основные полосы -->
+<div class="aurora-band aurora-band-1"></div>
+<div class="aurora-band aurora-band-2"></div>
+<div class="aurora-band aurora-band-3"></div>
 
-  <!-- Вертикальные лучи-столбы -->
-  <div class="aurora-rays">
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-    <div class="aurora-ray"></div>
-  </div>
+<!-- Вертикальные лучи-столбы -->
+<div class="aurora-rays">
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+<div class="aurora-ray"></div>
+</div>
 
-  <!-- Магические частицы -->
-  <div class="aurora-particles"></div>
+<!-- Магические частицы -->
+<div class="aurora-particles"></div>
 </div>
 
 <!-- Отражение сияния — внутри .water-surface -->
 <!-- <div class="aurora-water-reflection"></div> -->
 
-            <!-- Чекпоинты -->
-            <div class="checkpoint" style="left:20%" data-tip="Выход из порта"></div>
-            <div class="checkpoint" style="left:40%" data-tip="Открытое море"></div>
-            <div class="checkpoint" style="left:60%" data-tip="Зона Кракена"></div>
-            <div class="checkpoint" style="left:80%" data-tip="Берег виден"></div>
-            <div class="checkpoint final" style="left:0%" data-tip="Безопасная гавань"></div>
-        </div>
-   </div>
-        <!-- Порт назначения — флаг -->
-        <div class="voyage-end">
-            <svg viewBox="0 0 24 24">
-                <line x1="5" y1="2" x2="5" y2="22"/>
-                <path d="M5 2l14 5-14 5"/>
-            </svg>
-        </div>
- 
-
-    <!-- Прочность корпуса -->
-    <div class="hull-bar">
-        <span class="hull-label">Корпус корабля</span>
-        <div class="hull-segments">
-            <div class="hull-segment active" id="hull-1"></div>
-            <div class="hull-segment active" id="hull-2"></div>
-            <div class="hull-segment active" id="hull-3"></div>
-            <div class="hull-segment active" id="hull-4"></div></div>
-        <span id="hull-text">4/4</span>
-    </div>
+<!-- Чекпоинты -->
+<div class="checkpoint" style="left:20%" data-tip="Выход из порта"></div>
+<div class="checkpoint" style="left:40%" data-tip="Открытое море"></div>
+<div class="checkpoint" style="left:60%" data-tip="Зона Кракена"></div>
+<div class="checkpoint" style="left:80%" data-tip="Берег виден"></div>
+<div class="checkpoint final" style="left:0%" data-tip="Безопасная гавань"></div>
 </div>
-    <!-- Кракен -->
+</div>
+<!-- Порт назначения — флаг -->
+<div class="voyage-end">
+<svg viewBox="0 0 24 24">
+<line x1="5" y1="2" x2="5" y2="22"/>
+<path d="M5 2l14 5-14 5"/>
+</svg>
+</div>
+
+<!-- Прочность корпуса -->
+<div class="hull-bar">
+<span class="hull-label">Корпус корабля</span>
+<div class="hull-segments">
+<div class="hull-segment active" id="hull-1"></div>
+<div class="hull-segment active" id="hull-2"></div>
+<div class="hull-segment active" id="hull-3"></div>
+<div class="hull-segment active" id="hull-4"></div></div>
+<span id="hull-text">4/4</span>
+</div>
+</div>
+<!-- Кракен -->
 <div id="kraken-attack" class="kraken-attack hidden">
 
-  <!-- Спрайт кракена -->
-  <div class="kraken-sprite" id="kraken-sprite"></div>
+<!-- Спрайт кракена -->
+<div class="kraken-sprite" id="kraken-sprite"></div>
 
-  <!-- Ударные волны — 4 линии с разной задержкой и скоростью -->
-  <div class="kraken-wave-line" style="--y:10%; --dur:1.3s; --delay:0.05s;"></div>
-  <div class="kraken-wave-line" style="--y:16%; --dur:1.5s; --delay:0.15s;"></div>
-  <div class="kraken-wave-line" style="--y:22%; --dur:1.4s; --delay:0.1s;"></div>
-  <div class="kraken-wave-line" style="--y:28%; --dur:1.6s; --delay:0.25s;"></div>
+<!-- Ударные волны — 4 линии с разной задержкой и скоростью -->
+<div class="kraken-wave-line" style="--y:10%; --dur:1.3s; --delay:0.05s;"></div>
+<div class="kraken-wave-line" style="--y:16%; --dur:1.5s; --delay:0.15s;"></div>
+<div class="kraken-wave-line" style="--y:22%; --dur:1.4s; --delay:0.1s;"></div>
+<div class="kraken-wave-line" style="--y:28%; --dur:1.6s; --delay:0.25s;"></div>
 
-  <!-- Чернильные кляксы — 5 штук для плотности -->
-  <div class="kraken-blot" style="
-    left:46%; bottom:32%; width:9px; height:8px;
-    --tx:-30px; --ty:-55px; --rot:25deg;
-    --dur:1.2s; --delay:0.08s;
-  "></div>
-  <div class="kraken-blot" style="
-    left:54%; bottom:30%; width:7px; height:6px;
-    --tx:35px; --ty:-50px; --rot:-20deg;
-    --dur:1.1s; --delay:0.14s;
-  "></div>
-  <div class="kraken-blot" style="
-    left:41%; bottom:27%; width:5px; height:5px;
-    --tx:-45px; --ty:-38px; --rot:35deg;
-    --dur:1s; --delay:0.2s;
-  "></div>
-  <div class="kraken-blot" style="
-    left:58%; bottom:34%; width:6px; height:5px;
-    --tx:25px; --ty:-60px; --rot:-30deg;
-    --dur:1.3s; --delay:0.06s;
-  "></div>
-  <div class="kraken-blot" style="
-    left:50%; bottom:25%; width:4px; height:4px;
-    --tx:-10px; --ty:-70px; --rot:10deg;
-    --dur:0.9s; --delay:0.22s;
-  "></div>
+<!-- Чернильные кляксы — 5 штук для плотности -->
+<div class="kraken-blot" style="
+left:46%; bottom:32%; width:9px; height:8px;
+--tx:-30px; --ty:-55px; --rot:25deg;
+--dur:1.2s; --delay:0.08s;
+"></div>
+<div class="kraken-blot" style="
+left:54%; bottom:30%; width:7px; height:6px;
+--tx:35px; --ty:-50px; --rot:-20deg;
+--dur:1.1s; --delay:0.14s;
+"></div>
+<div class="kraken-blot" style="
+left:41%; bottom:27%; width:5px; height:5px;
+--tx:-45px; --ty:-38px; --rot:35deg;
+--dur:1s; --delay:0.2s;
+"></div>
+<div class="kraken-blot" style="
+left:58%; bottom:34%; width:6px; height:5px;
+--tx:25px; --ty:-60px; --rot:-30deg;
+--dur:1.3s; --delay:0.06s;
+"></div>
+<div class="kraken-blot" style="
+left:50%; bottom:25%; width:4px; height:4px;
+--tx:-10px; --ty:-70px; --rot:10deg;
+--dur:0.9s; --delay:0.22s;
+"></div>
 
-  <!-- Подпись -->
-  <div class="kraken-caption">— Выпускайте Кракена! —</div>
+<!-- Подпись -->
+<div class="kraken-caption">— Выпускайте Кракена! —</div>
 
 </div>
 
 </div><!-- конец sea-scene -->
 
-    </aside>
+</aside>
 
-
-    <!--═══ Колонка 2: Доска═══ -->
+<!--═══ Колонка 2: Доска═══ -->
 <div class="board-column">
-    <div class="header main-header">
-        <h1>KRAKEN</h1>
-        <div class="subtitle">Тренажёр дебютов</div>
-    </div>
-
-
-
-
-
-    <div id="board-wrapper" style="position:relative;">
-        <div id="board"></div>
-        <svg id="arrow-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100;">
-            <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 170, 0, 0.85)" />
-                </marker>
-            </defs>
-        </svg>
-
-	<!-- ═══ TREASURE HUNT: подсказка ═══ -->
-        <div id="treasure-hint" class="treasure-hint"></div>
-
-	<!-- КАРТА ДЕБЮТОВ — поверх доски -->
-        <div id="opening-map-container" class="opening-map-container">
-            <img src="animation/map.png" alt="Карта дебютов" class="opening-map-img" id="opening-map-img">
-            <div class="map-overlay-gradient"></div>
-        </div>
-    </div>
+<div class="header main-header">
+<h1>KRAKEN</h1>
+<div class="subtitle">Тренажёр дебютов</div>
 </div>
 
+<div id="board-wrapper" style="position:relative;">
+<div id="board"></div>
+<svg id="arrow-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100;">
+<defs>
+<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+<polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 170, 0, 0.85)" />
+</marker>
+</defs>
+</svg>
+
+<!-- ═══ TREASURE HUNT: подсказка ═══ -->
+<div id="treasure-hint" class="treasure-hint"></div>
+
+<!-- КАРТА ДЕБЮТОВ — поверх доски -->
+<div id="opening-map-container" class="opening-map-container">
+<img src="animation/map.png" alt="Карта дебютов" class="opening-map-img" id="opening-map-img">
+<div class="map-overlay-gradient"></div>
+</div>
+</div>
+</div>
 
 <!--═══ Колонка 3: Аналитика ═══ -->
 <aside class="analysis-panel">
+
+<div id="userPanel" style="margin: 20px auto; text-align: right; width: 100%;"></div>
+
+<script>
+// Проверка авторизации и отображение панели
+async function initUserPanel() {
+const panel = document.getElementById('userPanel');
+
+try {
+const res = await fetch('/api/user/me');
+const data = await res.json();
+
+if (data.loggedIn) {
+panel.innerHTML = `
+<span style="color:#2ed573; margin-right:12px;">
+👤 ${data.user.username}
+</span>
+<button onclick="logout()" style="
+background:#e94560; color:white; border:none;
+padding:6px 14px; border-radius:6px; cursor:pointer;
+font-size:0.85em;">
+Выйти
+</button>
+`;
+
+// Сохраняем userId для рейтинговой системы
+window.currentUserId = data.user.id;
+} else {
+panel.innerHTML = `
+<a href="/login" style="
+    background: #00b4d8; color: white; text-decoration: none;
+    padding: 8px 16px; border-radius: 6px; font-size: 0.9em;
+    display: inline-block; font-weight: 600; transition: all 0.2s;"
+    onmouseover="this.style.background='#0096c7'; this.style.boxShadow='0 0 10px rgba(0,180,216,0.5)';"
+    onmouseout="this.style.background='#00b4d8'; this.style.boxShadow='none';">
+    Войти в аккаунт
+</a>
+`;
+}
+} catch (e) {
+console.log('Auth check failed');
+}
+}
+
+async function logout() {
+await fetch('/api/auth/logout', { method: 'POST' });
+window.location.reload();
+}
+
+initUserPanel();
+</script>
+
 <!-- Переключатель темы -->
 <div class="theme-toggle-wrapper">
-    <div class="cl-toggle-switch">
-        <label class="cl-switch">
-            <input type="checkbox" id="theme-toggle">
-            <span></span>
-        </label>
-    </div>
+<div class="cl-toggle-switch">
+<label class="cl-switch">
+<input type="checkbox" id="theme-toggle">
+<span></span>
+</label>
+</div>
 </div>
 
 <!-- Комбо -->
-    <div class="combo-container">
-        <div class="combo-info">
-            <span class="combo-label">Combo Streak</span>
-            <span id="combo-multiplier">x1</span>
-        </div>
-        <div class="combo-bar-bg">
-            <div id="combo-fill" style="width: 0%"></div>
-        </div></div>
+<div class="combo-container">
+<div class="combo-info">
+<span class="combo-label">Combo Streak</span>
+<span id="combo-multiplier">x1</span>
+</div>
+<div class="combo-bar-bg">
+<div id="combo-fill" style="width: 0%"></div>
+</div></div>
 
- <!-- ═══ ПАНЕЛЬ СОКРОВИЩ ═══ -->
- <div id="treasure-panel" class="treasure-panel hidden">
-        <span class="treasure-panel-icon">🗺️</span>
-        <span class="treasure-panel-label">Сокровища:</span>
-        <span id="treasure-counter" class="treasure-counter-value">0</span>
-        <span class="treasure-panel-separator">•</span>
-        <span class="treasure-panel-pts-icon">⚜️</span>
-        <span id="treasure-points" class="treasure-points-value">0</span>
-        <span id="treasure-streak" class="treasure-streak"></span>
-    </div>
+<!-- ═══ ПАНЕЛЬ СОКРОВИЩ ═══ -->
+<div id="treasure-panel" class="treasure-panel hidden">
+<span class="treasure-panel-icon">🗺️</span>
+<span class="treasure-panel-label">Сокровища:</span>
+<span id="treasure-counter" class="treasure-counter-value">0</span>
+<span class="treasure-panel-separator">•</span>
+<span class="treasure-panel-pts-icon">⚜️</span>
+<span id="treasure-points" class="treasure-points-value">0</span>
+<span id="treasure-streak" class="treasure-streak"></span>
+</div>
 
+<!-- Нотация -->
+<div class="notation-box">
+<div class="panel-label">История ходов</div>
+<div id="move-history" class="move-history"></div>
+</div><a id="lichess-analysis-btn"
+class="btn-lichess-analysis"
+href="#"
+target="_blank"
+rel="noopener noreferrer">♟ Исследовать с Lichess
+</a>
 
+<!-- Комментарии -->
+<div class="feedback-box">
+<div id="opening-badge" class="opening-badge">Начальная позиция</div>
+<div id="kraken-message" class="kraken-message">Кракен наблюдает за вашими ходами...</div>
+</div><!-- Кнопка Карта -->
+<div class="map-toggle-wrapper">
+<button id="toggle-map-btn" class="btn-map-toggle" title="Показать карту дебютов">
+<span class="map-btn-label" id="map-toggle-text">Карта</span>
+</button>
+</div>
 
-    <!-- Нотация -->
-    <div class="notation-box">
-        <div class="panel-label">История ходов</div>
-        <div id="move-history" class="move-history"></div>
-    </div><a id="lichess-analysis-btn" 
-       class="btn-lichess-analysis" 
-       href="#" 
-       target="_blank" 
-       rel="noopener noreferrer">♟ Исследовать с Lichess
-    </a>
-
-    <!-- Комментарии -->
-    <div class="feedback-box">
-        <div id="opening-badge" class="opening-badge">Начальная позиция</div>
-        <div id="kraken-message" class="kraken-message">Кракен наблюдает за вашими ходами...</div>
-    </div><!-- Кнопка Карта -->
-    <div class="map-toggle-wrapper">
-        <button id="toggle-map-btn" class="btn-map-toggle" title="Показать карту дебютов">
-            <span class="map-btn-label" id="map-toggle-text">Карта</span>
-        </button>
-    </div>
-
-    <!-- Кнопка Расставить позицию -->
-    <button id="btn-setup-position" class="btn-secondary" style="width:100%; margin-top:8px;">♟ Расставить позицию</button>
-
+<!-- Кнопка Расставить позицию -->
+<button id="btn-setup-position" class="btn-secondary" style="width:100%; margin-top:8px;">♟ Расставить позицию</button>
 
 </aside>
 </div>
-
 
 <!-- конец .app -->
 
@@ -579,7 +615,6 @@
 <!-- ═══ TREASURE HUNT: оверлей найденного сокровища ═══ -->
 <div id="treasure-overlay" class="treasure-overlay"></div>
 
-
 <script src="sounds.js"></script>
 <script src="voyage.js"></script>
 <script src="map.js"></script>
@@ -587,256 +622,246 @@
 <script src="treasure.js"></script>
 <script src="script.js"></script>
 
-
-
-
 <!--═══ Модалка результатов партии ═══ -->
 <div id="unified-result-modal" class="game-over-overlay">
-  <div class="game-over-scroll-wrap">
-    <div class="game-over-card newspaper-style" id="game-over-card">
+<div class="game-over-scroll-wrap">
+<div class="game-over-card newspaper-style" id="game-over-card">
 
-      <!-- Псевдо-элементы карточки (пятна, текстура) обрабатываются через CSS -->
+<!-- Псевдо-элементы карточки (пятна, текстура) обрабатываются через CSS -->
 
-      <!--═══ ШАПКА ГАЗЕТЫ ═══ -->
-      <header class="game-over-masthead">
-        <div class="masthead-dateline" id="go-dateline">
-          Экстренный выпуск • №0 • 0ходов
-        </div>
-        <h1 class="masthead-title">ВЕСТНИК ГАВАНИ</h1>
-        <div class="masthead-ornament">
-          <span class="masthead-ornament-symbol">⚓</span>
-        </div>
-      </header>
+<!--═══ ШАПКА ГАЗЕТЫ ═══ -->
+<header class="game-over-masthead">
+<div class="masthead-dateline" id="go-dateline">
+Экстренный выпуск • №0 • 0ходов
+</div>
+<h1 class="masthead-title">ВЕСТНИК ГАВАНИ</h1>
+<div class="masthead-ornament">
+<span class="masthead-ornament-symbol">⚓</span>
+</div>
+</header>
 
-      <!-- ═══ ЗАГОЛОВОК / ИСХОД ═══ -->
-      <section class="game-over-headline">
-        <div class="headline-kicker" id="go-kicker">Итоги экспедиции</div>
+<!-- ═══ ЗАГОЛОВОК / ИСХОД ═══ -->
+<section class="game-over-headline">
+<div class="headline-kicker" id="go-kicker">Итоги экспедиции</div>
 
-        <!-- Звёзды (скрыты по умолчанию) -->
-        <div class="game-over-stars hidden" id="go-stars"></div>
+<!-- Звёзды (скрыты по умолчанию) -->
+<div class="game-over-stars hidden" id="go-stars"></div>
 
-        <!-- GIF кракена при поражении (скрыт по умолчанию) -->
-        <div class="game-over-illustration hidden" id="go-illustration">
-          <img src="animation/krakenwin.gif"
-               class="game-over-kraken-img"
-               alt="Кракен побеждает"
-               loading="lazy">
-          <div class="illustration-caption">Художественная реконструкция событий</div>
-        </div>
-
-        <h2 class="game-over-title" id="go-title">ЭКСПЕДИЦИЯ ЗАВЕРШЕНА</h2>
-        <p class="headline-sub hidden" id="go-subtitle"></p></section>
-
-      <!-- ═══ РЕЙТИНГ ═══ -->
-      <div class="newspaper-rating-block">
-        <div class="rating-block-label">Изменение рейтинга</div>
-        <div class="rating-delta" id="go-rating-delta">+0</div>
-        <div class="rating-transition" id="go-rating-transition">1200→<b>1200</b></div>
-      </div>
-
-      <!-- ═══ КАТЕГОРИИ ХОДОВ ═══ -->
-      <section class="game-over-categories">
-        <div class="categories-title">Качество ходов</div>
-        <div class="game-over-stats" id="go-categories">
-          <!-- Заполняется из JS -->
-        </div>
-      </section>
-
-      
-      <!-- ═══ Результаты прохождения карты ═══ -->
-      <div id="go-map-result" class="go-section hidden"></div>
-
-
-
-      <!-- ═══ КОМБО (скрыт если< 3) ═══ -->
-      <div class="game-over-combo hidden" id="go-combo-section">
-        <div class="section-ornament">
-          <span class="section-ornament-glyph">✦</span>
-        </div>
-        <div class="voyage-stat-row" style="padding: 0 30px;">
-          <span class="voyage-stat-label">Лучшая серия</span>
-          <span class="voyage-stat-value voyage-stat-value--bold" id="go-combo-value">0ходов</span>
-        </div>
-      </div>
-
-
-     <!-- ═══ СОКРОВИЩА (скрыт если нет находок) ═══ -->
-      <section class="game-over-treasure hidden" id="go-treasure-section">
-        <!-- Заполняется из JS -->
-      </section>
-
-
-      <!-- ═══ ДАННЫЕ ПЛАВАНИЯ (скрыты если нет VoyageEngine) ═══ -->
-      <section class="game-over-voyage hidden" id="go-voyage-section">
-        <div class="voyage-summary-title">Бортовой журнал</div>
-        <div class="voyage-stat-row">
-          <span class="voyage-stat-label">Состояние обшивки</span>
-          <span class="voyage-stat-value voyage-stat-value--bold" id="go-hull">0/0</span>
-        </div>
-        <div class="voyage-stat-row">
-          <span class="voyage-stat-label">Ремонтов проведено</span>
-          <span class="voyage-stat-value voyage-stat-value--bold" id="go-repairs">0</span>
-        </div>
-        <div class="voyage-stat-row">
-          <span class="voyage-stat-label">Общий урон получен</span>
-          <span class="voyage-stat-value voyage-stat-value--bold" id="go-damage">0</span>
-        </div>
-        <div class="voyage-stat-row hidden" id="go-crits-row">
-          <span class="voyage-stat-label">Критических ударов</span>
-          <span class="voyage-stat-value voyage-stat-value--critical" id="go-crits">0</span>
-        </div>
-      </section>
-
-      <!-- ═══ ДОСТИЖЕНИЯ (скрыты если нет) ═══ -->
-      <div class="game-over-achievements hidden" id="go-achievements"></div>
-
-      <!-- ═══ ШТРАФЫ (скрыты если нет) ═══ -->
-      <div class="penalty-line hidden" id="go-penalties"></div>
-
-      <!-- ═══ ХУДШИЙ ХОД (скрыт если cpl <= 200) ═══ -->
-      <div class="worst-move-row hidden" id="go-worst-move">
-        <div class="label">Худший ход</div>
-        <div class="value" id="go-worst-value"></div>
-      </div>
-
-      <!-- ═══ СОВЕТ ПРИ ПОРАЖЕНИИ (скрыт) ═══ -->
-      <div class="defeat-tip hidden" id="go-defeat-tip"></div>
-
-      <!-- ═══ КНОПКИ ═══ -->
-      <div class="game-over-buttons">
-        <button class="btn-primary-action" id="go-btn-new-game">⛵ Новый поход</button>
-	<button id="go-btn-retry-fen" class="go-btn go-btn--secondary hidden">Тренировать ещё раз</button>
-        <button id="go-btn-close">Закрыть</button>
-      </div>
-
-    </div>
-  </div>
+<!-- GIF кракена при поражении (скрыт по умолчанию) -->
+<div class="game-over-illustration hidden" id="go-illustration">
+<img src="animation/krakenwin.gif"
+class="game-over-kraken-img"
+alt="Кракен побеждает"
+loading="lazy">
+<div class="illustration-caption">Художественная реконструкция событий</div>
 </div>
 
+<h2 class="game-over-title" id="go-title">ЭКСПЕДИЦИЯ ЗАВЕРШЕНА</h2>
+<p class="headline-sub hidden" id="go-subtitle"></p></section>
+
+<!-- ═══ РЕЙТИНГ ═══ -->
+<div class="newspaper-rating-block">
+<div class="rating-block-label">Изменение рейтинга</div>
+<div class="rating-delta" id="go-rating-delta">+0</div>
+<div class="rating-transition" id="go-rating-transition">1200→<b>1200</b></div>
+</div>
+
+<!-- ═══ КАТЕГОРИИ ХОДОВ ═══ -->
+<section class="game-over-categories">
+<div class="categories-title">Качество ходов</div>
+<div class="game-over-stats" id="go-categories">
+<!-- Заполняется из JS -->
+</div>
+</section>
+
+<!-- ═══ Результаты прохождения карты ═══ -->
+<div id="go-map-result" class="go-section hidden"></div>
+
+<!-- ═══ КОМБО (скрыт если< 3) ═══ -->
+<div class="game-over-combo hidden" id="go-combo-section">
+<div class="section-ornament">
+<span class="section-ornament-glyph">✦</span>
+</div>
+<div class="voyage-stat-row" style="padding: 0 30px;">
+<span class="voyage-stat-label">Лучшая серия</span>
+<span class="voyage-stat-value voyage-stat-value--bold" id="go-combo-value">0ходов</span>
+</div>
+</div>
+
+<!-- ═══ СОКРОВИЩА (скрыт если нет находок) ═══ -->
+<section class="game-over-treasure hidden" id="go-treasure-section">
+<!-- Заполняется из JS -->
+</section>
+
+<!-- ═══ ДАННЫЕ ПЛАВАНИЯ (скрыты если нет VoyageEngine) ═══ -->
+<section class="game-over-voyage hidden" id="go-voyage-section">
+<div class="voyage-summary-title">Бортовой журнал</div>
+<div class="voyage-stat-row">
+<span class="voyage-stat-label">Состояние обшивки</span>
+<span class="voyage-stat-value voyage-stat-value--bold" id="go-hull">0/0</span>
+</div>
+<div class="voyage-stat-row">
+<span class="voyage-stat-label">Ремонтов проведено</span>
+<span class="voyage-stat-value voyage-stat-value--bold" id="go-repairs">0</span>
+</div>
+<div class="voyage-stat-row">
+<span class="voyage-stat-label">Общий урон получен</span>
+<span class="voyage-stat-value voyage-stat-value--bold" id="go-damage">0</span>
+</div>
+<div class="voyage-stat-row hidden" id="go-crits-row">
+<span class="voyage-stat-label">Критических ударов</span>
+<span class="voyage-stat-value voyage-stat-value--critical" id="go-crits">0</span>
+</div>
+</section>
+
+<!-- ═══ ДОСТИЖЕНИЯ (скрыты если нет) ═══ -->
+<div class="game-over-achievements hidden" id="go-achievements"></div>
+
+<!-- ═══ ШТРАФЫ (скрыты если нет) ═══ -->
+<div class="penalty-line hidden" id="go-penalties"></div>
+
+<!-- ═══ ХУДШИЙ ХОД (скрыт если cpl <= 200) ═══ -->
+<div class="worst-move-row hidden" id="go-worst-move">
+<div class="label">Худший ход</div>
+<div class="value" id="go-worst-value"></div>
+</div>
+
+<!-- ═══ СОВЕТ ПРИ ПОРАЖЕНИИ (скрыт) ═══ -->
+<div class="defeat-tip hidden" id="go-defeat-tip"></div>
+
+<!-- ═══ КНОПКИ ═══ -->
+<div class="game-over-buttons">
+<button class="btn-primary-action" id="go-btn-new-game">⛵ Новый поход</button>
+<button id="go-btn-retry-fen" class="go-btn go-btn--secondary hidden">Тренировать ещё раз</button>
+<button id="go-btn-close">Закрыть</button>
+</div>
+
+</div>
+</div>
+</div>
 
 <!--═══ МОДАЛКА РЕДАКТОРА ПОЗИЦИЙ ═══ -->
 <div id="position-editor-modal" class="pe-modal">
-  <div class="pe-modal-content">
-    <div class="pe-header">
-      <h2 class="pe-title">Редактор позиций</h2>
-      <button id="pe-close" class="pe-close-btn">&times;</button>
-    </div>
-
-    <div class="pe-body">
-      <!-- Левая панель: фигуры для расстановки -->
-      <div class="pe-sidebar">
-        <div class="pe-piece-palette">
-          <div class="pe-palette-group">
-            <div class="pe-palette-label">Белые</div>
-            <div class="pe-palette-row">
-              <div class="pe-palette-piece" data-piece="wK"><img src="/chesspieces/alpha/wK.png" alt="K"></div>
-              <div class="pe-palette-piece" data-piece="wQ"><img src="/chesspieces/alpha/wQ.png" alt="Q"></div>
-              <div class="pe-palette-piece" data-piece="wR"><img src="/chesspieces/alpha/wR.png" alt="R"></div>
-              <div class="pe-palette-piece" data-piece="wB"><img src="/chesspieces/alpha/wB.png" alt="B"></div>
-              <div class="pe-palette-piece" data-piece="wN"><img src="/chesspieces/alpha/wN.png" alt="N"></div>
-              <div class="pe-palette-piece" data-piece="wP"><img src="/chesspieces/alpha/wP.png" alt="P"></div>
-            </div>
-          </div>
-          <div class="pe-palette-group">
-            <div class="pe-palette-label">Чёрные</div>
-            <div class="pe-palette-row">
-              <div class="pe-palette-piece" data-piece="bK"><img src="/chesspieces/alpha/bK.png" alt="k"></div>
-              <div class="pe-palette-piece" data-piece="bQ"><img src="/chesspieces/alpha/bQ.png" alt="q"></div>
-              <div class="pe-palette-piece" data-piece="bR"><img src="/chesspieces/alpha/bR.png" alt="r"></div>
-              <div class="pe-palette-piece" data-piece="bB"><img src="/chesspieces/alpha/bB.png" alt="b"></div>
-              <div class="pe-palette-piece" data-piece="bN"><img src="/chesspieces/alpha/bN.png" alt="n"></div>
-              <div class="pe-palette-piece" data-piece="bP"><img src="/chesspieces/alpha/bP.png" alt="p"></div>
-            </div>
-          </div>
-          <div class="pe-palette-group">
-            <div class="pe-tool-row">
-              <div class="pe-palette-piece pe-tool-eraser active" data-piece="trash" title="Ластик">
-                <span class="pe-eraser-icon">🗑️</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Центр: доска -->
-      <div class="pe-board-wrap">
-        <div id="pe-board" style="width: 100%;"></div>
-        <button id="pe-flip-board" class="pe-btn pe-btn-small pe-flip-btn" title="Перевернуть доску"> Перевернуть</button>
-      </div>
-
-      <!-- Правая панель: настройки -->
-      <div class="pe-settings">
-        <!-- Очередь хода -->
-        <div class="pe-setting-group">
-          <label class="pe-label">Очередь хода</label>
-          <div class="pe-radio-row">
-            <label class="pe-radio-label">
-              <input type="radio" name="pe-turn" value="w" checked><span class="pe-radio-custom pe-radio-white"></span> Белые
-            </label>
-            <label class="pe-radio-label">
-              <input type="radio" name="pe-turn" value="b">
-              <span class="pe-radio-custom pe-radio-black"></span> Чёрные
-            </label>
-          </div>
-        </div>
-
-        <!-- Рокировка -->
-        <div class="pe-setting-group">
-          <label class="pe-label">Рокировка</label>
-          <div class="pe-castling-grid">
-            <label class="pe-check-label">
-              <input type="checkbox" id="pe-castle-K" checked>
-              <span>♔ O-O</span>
-            </label>
-            <label class="pe-check-label">
-              <input type="checkbox" id="pe-castle-Q" checked>
-              <span>♔ O-O-O</span>
-            </label>
-            <label class="pe-check-label">
-              <input type="checkbox" id="pe-castle-k" checked>
-              <span>♚ O-O</span>
-            </label>
-            <label class="pe-check-label">
-              <input type="checkbox" id="pe-castle-q" checked>
-              <span>♚ O-O-O</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- FEN -->
-        <div class="pe-setting-group">
-          <label class="pe-label" for="pe-fen-input">FEN</label>
-          <div class="pe-fen-row">
-            <input type="text" id="pe-fen-input" class="pe-input pe-fen-field"
-                   placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
-            <button id="pe-fen-apply" class="pe-btn pe-btn-small" title="Применить FEN">↵</button>
-            <button id="pe-fen-copy" class="pe-btn pe-btn-small" title="Копировать FEN">📋</button>
-          </div><div id="pe-fen-error" class="pe-fen-error hidden"></div>
-        </div>
-
-        <!-- Пресеты -->
-        <div class="pe-setting-group">
-          <label class="pe-label">Быстрые позиции</label>
-          <div class="pe-presets">
-            <button class="pe-btn pe-btn-preset" data-fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Начальная</button>
-            <button class="pe-btn pe-btn-preset" data-fen="8/8/8/8/8/8/8/8 w - - 0 1">Пустая</button>
-          </div>
-        </div>
-
-        <!-- Валидация -->
-        <div id="pe-validation" class="pe-validation hidden"></div>
-
-        <!-- Кнопки действий -->
-        <div class="pe-actions">
-          <button id="pe-start-white" class="pe-btn pe-btn-primary">Играть за белых</button>
-          <button id="pe-start-black" class="pe-btn pe-btn-primary pe-btn-dark">Играть за чёрных</button>
-          <button id="pe-cancel" class="pe-btn pe-btn-secondary">Отмена</button>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="pe-modal-content">
+<div class="pe-header">
+<h2 class="pe-title">Редактор позиций</h2>
+<button id="pe-close" class="pe-close-btn">×</button>
 </div>
 
+<div class="pe-body">
+<!-- Левая панель: фигуры для расстановки -->
+<div class="pe-sidebar">
+<div class="pe-piece-palette">
+<div class="pe-palette-group">
+<div class="pe-palette-label">Белые</div>
+<div class="pe-palette-row">
+<div class="pe-palette-piece" data-piece="wK"><img src="/chesspieces/alpha/wK.png" alt="K"></div>
+<div class="pe-palette-piece" data-piece="wQ"><img src="/chesspieces/alpha/wQ.png" alt="Q"></div>
+<div class="pe-palette-piece" data-piece="wR"><img src="/chesspieces/alpha/wR.png" alt="R"></div>
+<div class="pe-palette-piece" data-piece="wB"><img src="/chesspieces/alpha/wB.png" alt="B"></div>
+<div class="pe-palette-piece" data-piece="wN"><img src="/chesspieces/alpha/wN.png" alt="N"></div>
+<div class="pe-palette-piece" data-piece="wP"><img src="/chesspieces/alpha/wP.png" alt="P"></div>
+</div>
+</div>
+<div class="pe-palette-group">
+<div class="pe-palette-label">Чёрные</div>
+<div class="pe-palette-row">
+<div class="pe-palette-piece" data-piece="bK"><img src="/chesspieces/alpha/bK.png" alt="k"></div>
+<div class="pe-palette-piece" data-piece="bQ"><img src="/chesspieces/alpha/bQ.png" alt="q"></div>
+<div class="pe-palette-piece" data-piece="bR"><img src="/chesspieces/alpha/bR.png" alt="r"></div>
+<div class="pe-palette-piece" data-piece="bB"><img src="/chesspieces/alpha/bB.png" alt="b"></div>
+<div class="pe-palette-piece" data-piece="bN"><img src="/chesspieces/alpha/bN.png" alt="n"></div>
+<div class="pe-palette-piece" data-piece="bP"><img src="/chesspieces/alpha/bP.png" alt="p"></div>
+</div>
+</div>
+<div class="pe-palette-group">
+<div class="pe-tool-row">
+<div class="pe-palette-piece pe-tool-eraser active" data-piece="trash" title="Ластик">
+<span class="pe-eraser-icon">🗑️</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Центр: доска -->
+<div class="pe-board-wrap">
+<div id="pe-board" style="width: 100%;"></div>
+<button id="pe-flip-board" class="pe-btn pe-btn-small pe-flip-btn" title="Перевернуть доску"> Перевернуть</button>
+</div>
+
+<!-- Правая панель: настройки -->
+<div class="pe-settings">
+<!-- Очередь хода -->
+<div class="pe-setting-group">
+<label class="pe-label">Очередь хода</label>
+<div class="pe-radio-row">
+<label class="pe-radio-label">
+<input type="radio" name="pe-turn" value="w" checked><span class="pe-radio-custom pe-radio-white"></span> Белые
+</label>
+<label class="pe-radio-label">
+<input type="radio" name="pe-turn" value="b">
+<span class="pe-radio-custom pe-radio-black"></span> Чёрные
+</label>
+</div>
+</div>
+
+<!-- Рокировка -->
+<div class="pe-setting-group">
+<label class="pe-label">Рокировка</label>
+<div class="pe-castling-grid">
+<label class="pe-check-label">
+<input type="checkbox" id="pe-castle-K" checked>
+<span>♔ O-O</span>
+</label>
+<label class="pe-check-label">
+<input type="checkbox" id="pe-castle-Q" checked>
+<span>♔ O-O-O</span>
+</label>
+<label class="pe-check-label">
+<input type="checkbox" id="pe-castle-k" checked>
+<span>♚ O-O</span>
+</label>
+<label class="pe-check-label">
+<input type="checkbox" id="pe-castle-q" checked>
+<span>♚ O-O-O</span>
+</label>
+</div>
+</div>
+
+<!-- FEN -->
+<div class="pe-setting-group">
+<label class="pe-label" for="pe-fen-input">FEN</label>
+<div class="pe-fen-row">
+<input type="text" id="pe-fen-input" class="pe-input pe-fen-field"
+placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+<button id="pe-fen-apply" class="pe-btn pe-btn-small" title="Применить FEN">↵</button>
+<button id="pe-fen-copy" class="pe-btn pe-btn-small" title="Копировать FEN">📋</button>
+</div><div id="pe-fen-error" class="pe-fen-error hidden"></div>
+</div>
+
+<!-- Пресеты -->
+<div class="pe-setting-group">
+<label class="pe-label">Быстрые позиции</label>
+<div class="pe-presets">
+<button class="pe-btn pe-btn-preset" data-fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Начальная</button>
+<button class="pe-btn pe-btn-preset" data-fen="8/8/8/8/8/8/8/8 w - - 0 1">Пустая</button>
+</div>
+</div>
+
+<!-- Валидация -->
+<div id="pe-validation" class="pe-validation hidden"></div>
+
+<!-- Кнопки действий -->
+<div class="pe-actions">
+<button id="pe-start-white" class="pe-btn pe-btn-primary">Играть за белых</button>
+<button id="pe-start-black" class="pe-btn pe-btn-primary pe-btn-dark">Играть за чёрных</button>
+<button id="pe-cancel" class="pe-btn pe-btn-secondary">Отмена</button>
+</div>
+</div>
+</div>
+</div>
+</div>
 
 </body>
 </html>

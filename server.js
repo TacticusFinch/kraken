@@ -10,12 +10,128 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { Chess } = require('chess.js');
+const session = require('express-session');
+const db = require('./db');
+const SqliteStore = require('better-sqlite3-session-store')(session);
+const passport = require('passport');
+const bcrypt = require('bcryptjs');
+const UserStore = require('./models/UserSqlite');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'kraken-dev-secret',
+  resave: false,
+  saveUninitialized: false,
+  store: new SqliteStore({
+    client: db,
+    expired: { clear: true, intervalMs: 1000 * 60 * 15 }
+  }),
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true
+  }
+}));
+
+// 2. Активация Passport
+require('./config/passport')(passport);
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Определяем userId: залогиненный пользователь или аноним
+app.use((req, res, next) => {
+  if (req.isAuthenticated()) {
+    req.oddsUserId = `user_${req.user.id}`;
+  }
+  next();
+});
+
+
+// ================= МАРШРУТЫ АВТОРИЗАЦИИ =================
+
+// Регистрация обычного аккаунта
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Заполните все поля' });
+    }
+    if (UserStore.findByEmail(email)) {
+      return res.status(400).json({ message: 'Email уже занят' });
+    }
+    if (UserStore.findByUsername(username)) {
+      return res.status(400).json({ message: 'Имя уже занято' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    UserStore.create({ username, email, passwordHash: hashedPassword });
+
+    res.status(201).json({ message: 'Регистрация успешна' });
+  } catch (e) {
+    console.error('Ошибка регистрации:', e.message);
+    res.status(500).json({ message: 'Ошибка сервера при регистрации' });
+  }
+});
+
+// Логин
+app.post('/api/auth/login', (req, res, next) => {
+  passport.authenticate('local', (err, user, info) => {
+    if (err) return res.status(500).json({ message: 'Ошибка сервера' });
+    if (!user) return res.status(401).json({ message: info?.message || 'Неверные данные' });
+
+    req.logIn(user, (err) => {
+      if (err) return res.status(500).json({ message: 'Ошибка входа' });
+      
+      // Не отправляем пароль на клиент
+      const safeUser = {
+        id: user.id,
+        username: user.username,
+        email: user.email
+      };
+      res.json({ message: 'Вы успешно вошли', user: safeUser });
+    });
+  })(req, res, next);
+});
+
+// Роуты для Lichess
+app.get('/api/auth/lichess', passport.authenticate('lichess'));
+app.get('/api/auth/lichess/callback', 
+  passport.authenticate('lichess', { failureRedirect: '/login?error=oauth_failed' }),
+  (req, res) => { res.redirect('/'); } // Перенаправление на главную после успеха
+);
+
+// Выход из системы
+app.post('/api/auth/logout', (req, res, next) => {
+  req.logout((err) => {
+    if (err) return next(err);
+    res.json({ message: 'Вы вышли из системы' });
+  });
+});
+
+// Проверка текущего юзера (для фронтенда при обновлении страницы)
+app.get('/api/user/me', (req, res) => {
+  if (req.isAuthenticated()) {
+    return res.json({
+      loggedIn: true,
+      user: {
+        id: req.user.id,
+        username: req.user.username,
+        email: req.user.email,
+        rating: req.user.rating,
+        games: req.user.games
+      }
+    });
+  }
+  res.json({ loggedIn: false });
+});
+
+
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -91,6 +207,72 @@ app.get(/.*\.wasm$/, stockfishHeaders, (req, res) => {
         }
     }
 });
+
+// Страница авторизации
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'auth.html'));
+});
+
+app.get('/register', (req, res) => {
+    res.sendFile(path.join(__dirname, 'auth.html'));
+});
+
+
+
+// Миграция рейтинга анонима → в аккаунт при входе
+app.post('/api/rating/migrate', (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: 'Не авторизован' });
+  }
+
+  const { anonymousId } = req.body;
+  const oddsId = `user_${req.user.id}`;
+  const UserStore = require('./models/UserSqlite');
+
+  // Если у аккаунта уже есть игры — не перезаписываем
+  const existing = ratings[oddsId];
+  if (existing && existing.games > 0) {
+    return res.json({
+      message: 'У аккаунта уже есть рейтинг',
+      userId: oddsId,
+      rating: existing.rating,
+      games: existing.games
+    });
+  }
+
+  // Если есть анонимный рейтинг — переносим
+  const anon = ratings[anonymousId];
+  if (anon && anon.games > 0) {
+    ratings[oddsId] = { ...anon, updatedAt: Date.now() };
+    console.log(`📦 Миграция рейтинга: ${anonymousId} → ${oddsId} (${anon.rating}, ${anon.games} игр)`);
+    saveRatingsDebounced();
+
+    // Синхронизируем с таблицей users
+    UserStore.updateRating(req.user.id, anon.rating, anon.games, anon.lastDeltas || []);
+
+    return res.json({
+      message: 'Рейтинг перенесён',
+      userId: oddsId,
+      rating: anon.rating,
+      games: anon.games,
+      migratedFrom: anonymousId
+    });
+  }
+
+  // Ни у кого нет рейтинга — создаём дефолтный
+  ratings[oddsId] = { rating: 1200, games: 0, lastDeltas: [], updatedAt: Date.now() };
+  saveRatingsDebounced();
+
+  res.json({
+    message: 'Создан новый рейтинг',
+    userId: oddsId,
+    rating: 1200,
+    games: 0
+  });
+});
+
+
+
 
 app.use(express.static(__dirname));
 
@@ -905,6 +1087,19 @@ app.post('/api/rating/:userId/update', (req, res) => {
         updatedAt: Date.now()
     };
     saveRatingsDebounced();
+
+    // Синхронизируем с SQLite если это залогиненный пользователь
+    if (userId.startsWith('user_')) {
+      const dbId = parseInt(userId.replace('user_', ''));
+      if (!isNaN(dbId)) {
+        try {
+          const UserStore = require('./models/UserSqlite');
+          UserStore.updateRating(dbId, newRating, ratings[userId].games, newDeltas);
+        } catch (e) {
+          console.error('Ошибка синхронизации с SQLite:', e.message);
+        }
+      }
+    }
 
     console.log(`📈 ${userId}: ${oldRating} → ${newRating} (delta ${delta >= 0 ? '+' : ''}${delta}) ходов=${moves.length}`);
 

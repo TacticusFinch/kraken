@@ -39,8 +39,10 @@ const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 
 
 // --- Warm-up сервера и предзагрузка ---
 function warmUpServer() {
-    fetch(API_BASE + '/health', { method: 'GET' }).catch(() => {});
+    // Пингуем корень сайта, чтобы разбудить Render (он вернет 200 вместо 404)
+    fetch(API_BASE + '/', { method: 'GET' }).catch(() => {});
 }
+
 
 const openingBookCache = new Map();
 const BOOK_CACHE_TTL = 30 * 60 * 1000;
