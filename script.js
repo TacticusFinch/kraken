@@ -487,6 +487,12 @@ async function processPlayerMove(move, fenBefore) {
         const playerTurnBefore = fenBefore.charAt(fenBefore.indexOf(' ') + 1);
 
         appendMoveToNotation(move, 'pending', true);
+	if (typeof TreasureHunt !== 'undefined') {
+            const foundTreasure = TreasureHunt.checkPlayerMove(move.san);
+            if (foundTreasure) {
+                console.log("🎉 Сокровище найдено в партии!", foundTreasure);
+            }
+        }
 
         const serverDataPromise = playMoveOnServer(fenBefore, move.san, userRating);
         analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, playerTurnBefore, serverDataPromise);
@@ -668,7 +674,9 @@ function applyOpponentReply(san) {
     board.position(game.fen(), true);
     playMoveSound(result);
     appendMoveToNotation(result, 'opponent', false);
-
+    if (typeof TreasureHunt !== 'undefined' && TreasureHunt.isActive()) {
+        TreasureHunt.scanPosition(game.fen(), playerColor);
+    }
     // Предвычисляем оценку пока игрок думает
     prefetchEvaluation(game.fen());
 
@@ -700,6 +708,9 @@ async function makeEngineReply() {
                 board.position(game.fen(), true);
                 playMoveSound(result);
                 appendMoveToNotation(result, 'opponent', false);
+		if (typeof TreasureHunt !== 'undefined' && TreasureHunt.isActive()) {
+                    TreasureHunt.scanPosition(game.fen(), playerColor);
+                }
             }
         }
         waitingForOpponent = false;
@@ -1415,22 +1426,23 @@ lastTapAction = 'select';
 // ============================================
 
 function onDragStart(source, piece, position, orientation) {
-if (isTouchDevice) return false;
-if (!sessionActive) return false;
-if (game.game_over()) return false;
+    if (isTouchDevice) return false;
+    if (!sessionActive) return false;
+    if (game.game_over()) return false;
 
-if (selectedSquare) {
-clearClickHighlight();
-selectedSquare = null;
-}
+    const pieceColor = piece[0];
+    if ((playerColor === 'white' && pieceColor === 'b') ||
+        (playerColor === 'black' && pieceColor === 'w')) {
+        return false;   // чужая фигура — НЕ трогаем selectedSquare
+    }
 
-const pieceColor = piece[0];
-if ((playerColor === 'white' && pieceColor === 'b') ||
-(playerColor === 'black' && pieceColor === 'w')) {
-return false;
-}
+    // обнуляем выбор только если реально начинаем тащить свою фигуру
+    if (selectedSquare) {
+        clearClickHighlight();
+        selectedSquare = null;
+    }
 
-return true;
+    return true;
 }
 
 // ============================================
@@ -1972,6 +1984,12 @@ $(document).ready(async function () {
     setTimeout(testSkillLevelSupport, 3000);
 
     $('#applyRating').on('click', handleRatingReset);
+
+   // Инициализация системы сокровищ
+   if (typeof TreasureHunt !== 'undefined') {
+       TreasureHunt.init();
+   }
+   
 
     console.log('🦑 Kraken Opening Trainer v3.8 loaded');
 });

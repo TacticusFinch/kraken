@@ -271,7 +271,40 @@ app.post('/api/rating/migrate', (req, res) => {
   });
 });
 
+// ============================================
+// API: Поиск сокровищ
+// ============================================
+app.post('/api/treasure/scan', async (req, res) => {
+    const { fen, rating } = req.body;
+    try {
+        // Используем уже существующую функцию fetchLichessExplorer
+        const data = await fetchLichessExplorer(fen, rating);
+        const moves = data.moves || [];
+        
+        // Фильтруем ходы: ищем те, которые редко играют (например, < 12%)
+        // Это и будут наши "сокровища"
+        const total = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        
+        const treasures = moves
+            .filter(m => {
+                const count = m.white + m.draws + m.black;
+                const popularity = (count / total) * 100;
+                // Условие: ход редкий (меньше 12%) и имеет хоть какую-то статистику
+                return popularity < 12 && count >= 5;
+            })
+            .map(m => ({
+                san: m.san,
+                popularity: ((m.white + m.draws + m.black) / total * 100).toFixed(1),
+                winRate: ((m.white + 0.5 * m.draws) / (m.white + m.draws + m.black) * 100).toFixed(1),
+                games: (m.white + m.draws + m.black)
+            }));
 
+        res.json({ treasures });
+    } catch (err) {
+        console.error('Ошибка /api/treasure/scan:', err.message);
+        res.status(500).json({ error: 'Failed to scan treasures' });
+    }
+});
 
 
 app.use(express.static(__dirname));
