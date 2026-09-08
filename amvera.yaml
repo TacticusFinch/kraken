@@ -9,4 +9,3 @@ build:
 
 run:
   command: node server.js
-  persistenceMount: /app/data
