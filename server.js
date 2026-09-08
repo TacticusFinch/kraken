@@ -314,8 +314,8 @@ app.use(express.static(__dirname));
 // ============================================
 
 const token = process.env.LICHESS_TOKEN;
-const CACHE_TTL = 1000 * 60 * 60;
-const CACHE_MAX_SIZE = 2000;
+const CACHE_TTL = 1000 * 60 * 24;
+const CACHE_MAX_SIZE = 5000;
 const LICHESS_TIMEOUT = 2500;
 const PREFETCH_ENABLED = false;
 const PREFETCH_TOP_N = 2;
@@ -437,31 +437,23 @@ const lichessLimit = createRateLimiter(750);
 // ============================================
 function getLichessRatingBands(rating) {
     const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
-    if (rating < 1100) return [1000, 1200];
-
-    let idx = 0;
+    const r = Math.max(1000, Math.min(2500, rating));
+    
+    // Находим ближайший диапазон
+    let closestIdx = 0;
+    let minDiff = Infinity;
     for (let i = 0; i < allBands.length; i++) {
-        if (allBands[i] <= rating) idx = i;
-        else break;
+        const diff = Math.abs(allBands[i] - r);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestIdx = i;
+        }
     }
 
-    const main = allBands[idx];
-    const next = allBands[idx + 1];
-    const prev = allBands[idx - 1];
-    const result = [main];
-    const step = next !== undefined ? next - main : 200;
-    const distToTop = next !== undefined ? next - rating : Infinity;
-    const distToBottom = rating - main;
-
-    if (next !== undefined && distToTop <= step / 3) {
-        result.push(next);
-    } else if (prev !== undefined && distToBottom <= step / 3) {
-        result.push(prev);
-    } else if (next === undefined && prev !== undefined) {
-        result.push(prev);
-    }
-
-    return result.sort((a, b) => a - b);
+    // Сразу берем группу игрока + по одной группе снизу и сверху
+    const start = Math.max(0, closestIdx - 1);
+    const end = Math.min(allBands.length, closestIdx + 2);
+    return allBands.slice(start, end);
 }
 
 // ============================================
@@ -523,27 +515,27 @@ function expandBands(bands) {
 }
 
 async function fetchLichessExplorer(fen, rating) {
+    // Если мы на паузе после 429 — сразу выходим, не спамим
+    if (Date.now() < rateLimitBlockedUntil) {
+        return { moves: [] };
+    }
+
     let bands = getLichessRatingBands(rating);
     let data = await fetchLichessRaw(fen, bands);
     
-    // Если словили 429, НЕ долбим API расширением диапазонов!
-    if (data.rateLimited) return data;
+    // Если на паузе или ходов нет — не делаем повторных запросов
+    if (Date.now() < rateLimitBlockedUntil || !data?.moves?.length) {
+        return data || { moves: [] };
+    }
 
     let total = (data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
 
-    let attempts = 0;
-    while (total < MIN_GAMES_FOR_BOOK && attempts < 2) {
+    // Дополнительный запрос делаем ТОЛЬКО один раз и только если реально мало партий
+    if (total < MIN_GAMES_FOR_BOOK) {
         const expanded = expandBands(bands);
-        if (expanded.length === bands.length) break;
-        console.log(`⚠ Мало партий (${total} < ${MIN_GAMES_FOR_BOOK}), расширяем bands → [${expanded.join(',')}]`);
-        bands = expanded;
-        data = await fetchLichessRaw(fen, bands);
-        
-        // Прерываем при ошибке лимита
-        if (data.rateLimited) break;
-
-        total = (data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        attempts++;
+        if (expanded.length > bands.length) {
+            data = await fetchLichessRaw(fen, expanded);
+        }
     }
 
     return data;
