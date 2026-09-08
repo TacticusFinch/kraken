@@ -8,4 +8,5 @@ build:
   requirementsPath: package.json
 
 run:
-  command: npm start
+  command: node server.js
+  persistenceMount: /app/data
