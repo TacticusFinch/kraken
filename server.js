@@ -318,7 +318,7 @@ const CACHE_TTL = 1000 * 60 * 60;
 const CACHE_MAX_SIZE = 2000;
 const LICHESS_TIMEOUT = 2500;
 const PREFETCH_ENABLED = true;
-const PREFETCH_TOP_N = 4;
+const PREFETCH_TOP_N = 2;
 const PREFETCH_MIN_SHARE = 0.05;
 const MIN_GAMES_FOR_BOOK = 25;
 const MIN_GAMES_FOR_MOVE = 10;
@@ -410,7 +410,7 @@ function createLimiter(maxConcurrent) {
         next();
     });
 }
-const lichessLimit = createLimiter(6);
+const lichessLimit = createLimiter(2);
 
 // ============================================
 // Рейтинговые группы Lichess
@@ -482,8 +482,15 @@ async function fetchLichessRaw(fen, bands) {
         setCached(cacheKey, response.data);
         return response.data;
     }).catch(err => {
-        if (err.response) console.error('Lichess API:', err.response.status, err.response.statusText);
-        else console.error('Lichess API:', err.message);
+        if (err.response) {
+            console.error('Lichess API:', err.response.status, err.response.statusText);
+            // Если получили 429, помечаем, что это ошибка рейт-лимита
+            if (err.response.status === 429) {
+                return { moves: [], rateLimited: true };
+            }
+        } else {
+            console.error('Lichess API:', err.message);
+        }
         return { moves: [] };
     }).finally(() => {
         inflight.delete(cacheKey);
@@ -506,6 +513,10 @@ function expandBands(bands) {
 async function fetchLichessExplorer(fen, rating) {
     let bands = getLichessRatingBands(rating);
     let data = await fetchLichessRaw(fen, bands);
+    
+    // Если словили 429, НЕ долбим API расширением диапазонов!
+    if (data.rateLimited) return data;
+
     let total = (data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
 
     let attempts = 0;
@@ -515,6 +526,10 @@ async function fetchLichessExplorer(fen, rating) {
         console.log(`⚠ Мало партий (${total} < ${MIN_GAMES_FOR_BOOK}), расширяем bands → [${expanded.join(',')}]`);
         bands = expanded;
         data = await fetchLichessRaw(fen, bands);
+        
+        // Прерываем при ошибке лимита
+        if (data.rateLimited) break;
+
         total = (data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
         attempts++;
     }
