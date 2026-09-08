@@ -3,7 +3,7 @@
 //============================================
 
 // --- Константы ---
-const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://kraken-qslu.onrender.com';
+const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://krakenserver-tacticusfinch.amvera.io';
 const EVAL_DEPTH = 15;
 const EVAL_DEPTH_FAST = 10;
 const NUM_ENGINES = 3;
