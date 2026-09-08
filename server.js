@@ -317,7 +317,7 @@ const token = process.env.LICHESS_TOKEN;
 const CACHE_TTL = 1000 * 60 * 60;
 const CACHE_MAX_SIZE = 2000;
 const LICHESS_TIMEOUT = 2500;
-const PREFETCH_ENABLED = true;
+const PREFETCH_ENABLED = false;
 const PREFETCH_TOP_N = 2;
 const PREFETCH_MIN_SHARE = 0.05;
 const MIN_GAMES_FOR_BOOK = 25;
@@ -369,6 +369,7 @@ const lichessCache = new Map();
 const inflight = new Map();
 let cacheHits = 0;
 let cacheMisses = 0;
+let rateLimitBlockedUntil = 0;
 
 function getCached(key) {
     const entry = lichessCache.get(key);
@@ -391,26 +392,45 @@ function setCached(key, data) {
 }
 
 // ============================================
-// Ограничитель параллельных запросов
+// Ограничитель с задержкой (Rate Limiter)
 // ============================================
-function createLimiter(maxConcurrent) {
-    let active = 0;
+function createRateLimiter(minDelayMs) {
+    let lastCallTime = 0;
     const queue = [];
-    const next = () => {
-        if (active >= maxConcurrent || queue.length === 0) return;
-        active++;
+    let isProcessing = false;
+
+    const processQueue = async () => {
+        if (queue.length === 0 || isProcessing) return;
+        isProcessing = true;
+
         const { fn, resolve, reject } = queue.shift();
-        fn().then(resolve, reject).finally(() => {
-            active--;
-            next();
-        });
+        const now = Date.now();
+        const timeSinceLast = now - lastCallTime;
+        
+        if (timeSinceLast < minDelayMs) {
+            await new Promise(r => setTimeout(r, minDelayMs - timeSinceLast));
+        }
+
+        lastCallTime = Date.now();
+        try {
+            const res = await fn();
+            resolve(res);
+        } catch (err) {
+            reject(err);
+        } finally {
+            isProcessing = false;
+            processQueue();
+        }
     };
+
     return (fn) => new Promise((resolve, reject) => {
         queue.push({ fn, resolve, reject });
-        next();
+        processQueue();
     });
 }
-const lichessLimit = createLimiter(2);
+
+// Минимум 750 мс между каждым запросом (максимум ~1.3 запроса/сек — идеал для Lichess)
+const lichessLimit = createRateLimiter(750);
 
 // ============================================
 // Рейтинговые группы Lichess
@@ -448,20 +468,16 @@ function getLichessRatingBands(rating) {
 // Запрос к Lichess Explorer
 // ============================================
 async function fetchLichessRaw(fen, bands) {
+    // Если мы временно заблокированы Lichess — не спамим и ждём окончания бана
+    if (Date.now() < rateLimitBlockedUntil) {
+        console.log(`⏳ Ждём снятия 429 (осталось ${Math.ceil((rateLimitBlockedUntil - Date.now()) / 1000)}с)`);
+        return { moves: [] };
+    }
+
     const cacheKey = `${fen}|${bands.join(',')}`;
     const cached = getCached(cacheKey);
-    if (cached) {
-        const total = (cached.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        console.log(`📚 [CACHE] bands=[${bands.join(',')}] | партий: ${total}`);
-        return cached;
-    }
-
-    if (inflight.has(cacheKey)) {
-        console.log(`⏳ [INFLIGHT] bands=[${bands.join(',')}]`);
-        return inflight.get(cacheKey);
-    }
-
-    console.log(`🌐 [FETCH] bands=[${bands.join(',')}] | FEN: ${fen.split(' ').slice(0, 2).join(' ')}`);
+    if (cached) return cached;
+    if (inflight.has(cacheKey)) return inflight.get(cacheKey);
 
     const url = new URL('https://explorer.lichess.ovh/lichess');
     url.searchParams.set('variant', 'standard');
@@ -472,24 +488,20 @@ async function fetchLichessRaw(fen, bands) {
 
     const p = lichessLimit(() => axios.get(url.toString(), {
         headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': token ? `Bearer ${token}` : undefined,
             'User-Agent': 'KrakenChessTrainer/3.3'
         },
         timeout: LICHESS_TIMEOUT
     })).then(response => {
         const total = (response.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        console.log(`✅ [FETCH OK] bands=[${bands.join(',')}] | ${total} партий`);
         setCached(cacheKey, response.data);
         return response.data;
     }).catch(err => {
-        if (err.response) {
+        if (err.response?.status === 429) {
+            console.error('🛑 Lichess 429: включаем паузу на 60 секунд!');
+            rateLimitBlockedUntil = Date.now() + 60000; // Ждем 60 секунд без запросов
+        } else if (err.response) {
             console.error('Lichess API:', err.response.status, err.response.statusText);
-            // Если получили 429, помечаем, что это ошибка рейт-лимита
-            if (err.response.status === 429) {
-                return { moves: [], rateLimited: true };
-            }
-        } else {
-            console.error('Lichess API:', err.message);
         }
         return { moves: [] };
     }).finally(() => {
