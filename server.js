@@ -486,7 +486,9 @@ async function fetchLichessRaw(fen, bands) {
         timeout: LICHESS_TIMEOUT
     })).then(response => {
         const total = (response.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        setCached(cacheKey, response.data);
+        if (response.data?.moves?.length > 0) {
+    setCached(cacheKey, response.data);
+}
         return response.data;
     }).catch(err => {
         if (err.response?.status === 429) {
@@ -515,7 +517,6 @@ function expandBands(bands) {
 }
 
 async function fetchLichessExplorer(fen, rating) {
-    // Если мы на паузе после 429 — сразу выходим, не спамим
     if (Date.now() < rateLimitBlockedUntil) {
         return { moves: [] };
     }
@@ -523,22 +524,18 @@ async function fetchLichessExplorer(fen, rating) {
     let bands = getLichessRatingBands(rating);
     let data = await fetchLichessRaw(fen, bands);
     
-    // Если на паузе или ходов нет — не делаем повторных запросов
-    if (Date.now() < rateLimitBlockedUntil || !data?.moves?.length) {
-        return data || { moves: [] };
+    // Если вернулись ходы — отдаём
+    if (data?.moves?.length > 0) {
+        return data;
     }
 
-    let total = (data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-
-    // Дополнительный запрос делаем ТОЛЬКО один раз и только если реально мало партий
-    if (total < MIN_GAMES_FOR_BOOK) {
-        const expanded = expandBands(bands);
-        if (expanded.length > bands.length) {
-            data = await fetchLichessRaw(fen, expanded);
-        }
+    // Если ходов нет, пробуем расширенный диапазон
+    const expanded = expandBands(bands);
+    if (expanded.length > bands.length && Date.now() >= rateLimitBlockedUntil) {
+        data = await fetchLichessRaw(fen, expanded);
     }
 
-    return data;
+    return data || { moves: [] };
 }
 
 // ============================================
