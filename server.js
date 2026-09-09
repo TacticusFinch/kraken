@@ -314,7 +314,7 @@ app.use(express.static(__dirname));
 // ============================================
 
 const token = process.env.LICHESS_TOKEN;
-const CACHE_TTL = 1000 * 60 * 24;
+const CACHE_TTL = 1000*60*60*24;
 const CACHE_MAX_SIZE = 5000;
 const LICHESS_TIMEOUT = 2500;
 const PREFETCH_ENABLED = false;
@@ -392,54 +392,35 @@ function setCached(key, data) {
 }
 
 // ============================================
-// Ограничитель с задержкой (Rate Limiter)
+// Ограничитель с очередью (строго 1 запрос в 1000мс)
 // ============================================
-function createRateLimiter(minDelayMs) {
-    let lastCallTime = 0;
-    const queue = [];
-    let isProcessing = false;
+let lastLichessCall = 0;
+const LICHESS_DELAY_MS = 1000;
 
-    const processQueue = async () => {
-        if (queue.length === 0 || isProcessing) return;
-        isProcessing = true;
-
-        const { fn, resolve, reject } = queue.shift();
+function lichessLimit(fn) {
+    return new Promise((resolve, reject) => {
         const now = Date.now();
-        const timeSinceLast = now - lastCallTime;
-        
-        if (timeSinceLast < minDelayMs) {
-            await new Promise(r => setTimeout(r, minDelayMs - timeSinceLast));
-        }
+        const wait = Math.max(0, lastLichessCall + LICHESS_DELAY_MS - now);
+        lastLichessCall = now + wait;
 
-        lastCallTime = Date.now();
-        try {
-            const res = await fn();
-            resolve(res);
-        } catch (err) {
-            reject(err);
-        } finally {
-            isProcessing = false;
-            processQueue();
-        }
-    };
-
-    return (fn) => new Promise((resolve, reject) => {
-        queue.push({ fn, resolve, reject });
-        processQueue();
+        setTimeout(async () => {
+            try {
+                const res = await fn();
+                resolve(res);
+            } catch (e) {
+                reject(e);
+            }
+        }, wait);
     });
 }
 
-// Минимум 750 мс между каждым запросом (максимум ~1.3 запроса/сек — идеал для Lichess)
-const lichessLimit = createRateLimiter(750);
-
 // ============================================
-// Рейтинговые группы Lichess
+// Рейтинговые группы Lichess (широкий охват)
 // ============================================
 function getLichessRatingBands(rating) {
     const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
     const r = Math.max(1000, Math.min(2500, rating));
     
-    // Находим ближайший диапазон
     let closestIdx = 0;
     let minDiff = Infinity;
     for (let i = 0; i < allBands.length; i++) {
@@ -450,25 +431,29 @@ function getLichessRatingBands(rating) {
         }
     }
 
-    // Сразу берем группу игрока + по одной группе снизу и сверху
     const start = Math.max(0, closestIdx - 1);
     const end = Math.min(allBands.length, closestIdx + 2);
     return allBands.slice(start, end);
 }
 
-// ============================================
-// Запрос к Lichess Explorer
-// ============================================
-async function fetchLichessRaw(fen, bands) {
-    // Если мы временно заблокированы Lichess — не спамим и ждём окончания бана
-    if (Date.now() < rateLimitBlockedUntil) {
-        console.log(`⏳ Ждём снятия 429 (осталось ${Math.ceil((rateLimitBlockedUntil - Date.now()) / 1000)}с)`);
-        return { moves: [] };
-    }
+function expandBands(bands) {
+    const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
+    const set = new Set(bands);
+    const minIdx = allBands.indexOf(bands[0]);
+    const maxIdx = allBands.indexOf(bands[bands.length - 1]);
+    if (minIdx > 0) set.add(allBands[minIdx - 1]);
+    if (maxIdx < allBands.length - 1) set.add(allBands[maxIdx + 1]);
+    return [...set].sort((a, b) => a - b);
+}
 
+// ============================================
+// Запрос к Lichess Explorer с мягким повтором при 429
+// ============================================
+async function fetchLichessRaw(fen, bands, retryCount = 0) {
     const cacheKey = `${fen}|${bands.join(',')}`;
     const cached = getCached(cacheKey);
     if (cached) return cached;
+
     if (inflight.has(cacheKey)) return inflight.get(cacheKey);
 
     const url = new URL('https://explorer.lichess.ovh/lichess');
@@ -483,19 +468,23 @@ async function fetchLichessRaw(fen, bands) {
             'Authorization': token ? `Bearer ${token}` : undefined,
             'User-Agent': 'KrakenChessTrainer/3.3'
         },
-        timeout: LICHESS_TIMEOUT
+        timeout: 4500
     })).then(response => {
-        const total = (response.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        if (response.data?.moves?.length > 0) {
-    setCached(cacheKey, response.data);
-}
+        if (response.data && response.data.moves && response.data.moves.length > 0) {
+            setCached(cacheKey, response.data);
+        }
         return response.data;
-    }).catch(err => {
-        if (err.response?.status === 429) {
-            console.error('🛑 Lichess 429: включаем паузу на 60 секунд!');
-            rateLimitBlockedUntil = Date.now() + 60000; // Ждем 60 секунд без запросов
-        } else if (err.response) {
-            console.error('Lichess API:', err.response.status, err.response.statusText);
+    }).catch(async err => {
+        // Если прилетел 429 — не блокируем игру на 60 сек, а ждем 2.5с и повторяем
+        if (err.response?.status === 429 && retryCount < 1) {
+            console.log(`⏳ Лимит Lichess (429): мягкое ожидание 2.5с и повтор...`);
+            await new Promise(r => setTimeout(r, 2500));
+            return fetchLichessRaw(fen, bands, retryCount + 1);
+        }
+        if (err.response) {
+            console.error('Lichess API error:', err.response.status, err.response.statusText);
+        } else {
+            console.error('Lichess API error:', err.message);
         }
         return { moves: [] };
     }).finally(() => {
@@ -506,33 +495,16 @@ async function fetchLichessRaw(fen, bands) {
     return p;
 }
 
-function expandBands(bands) {
-    const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
-    const set = new Set(bands);
-    const minIdx = allBands.indexOf(bands[0]);
-    const maxIdx = allBands.indexOf(bands[bands.length - 1]);
-    if (minIdx > 0) set.add(allBands[minIdx - 1]);
-    if (maxIdx < allBands.length - 1) set.add(allBands[maxIdx + 1]);
-    return [...set].sort((a, b) => a - b);
-}
-
 async function fetchLichessExplorer(fen, rating) {
-    if (Date.now() < rateLimitBlockedUntil) {
-        return { moves: [] };
-    }
-
     let bands = getLichessRatingBands(rating);
     let data = await fetchLichessRaw(fen, bands);
-    
-    // Если вернулись ходы — отдаём
-    if (data?.moves?.length > 0) {
-        return data;
-    }
 
-    // Если ходов нет, пробуем расширенный диапазон
-    const expanded = expandBands(bands);
-    if (expanded.length > bands.length && Date.now() >= rateLimitBlockedUntil) {
-        data = await fetchLichessRaw(fen, expanded);
+    // Если ходов не найдено, расширяем диапазон один раз
+    if (!data?.moves?.length) {
+        const expanded = expandBands(bands);
+        if (expanded.length > bands.length) {
+            data = await fetchLichessRaw(fen, expanded);
+        }
     }
 
     return data || { moves: [] };
