@@ -72,9 +72,17 @@ const TreasureHunt = (function() {
             desc: 'Необычный, но вполне достойный ход'
         }
     };
-// ==========================================
+/// ==========================================
     // СОСТОЯНИЕ
     // ==========================================
+
+    let currentScanId = 0; // <-- ДОБАВИТЬ ЭТУ СТРОКУ (защита от гонок асинхронности)
+
+    // <-- ДОБАВИТЬ ЭТУ ФУНКЦИЮ:
+    function getPieceValue(piece) {
+        const vals = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+        return vals[piece ? piece.toLowerCase() : ''] || 0;
+    }
 
     let state = {};
     let DOM = {};
@@ -257,6 +265,10 @@ function prefilterCandidates(moves) {
     // ГЛАВНЫЙ МЕТОД — СКАНИРОВАНИЕ ПОЗИЦИИ
     // ==========================================
 
+// ==========================================
+    // ГЛАВНЫЙ МЕТОД — СКАНИРОВАНИЕ ПОЗИЦИИ
+    // ==========================================
+
     async function scanPosition(fen, playerColor) {
         TreasureDiag.log('SCAN', 'scanPosition called', {
             fen: fen.substring(0, 40) + '...',
@@ -266,10 +278,6 @@ function prefilterCandidates(moves) {
         // --- Быстрые проверки ---
         if (!state.active) {
             TreasureDiag.log('GATE', '❌ Module not active');
-            return [];
-        }
-        if (state.scanInProgress) {
-            TreasureDiag.log('GATE', '❌ Scan already in progress');
             return [];
         }
         if (fen === state.lastScanFen) {
@@ -325,6 +333,8 @@ function prefilterCandidates(moves) {
             move: fullmove, complexity: complexity
         });
 
+        // Инкрементируем ID: отменяет обработку любых прошлых зависших запросов
+        const scanId = ++currentScanId;
         state.movesSinceLastScan = 0;
         state.lastScanFen = fen;
         state.scanInProgress = true;
@@ -334,63 +344,46 @@ function prefilterCandidates(moves) {
             TreasureDiag.log('SERVER', 'Fetching book data...');
             const bookData = await fetchBookData(fen);
 
-            if (!bookData) {
-                TreasureDiag.log('SERVER', '❌ Server returned null/error');
+            // Если позиция успела смениться пока сервер отвечал — прерываем
+            if (scanId !== currentScanId) {
+                TreasureDiag.log('SCAN', '⏹️ Scan aborted (new move was made)');
+                return [];
+            }
+
+            if (!bookData || !bookData.treasures || bookData.treasures.length === 0) {
+                TreasureDiag.log('SERVER', '❌ No treasures in response');
                 state.consecutiveEmptyScans++;
                 state.currentTreasures = [];
                 return [];
             }
-
-            if (!bookData.treasures || bookData.treasures.length === 0) {
-                TreasureDiag.log('SERVER', '❌ No treasures in response', {
-                    keys: Object.keys(bookData),
-                    raw: JSON.stringify(bookData).substring(0, 200)
-                });
-                state.consecutiveEmptyScans++;
-                state.currentTreasures = [];
-                return [];
-            }
-
-            TreasureDiag.log('SERVER', '✅ Got candidates from server', {
-                count: bookData.treasures.length,
-                moves: bookData.treasures.map(t => t.san + ' (' + t.popularity + '%)')
-            });
 
             // Шаг 2: Предфильтр
             const candidates = prefilterCandidates(bookData.treasures);
-            TreasureDiag.log('PREFILTER', 'Prefilter result', {
-                before: bookData.treasures.length,
-                after: candidates.length,
-                rejected: bookData.treasures
-                    .filter(m => !candidates.includes(m))
-                    .map(m => m.san + ' (pop=' + m.popularity +
-                         '%, games=' + m.games + ', wr=' + m.winRate + '%)')
-            });
-
             if (candidates.length === 0) {
                 state.consecutiveEmptyScans++;
                 state.currentTreasures = [];
                 return [];
             }
 
-            // Шаг 3: Движок
-            TreasureDiag.log('ENGINE', 'Starting engine evaluation', {
+            // Шаг 3: Движок (передаем scanId)
+            TreasureDiag.log('ENGINE', 'Starting parallel engine evaluation', {
                 candidates: candidates.map(c => c.san)
             });
 
-            const treasures = await evaluateRareMoves(fen, candidates, playerColor);
+            const treasures = await evaluateRareMoves(fen, candidates, playerColor, scanId);
+
+            // Если за время работы движка доска изменилась — прерываем
+            if (scanId !== currentScanId) {
+                TreasureDiag.log('SCAN', '⏹️ Scan results dropped (position outdated)');
+                return [];
+            }
 
             state.currentTreasures = treasures;
             state.totalScanned++;
 
             if (treasures.length > 0) {
                 state.consecutiveEmptyScans = 0;
-                TreasureDiag.log('RESULT', '🎉 TREASURES FOUND!', {
-                    count: treasures.length,
-                    treasures: treasures.map(t =>
-                        t.icon + ' ' + t.san + ' (loss=' + t.evalLoss +
-                        'cp, pop=' + t.popularity + '%)')
-                });
+                TreasureDiag.log('RESULT', '🎉 TREASURES FOUND!', { count: treasures.length });
                 showTreasureHint(treasures);
                 logScanResult(fen, treasures);
             } else {
@@ -401,12 +394,12 @@ function prefilterCandidates(moves) {
             return treasures;
 
         } catch (e) {
-            TreasureDiag.log('ERROR', '💥 Scan crashed: ' + e.message, {
-                stack: e.stack
-            });
+            TreasureDiag.log('ERROR', '💥 Scan crashed: ' + e.message, { stack: e.stack });
             return [];
         } finally {
-            state.scanInProgress = false;
+            if (scanId === currentScanId) {
+                state.scanInProgress = false;
+            }
         }
     }
 
@@ -450,119 +443,79 @@ function prefilterCandidates(moves) {
     }
 
 // ==========================================
-    // ОЦЕНКА ДВИЖКОМ — ТРЁХСТУПЕНЧАТАЯ
+    // ОЦЕНКА ДВИЖКОМ — ПАРАЛЛЕЛЬНАЯ И БЫСТРАЯ
     // ==========================================
 
-    async function evaluateRareMoves(fen, candidates, playerColor) {
-        const treasures = [];
+    async function evaluateRareMoves(fen, candidates, playerColor, scanId) {
         const sign = playerColor === 'white' ? 1 : -1;
 
-        const baseEval  = await getEngineEvalCached(fen, SCAN_DEPTH_FULL);
+        // 1. Быстрая базовая оценка текущей позиции
+        const baseEval = await getEngineEvalCached(fen, SCAN_DEPTH_FULL);
+        if (scanId !== currentScanId) return [];
+
         const baseScore = baseEval.score * sign;
 
-        TreasureDiag.log('ENGINE', 'Base position eval', {
-            rawScore: baseEval.score,
-            adjusted: baseScore,
-            isMate: baseEval.isMate || false
-        });
+        // 2. Параллельный анализ всех кандидатов через Promise.all
+        const evalPromises = candidates.map(async (candidate) => {
+            const testChess = new Chess(fen);
+            const moveDetails = testChess.move(candidate.san);
+            if (!moveDetails) return null;
 
-        for (const candidate of candidates) {
-            const testChess  = new Chess(fen);
-            const moveResult = testChess.move(candidate.san);
-            if (!moveResult) {
-                TreasureDiag.log('ENGINE', '❌ Invalid move: ' + candidate.san);
-                continue;
-            }
+            // Определяем: жертва ли это (ход меньшей фигурой под удар большей)
+            const isSacrifice = Boolean(
+                moveDetails.captured && 
+                getPieceValue(moveDetails.piece) < getPieceValue(moveDetails.captured)
+            );
 
             const afterFen = testChess.fen();
 
-            // Ступень 1
-            const quickEval  = await getEngineEvalCached(afterFen, SCAN_DEPTH_QUICK);
-            const quickScore = -(quickEval.score * sign);
-            const quickLoss  = baseScore - quickScore;
+            // Оцениваем позицию после хода кандидата
+            const moveEval = await getEngineEvalCached(afterFen, SCAN_DEPTH_FULL);
+            if (scanId !== currentScanId) return null;
 
-            if (quickLoss > EVAL_LOSS_PEARL + 30) {
-                TreasureDiag.log('ENGINE', '❌ Quick reject: ' + candidate.san, {
-                    quickLoss: Math.round(quickLoss),
-                    threshold: EVAL_LOSS_PEARL + 30
-                });
-                continue;
-            }
+            const candidateScore = -(moveEval.score * sign);
+            const evalLoss = baseScore - candidateScore;
 
-            // Ступень 2
-            const fullEval  = await getEngineEvalCached(afterFen, SCAN_DEPTH_FULL);
-            const fullScore = -(fullEval.score * sign);
-            const evalLoss  = baseScore - fullScore;
-
+            // Отсекаем ходы с потерей больше допустимой
             if (evalLoss > EVAL_LOSS_PEARL) {
-                TreasureDiag.log('ENGINE', '❌ Full reject: ' + candidate.san, {
-                    evalLoss: Math.round(evalLoss),
-                    threshold: EVAL_LOSS_PEARL
-                });
-                continue;
+                return null;
             }
 
-            // Классификация
             const pop   = parseFloat(candidate.popularity);
             const games = parseInt(candidate.games) || 0;
             const rawWR = parseFloat(candidate.winRate);
             const adjWR = wilsonLowerBound(rawWR / 100, games) * 100;
 
-            let type = classifyTreasure({
+            const type = classifyTreasure({
                 popularity: pop,
                 evalLoss:   evalLoss,
                 games:      games,
-                adjustedWR: adjWR
+                adjustedWR: adjWR,
+                isSacrifice: isSacrifice
             });
 
-            TreasureDiag.log('CLASSIFY', candidate.san + ' classification', {
-                pop, evalLoss: Math.round(evalLoss), games,
-                rawWR, adjWR: Math.round(adjWR * 10) / 10,
-                result: type || 'REJECTED'
-            });
+            if (!type) return null;
 
-            if (!type) continue;
+            return buildTreasure(candidate, type, evalLoss);
+        });
 
-            // Ступень 3
-            if (type === 'HIDDEN_GEM') {
-                const verifyEval  = await getEngineEvalCached(afterFen, SCAN_DEPTH_VERIFY);
-                const verifyScore = -(verifyEval.score * sign);
-                const verifyLoss  = baseScore - verifyScore;
+        // Ждем завершения всех кандидатов сразу, а не по очереди
+        const results = await Promise.all(evalPromises);
 
-                TreasureDiag.log('ENGINE', '🔍 Gem verification: ' + candidate.san, {
-                    verifyLoss: Math.round(verifyLoss),
-                    gemThreshold: EVAL_LOSS_GEM
-                });
-
-                if (verifyLoss > EVAL_LOSS_GEM) {
-                    if (verifyLoss <= EVAL_LOSS_GOLD) {
-                        type = 'BURIED_GOLD';
-                    } else if (verifyLoss <= EVAL_LOSS_PEARL) {
-                        type = 'PEARL';
-                    } else {
-                        continue;
-                    }
-                    treasures.push(buildTreasure(candidate, type, verifyLoss));
-                    continue;
-                }
-            }
-
-            treasures.push(buildTreasure(candidate, type, evalLoss));
-        }
-
-        treasures.sort((a, b) => b.tier - a.tier || a.evalLoss - b.evalLoss);
-        return treasures.slice(0, MAX_TREASURES_PER_POSITION);
+        return results
+            .filter(Boolean)
+            .sort((a, b) => b.tier - a.tier || a.evalLoss - b.evalLoss)
+            .slice(0, MAX_TREASURES_PER_POSITION);
     }
 
 // ==========================================
     // КЛАССИФИКАЦИЯ СОКРОВИЩА
     // ==========================================
 
-    function classifyTreasure({ popularity, evalLoss, games, adjustedWR }) {
-
+    function classifyTreasure({ popularity, evalLoss, games, adjustedWR, isSacrifice }) {
         if (evalLoss > EVAL_LOSS_PEARL) return null;
 
-        // 💎 HIDDEN_GEM
+        // 💎 HIDDEN_GEM: Ультраредкий точный ход
         if (popularity < POP_ULTRA_RARE &&
             evalLoss   <= EVAL_LOSS_GEM &&
             games      >= MIN_GAMES_GEM &&
@@ -570,7 +523,14 @@ function prefilterCandidates(moves) {
             return 'HIDDEN_GEM';
         }
 
-        // 💎 Бонусный путь: ход улучшает позицию
+        // 💎 HIDDEN_GEM: Тактическая новинка/жертва, сохраняющая равенство или перевес
+        if (isSacrifice &&
+            evalLoss   <= EVAL_LOSS_GEM &&
+            popularity < POP_RARE) {
+            return 'HIDDEN_GEM';
+        }
+
+        // 💎 Бонусный путь: ход объективно усиливает позицию (лучше мейнстрима)
         if (popularity < POP_RARE &&
             evalLoss   <= EVAL_GAIN_BONUS &&
             games      >= MIN_GAMES_GEM &&
@@ -578,7 +538,7 @@ function prefilterCandidates(moves) {
             return 'HIDDEN_GEM';
         }
 
-        // 🪙 BURIED_GOLD
+        // 🪙 BURIED_GOLD: Редкий надёжный ход
         if (popularity < POP_RARE &&
             evalLoss   <= EVAL_LOSS_GOLD &&
             games      >= MIN_GAMES_GOLD &&
@@ -586,7 +546,7 @@ function prefilterCandidates(moves) {
             return 'BURIED_GOLD';
         }
 
-        // 🦪 PEARL
+        // 🦪 PEARL: Рабочий боковой ход
         if (popularity < POP_UNCOMMON &&
             evalLoss   <= EVAL_LOSS_PEARL &&
             games      >= MIN_GAMES_PEARL &&
