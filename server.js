@@ -274,41 +274,51 @@ app.post('/api/rating/migrate', (req, res) => {
 // ============================================
 // API: Поиск сокровищ (оптимизированный)
 // ============================================
+// На сервере в /api/treasure/scan:
 app.post('/api/treasure/scan', async (req, res) => {
     const { fen, rating } = req.body;
-    try {
-        const data = await fetchLichessExplorer(fen, rating);
-        const moves = data.moves || [];
-        
-        if (moves.length === 0) {
-            return res.json({ treasures: [] });
-        }
+    
+    // Смотрим партии игроков чуть сильнее текущего пользователя (+200-300 пунктов)
+    const benchmarkRating = Math.min(2500, (rating || 1200) + 200);
+    const bands = getLichessRatingBands(benchmarkRating);
 
-        const total = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        if (total < MIN_GAMES_FOR_BOOK) {
-            return res.json({ treasures: [] });
-        }
-        
-        const treasures = moves
-            .filter(m => {
-                const count = m.white + m.draws + m.black;
-                const popularity = (count / total) * 100;
-                // Ищем редкие ходы с минимальной выборкой
-                return popularity < 12 && count >= 5;
-            })
-            .slice(0, 3) // Не более 3 кандидатов!
-            .map(m => ({
+    const data = await fetchLichessRaw(fen, bands);
+    const moves = data.moves || [];
+    
+    const totalGames = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+    if (totalGames < 50) return res.json({ treasures: [] });
+
+    // Находим винрейт самого популярного (главного) хода для сравнения
+    const mainMove = moves[0];
+    const mainMoveCount = mainMove.white + mainMove.draws + mainMove.black;
+    const mainMoveWR = (mainMove.white + 0.5 * mainMove.draws) / mainMoveCount;
+
+    const treasures = moves
+        .filter((m, idx) => {
+            // Пропускаем самый популярный ход (он не может быть сокровищем)
+            if (idx === 0) return false;
+
+            const count = m.white + m.draws + m.black;
+            const popularity = (count / totalGames) * 100;
+            const winRate = (m.white + 0.5 * m.draws) / count;
+
+            // КРИТЕРИИ СОКРОВИЩА:
+            // 1. Непопулярный (< 7% игроков)
+            // 2. Есть минимальная статистика (хотя бы 15 партий)
+            // 3. Винрейт ВЫШЕ, чем у главного хода этой позиции!
+            return popularity < 7.0 && count >= 15 && winRate > mainMoveWR;
+        })
+        .map(m => {
+            const count = m.white + m.draws + m.black;
+            return {
                 san: m.san,
-                popularity: ((m.white + m.draws + m.black) / total * 100).toFixed(1),
-                winRate: ((m.white + 0.5 * m.draws) / (m.white + m.draws + m.black) * 100).toFixed(1),
-                games: (m.white + m.draws + m.black)
-            }));
+                popularity: ((count / totalGames) * 100).toFixed(1),
+                winRate: (((m.white + 0.5 * m.draws) / count) * 100).toFixed(1),
+                games: count
+            };
+        });
 
-        res.json({ treasures });
-    } catch (err) {
-        console.error('Ошибка /api/treasure/scan:', err.message);
-        res.json({ treasures: [] }); // Возвращаем пустой массив вместо 500 ошибки
-    }
+    res.json({ treasures });
 });
 
 
