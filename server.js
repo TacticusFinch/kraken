@@ -272,53 +272,72 @@ app.post('/api/rating/migrate', (req, res) => {
 });
 
 // ============================================
-// API: Поиск сокровищ (оптимизированный)
+// API: Поиск сокровищ (ZERO-COST к Lichess)
+// Берет данные ТОЛЬКО из уже существующего кэша!
 // ============================================
-// На сервере в /api/treasure/scan:
 app.post('/api/treasure/scan', async (req, res) => {
     const { fen, rating } = req.body;
     
-    // Смотрим партии игроков чуть сильнее текущего пользователя (+200-300 пунктов)
-    const benchmarkRating = Math.min(2500, (rating || 1200) + 200);
-    const bands = getLichessRatingBands(benchmarkRating);
+    try {
+        const bands = getLichessRatingBands(rating);
+        const normalizedFen = fen.split(' ').slice(0, 4).join(' ');
+        const cacheKey = `${normalizedFen}|${bands.join(',')}`;
 
-    const data = await fetchLichessRaw(fen, bands);
-    const moves = data.moves || [];
-    
-    const totalGames = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
-    if (totalGames < 50) return res.json({ treasures: [] });
+        // Проверяем, есть ли позиция в кэше
+        let data = getCached(cacheKey);
 
-    // Находим винрейт самого популярного (главного) хода для сравнения
-    const mainMove = moves[0];
-    const mainMoveCount = mainMove.white + mainMove.draws + mainMove.black;
-    const mainMoveWR = (mainMove.white + 0.5 * mainMove.draws) / mainMoveCount;
+        // Если в кэше нет — делаем обычный запрос только если Lichess не заблокирован
+        if (!data) {
+            if (Date.now() < rateLimitBlockedUntil) {
+                return res.json({ treasures: [] });
+            }
+            data = await fetchLichessExplorer(fen, rating);
+        }
 
-    const treasures = moves
-        .filter((m, idx) => {
-            // Пропускаем самый популярный ход (он не может быть сокровищем)
-            if (idx === 0) return false;
+        const moves = data?.moves || [];
+        if (moves.length === 0) {
+            return res.json({ treasures: [] });
+        }
 
-            const count = m.white + m.draws + m.black;
-            const popularity = (count / totalGames) * 100;
-            const winRate = (m.white + 0.5 * m.draws) / count;
+        const totalGames = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        if (totalGames < 30) {
+            return res.json({ treasures: [] });
+        }
 
-            // КРИТЕРИИ СОКРОВИЩА:
-            // 1. Непопулярный (< 7% игроков)
-            // 2. Есть минимальная статистика (хотя бы 15 партий)
-            // 3. Винрейт ВЫШЕ, чем у главного хода этой позиции!
-            return popularity < 7.0 && count >= 15 && winRate > mainMoveWR;
-        })
-        .map(m => {
-            const count = m.white + m.draws + m.black;
-            return {
-                san: m.san,
-                popularity: ((count / totalGames) * 100).toFixed(1),
-                winRate: (((m.white + 0.5 * m.draws) / count) * 100).toFixed(1),
-                games: count
-            };
-        });
+        // Самый популярный (главный) ход
+        const mainMove = moves[0];
+        const mainCount = mainMove.white + mainMove.draws + mainMove.black;
+        const mainWR = (mainMove.white + 0.5 * mainMove.draws) / Math.max(1, mainCount);
 
-    res.json({ treasures });
+        // Настоящие сокровища:
+        // 1. Не первый ход (не мейнстрим)
+        // 2. Популярность от 0.5% до 8%
+        // 3. Выборка от 10 партий
+        // 4. Винрейт выше главного хода
+        const treasures = moves
+            .filter((m, idx) => {
+                if (idx === 0) return false;
+                const count = m.white + m.draws + m.black;
+                const pop = (count / totalGames) * 100;
+                const wr = (m.white + 0.5 * m.draws) / count;
+                return pop <= 8.0 && count >= 10 && wr >= mainWR;
+            })
+            .slice(0, 2)
+            .map(m => {
+                const count = m.white + m.draws + m.black;
+                return {
+                    san: m.san,
+                    popularity: ((count / totalGames) * 100).toFixed(1),
+                    winRate: (((m.white + 0.5 * m.draws) / count) * 100).toFixed(1),
+                    games: count
+                };
+            });
+
+        res.json({ treasures });
+    } catch (err) {
+        console.error('Ошибка treasure scan:', err.message);
+        res.json({ treasures: [] });
+    }
 });
 
 
@@ -520,11 +539,16 @@ async function fetchLichessRaw(fen, bands) {
 }
 
 async function fetchLichessExplorer(fen, rating) {
+    // Если мы в кулдауне — даже не пытаемся расширять диапазоны
+    if (Date.now() < rateLimitBlockedUntil) {
+        return { moves: [] };
+    }
+
     let bands = getLichessRatingBands(rating);
     let data = await fetchLichessRaw(fen, bands);
 
-    // Если ходов не найдено, расширяем диапазон один раз
-    if (!data?.moves?.length) {
+    // Расширяем диапазоны ТОЛЬКО если запрос успешен и не было блокировки
+    if (!data?.moves?.length && Date.now() >= rateLimitBlockedUntil) {
         const expanded = expandBands(bands);
         if (expanded.length > bands.length) {
             data = await fetchLichessRaw(fen, expanded);

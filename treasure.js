@@ -16,7 +16,7 @@ const TreasureHunt = (function() {
     const SCAN_DEPTH_VERIFY = 20;
 
     // Расширенное окно ходов
-    const MIN_MOVE_NUMBER = 3;
+    const MIN_MOVE_NUMBER = 5;
     const MAX_MOVE_NUMBER = 30;
 
     // Сниженный кулдаун
