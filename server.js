@@ -752,22 +752,29 @@ module.exports = { calculateRatingDelta };
 // ============================================
 app.post('/play-move', async (req, res) => {
     const { fen, san, rating } = req.body;
+    const t0 = Date.now();
+
     try {
         const chess = new Chess();
         if (!chess.load(fen)) {
             return res.status(400).json({ error: 'Invalid FEN' });
         }
 
-        // 1. Данные по исходной позиции (из кэша L1/L2)
+        // 1. Проверяем ход игрока (берется из кэша L1/L2)
         const currentData = await LichessGateway.getOpeningData(fen, rating);
         const moves = currentData.moves || [];
-        const total = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        const total = moves.reduce((s, m) => s + (m.white || 0) + (m.draws || 0) + (m.black || 0), 0);
 
-        const normalizedInput = normalizeSan(san);
-        const rank = moves.findIndex(m => normalizeSan(m.san) === normalizedInput) + 1;
-        const playerMoveInfo = rank > 0 ? moves[rank - 1] : null;
-        const playerMoveCount = playerMoveInfo ? (playerMoveInfo.white + playerMoveInfo.draws + playerMoveInfo.black) : 0;
-        const inBook = rank > 0 && playerMoveCount >= MIN_GAMES_FOR_MOVE && total >= MIN_GAMES_TOTAL;
+        const cleanSan = san.replace(/[+#!?]/g, '').trim();
+        const moveIndex = moves.findIndex(m => m.san.replace(/[+#!?]/g, '').trim() === cleanSan);
+        const rank = moveIndex !== -1 ? moveIndex + 1 : 99;
+        const playerMoveInfo = moveIndex !== -1 ? moves[moveIndex] : null;
+        const playerMoveCount = playerMoveInfo 
+            ? ((playerMoveInfo.white || 0) + (playerMoveInfo.draws || 0) + (playerMoveInfo.black || 0)) 
+            : 0;
+
+        // Книжный ход: входит в топ-5 популярных ходов или сыгран от 15 раз
+        const inBook = (rank <= 5 && total >= 30) || (playerMoveCount >= 15);
 
         if (!chess.move(san)) {
             return res.status(400).json({ error: 'Illegal move' });
@@ -775,18 +782,18 @@ app.post('/play-move', async (req, res) => {
 
         if (chess.isGameOver()) {
             return res.json({
-                check: { inBook, rank: rank || 99, total, moveCount: playerMoveCount },
+                check: { inBook, rank, total, moveCount: playerMoveCount },
                 reply: null,
                 gameOver: true,
                 treasures: []
             });
         }
 
-        // 2. Данные для позиции после хода игрока
+        // 2. Ищем ответ соперника (ЕДИНСТВЕННЫЙ внешний запрос, если нет в кэше)
         const newFen = chess.fen();
         const replyData = await LichessGateway.getOpeningData(newFen, rating);
         const replyMoves = replyData.moves || [];
-        const replyTotal = replyMoves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        const replyTotal = replyMoves.reduce((s, m) => s + (m.white || 0) + (m.draws || 0) + (m.black || 0), 0);
 
         let replyMove = null;
         if (replyMoves.length > 0 && replyTotal >= MIN_GAMES_FOR_BOOK) {
@@ -794,21 +801,17 @@ app.post('/play-move', async (req, res) => {
             if (picked) replyMove = picked.san;
         }
 
-        // 3. Сразу извлекаем сокровища для следующей позиции без единого нового HTTP-запроса!
-        let treasures = [];
-        if (replyMove) {
-            const nextChess = new Chess(newFen);
-            nextChess.move(replyMove);
-            // Берем сокровища для позиции, которая возникнет после ответа соперника
-            const userTurnData = await LichessGateway.getOpeningData(nextChess.fen(), rating);
-            treasures = LichessGateway.extractTreasures(userTurnData);
-        }
+        // 3. Сокровища извлекаем СРАЗУ из replyData (не делаем 3-й запрос к Lichess!)
+        const treasures = LichessGateway.extractTreasures(replyData);
+
+        const dt = Date.now() - t0;
+        console.log(`🎯 /play-move "${san}" → "${replyMove || '—'}", ${dt}ms, inBook=${inBook}, rank=${rank}`);
 
         res.json({
-            check: { inBook, rank: rank || 99, total, moveCount: playerMoveCount },
+            check: { inBook, rank, total, moveCount: playerMoveCount },
             reply: replyMove,
             gameOver: false,
-            treasures: treasures // <-- Клиент получает сокровища сразу!
+            treasures
         });
 
     } catch (err) {
@@ -816,7 +819,6 @@ app.post('/play-move', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 
 // ============================================
 // API: /get-move — первый ход белых

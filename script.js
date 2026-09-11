@@ -480,13 +480,27 @@ function playMoveSound(move) {
     }
 }
 
-const serverDataPromise = playMoveOnServer(fenBefore, move.san, userRating);
+async function processPlayerMove(move, fenBefore) {
+    try {
+        const fenAfter = game.fen();
+        const moveNumber = Math.ceil(game.history().length / 2);
+        const playerTurnBefore = fenBefore.charAt(fenBefore.indexOf(' ') + 1);
+
+        appendMoveToNotation(move, 'pending', true);
+
+        if (typeof TreasureHunt !== 'undefined' && TreasureHunt.isActive()) {
+            const foundTreasure = TreasureHunt.checkPlayerMove(move.san);
+            if (foundTreasure) {
+                console.log("🎉 Сокровище найдено в партии!", foundTreasure);
+            }
+        }
+
+        const serverDataPromise = playMoveOnServer(fenBefore, move.san, userRating);
         analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, playerTurnBefore, serverDataPromise);
 
-        // ЗАЩИТА ОТ ЗАВИСАНИЯ: если Lichess дал 429 или сервер завис более чем на 3 секунды,
-        // игра не блокируется, а переходит на локальный Stockfish
+        // ЗАЩИТА ОТ ЗАВИСАНИЯ: если Lichess дал 429 или сервер завис более чем на 3 секунды
         const serverTimeout = new Promise(resolve => 
-            setTimeout(() => resolve({ timeout: true, reply: null, gameOver: false }), 3000)
+            setTimeout(() => resolve({ timeout: true, reply: null, gameOver: false }), 5000)
         );
         const serverData = await Promise.race([serverDataPromise, serverTimeout]);
 
@@ -533,7 +547,7 @@ async function analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, pl
 
         // ===== Параллельно ждём сервер с таймаутом (защита от зависания сессии) =====
         const bgTimeout = new Promise(resolve => 
-            setTimeout(() => resolve({ check: { inBook: false, rank: 99, moveCount: 0 } }), 2000)
+            setTimeout(() => resolve({ check: { inBook: false, rank: 99, moveCount: 0 } }), 5000)
         );
         const serverData = await Promise.race([serverDataPromise, bgTimeout]);
         const bookInfo = (serverData && serverData.check) ? serverData.check : { inBook: false, rank: 99, moveCount: 0 };
