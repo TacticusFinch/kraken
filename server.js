@@ -16,6 +16,7 @@ const SqliteStore = require('better-sqlite3-session-store')(session);
 const passport = require('passport');
 const bcrypt = require('bcryptjs');
 const UserStore = require('./models/UserSqlite');
+const LichessGateway = require('./lichessGateway');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -271,71 +272,13 @@ app.post('/api/rating/migrate', (req, res) => {
   });
 });
 
-// ============================================
-// API: Поиск сокровищ (ZERO-COST к Lichess)
-// Берет данные ТОЛЬКО из уже существующего кэша!
-// ============================================
 app.post('/api/treasure/scan', async (req, res) => {
     const { fen, rating } = req.body;
-    
     try {
-        const bands = getLichessRatingBands(rating);
-        const normalizedFen = fen.split(' ').slice(0, 4).join(' ');
-        const cacheKey = `${normalizedFen}|${bands.join(',')}`;
-
-        // Проверяем, есть ли позиция в кэше
-        let data = getCached(cacheKey);
-
-        // Если в кэше нет — делаем обычный запрос только если Lichess не заблокирован
-        if (!data) {
-            if (Date.now() < rateLimitBlockedUntil) {
-                return res.json({ treasures: [] });
-            }
-            data = await fetchLichessExplorer(fen, rating);
-        }
-
-        const moves = data?.moves || [];
-        if (moves.length === 0) {
-            return res.json({ treasures: [] });
-        }
-
-        const totalGames = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        if (totalGames < 30) {
-            return res.json({ treasures: [] });
-        }
-
-        // Самый популярный (главный) ход
-        const mainMove = moves[0];
-        const mainCount = mainMove.white + mainMove.draws + mainMove.black;
-        const mainWR = (mainMove.white + 0.5 * mainMove.draws) / Math.max(1, mainCount);
-
-        // Настоящие сокровища:
-        // 1. Не первый ход (не мейнстрим)
-        // 2. Популярность от 0.5% до 8%
-        // 3. Выборка от 10 партий
-        // 4. Винрейт выше главного хода
-        const treasures = moves
-            .filter((m, idx) => {
-                if (idx === 0) return false;
-                const count = m.white + m.draws + m.black;
-                const pop = (count / totalGames) * 100;
-                const wr = (m.white + 0.5 * m.draws) / count;
-                return pop <= 8.0 && count >= 10 && wr >= mainWR;
-            })
-            .slice(0, 2)
-            .map(m => {
-                const count = m.white + m.draws + m.black;
-                return {
-                    san: m.san,
-                    popularity: ((count / totalGames) * 100).toFixed(1),
-                    winRate: (((m.white + 0.5 * m.draws) / count) * 100).toFixed(1),
-                    games: count
-                };
-            });
-
+        const data = await LichessGateway.getOpeningData(fen, rating);
+        const treasures = LichessGateway.extractTreasures(data);
         res.json({ treasures });
-    } catch (err) {
-        console.error('Ошибка treasure scan:', err.message);
+    } catch (e) {
         res.json({ treasures: [] });
     }
 });
@@ -397,168 +340,6 @@ function saveRatingsDebounced() {
 }
 
 // ============================================
-// Кэш Lichess + дедупликация
-// ============================================
-const lichessCache = new Map();
-const inflight = new Map();
-let cacheHits = 0;
-let cacheMisses = 0;
-let rateLimitBlockedUntil = 0;
-
-function getCached(key) {
-    const entry = lichessCache.get(key);
-    if (!entry) { cacheMisses++; return null; }
-    if (Date.now() - entry.time > CACHE_TTL) {
-        lichessCache.delete(key);
-        cacheMisses++;
-        return null;
-    }
-    cacheHits++;
-    return entry.data;
-}
-
-function setCached(key, data) {
-    lichessCache.set(key, { data, time: Date.now() });
-    if (lichessCache.size > CACHE_MAX_SIZE) {
-        const firstKey = lichessCache.keys().next().value;
-        lichessCache.delete(firstKey);
-    }
-}
-
-// ============================================
-// Ограничитель с очередью (строго 1 запрос в 1000мс)
-// ============================================
-let lastLichessCall = 0;
-const LICHESS_DELAY_MS = 250;
-
-function lichessLimit(fn) {
-    return new Promise((resolve, reject) => {
-        const now = Date.now();
-        const wait = Math.max(0, lastLichessCall + LICHESS_DELAY_MS - now);
-        lastLichessCall = now + wait;
-
-        setTimeout(async () => {
-            try {
-                const res = await fn();
-                resolve(res);
-            } catch (e) {
-                reject(e);
-            }
-        }, wait);
-    });
-}
-
-// ============================================
-// Рейтинговые группы Lichess (широкий охват)
-// ============================================
-function getLichessRatingBands(rating) {
-    const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
-    const r = Math.max(1000, Math.min(2500, rating));
-    
-    let closestIdx = 0;
-    let minDiff = Infinity;
-    for (let i = 0; i < allBands.length; i++) {
-        const diff = Math.abs(allBands[i] - r);
-        if (diff < minDiff) {
-            minDiff = diff;
-            closestIdx = i;
-        }
-    }
-
-    const start = Math.max(0, closestIdx - 1);
-    const end = Math.min(allBands.length, closestIdx + 2);
-    return allBands.slice(start, end);
-}
-
-function expandBands(bands) {
-    const allBands = [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500];
-    const set = new Set(bands);
-    const minIdx = allBands.indexOf(bands[0]);
-    const maxIdx = allBands.indexOf(bands[bands.length - 1]);
-    if (minIdx > 0) set.add(allBands[minIdx - 1]);
-    if (maxIdx < allBands.length - 1) set.add(allBands[maxIdx + 1]);
-    return [...set].sort((a, b) => a - b);
-}
-
-// ============================================
-// Запрос к Lichess Explorer (БЕЗ ЗАВИСАНИЙ)
-// ============================================
-async function fetchLichessRaw(fen, bands) {
-    // Нормализуем ключ кэша: отсекаем счетчики ходов (оставляем только расстановку и цвет)
-    const normalizedFen = fen.split(' ').slice(0, 4).join(' ');
-    const cacheKey = `${normalizedFen}|${bands.join(',')}`;
-    
-    const cached = getCached(cacheKey);
-    if (cached) return cached;
-
-    if (inflight.has(cacheKey)) return inflight.get(cacheKey);
-
-    // Если Lichess недавно вернул 429 — не долбим его повторно, отдаем пустой ответ сразу
-    if (Date.now() < rateLimitBlockedUntil) {
-        console.warn('⚡ Lichess во временном блоке (cooldown), пропускаем запрос в пользу движка');
-        return { moves: [] };
-    }
-
-    const url = new URL('https://explorer.lichess.ovh/lichess');
-    url.searchParams.set('variant', 'standard');
-    url.searchParams.set('fen', fen);
-    url.searchParams.set('speeds', 'blitz,rapid,classical');
-    url.searchParams.set('moves', '20');
-    url.searchParams.set('ratings', bands.join(','));
-
-    const p = axios.get(url.toString(), {
-        headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-            'User-Agent': 'KrakenChessTrainer/3.3'
-        },
-        timeout: 2500 // Уменьшаем таймаут, чтобы сервер не висел
-    }).then(response => {
-        if (response.data && response.data.moves) {
-            setCached(cacheKey, response.data);
-        }
-        return response.data || { moves: [] };
-    }).catch(err => {
-        if (err.response?.status === 429) {
-            console.warn('⚠️ Lichess 429! Включаем кулдаун на 15 секунд и сразу отдаем выход из книги');
-            rateLimitBlockedUntil = Date.now() + 15000; // 15 секунд не мучаем Lichess
-            return { moves: [] }; // Мгновенный ответ клиенту!
-        }
-        
-        if (err.response) {
-            console.error('Lichess API error:', err.response.status);
-        } else {
-            console.error('Lichess network error:', err.message);
-        }
-        return { moves: [] };
-    }).finally(() => {
-        inflight.delete(cacheKey);
-    });
-
-    inflight.set(cacheKey, p);
-    return p;
-}
-
-async function fetchLichessExplorer(fen, rating) {
-    // Если мы в кулдауне — даже не пытаемся расширять диапазоны
-    if (Date.now() < rateLimitBlockedUntil) {
-        return { moves: [] };
-    }
-
-    let bands = getLichessRatingBands(rating);
-    let data = await fetchLichessRaw(fen, bands);
-
-    // Расширяем диапазоны ТОЛЬКО если запрос успешен и не было блокировки
-    if (!data?.moves?.length && Date.now() >= rateLimitBlockedUntil) {
-        const expanded = expandBands(bands);
-        if (expanded.length > bands.length) {
-            data = await fetchLichessRaw(fen, expanded);
-        }
-    }
-
-    return data || { moves: [] };
-}
-
-// ============================================
 // Утилиты для ходов
 // ============================================
 function normalizeSan(san) {
@@ -596,7 +377,7 @@ function pickWeightedMove(moves) {
 async function prefetchLikelyPositions(fen, rating, topN = PREFETCH_TOP_N) {
     if (!PREFETCH_ENABLED) return;
     try {
-        const data = await fetchLichessExplorer(fen, rating);
+        const data = await LichessGateway.getOpeningData(fen, rating); // ✅
         const moves = data.moves || [];
         if (moves.length === 0) return;
 
@@ -614,10 +395,10 @@ async function prefetchLikelyPositions(fen, rating, topN = PREFETCH_TOP_N) {
             try {
                 const chess = new Chess(fen);
                 chess.move(cand.san);
-                await fetchLichessExplorer(chess.fen(), rating);
-            } catch (e) { /* пропускаем */ }
+                await LichessGateway.getOpeningData(chess.fen(), rating); // ✅
+            } catch (e) { }
         }));
-    } catch (e) { /* префетч не критичен */ }
+    } catch (e) { }
 }
 
 // ============================================
@@ -971,51 +752,39 @@ module.exports = { calculateRatingDelta };
 // ============================================
 app.post('/play-move', async (req, res) => {
     const { fen, san, rating } = req.body;
-    const t0 = Date.now();
-
     try {
         const chess = new Chess();
-        try {
-            chess.load(fen);
-        } catch (e) {
+        if (!chess.load(fen)) {
             return res.status(400).json({ error: 'Invalid FEN' });
         }
 
-        const data = await fetchLichessExplorer(fen, rating);
-        const moves = data.moves || [];
+        // 1. Данные по исходной позиции (из кэша L1/L2)
+        const currentData = await LichessGateway.getOpeningData(fen, rating);
+        const moves = currentData.moves || [];
         const total = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
 
         const normalizedInput = normalizeSan(san);
         const rank = moves.findIndex(m => normalizeSan(m.san) === normalizedInput) + 1;
         const playerMoveInfo = rank > 0 ? moves[rank - 1] : null;
-        const playerMoveCount = playerMoveInfo
-            ? playerMoveInfo.white + playerMoveInfo.draws + playerMoveInfo.black
-            : 0;
+        const playerMoveCount = playerMoveInfo ? (playerMoveInfo.white + playerMoveInfo.draws + playerMoveInfo.black) : 0;
         const inBook = rank > 0 && playerMoveCount >= MIN_GAMES_FOR_MOVE && total >= MIN_GAMES_TOTAL;
 
-        let playerMoveResult;
-        try {
-            playerMoveResult = chess.move(san);
-        } catch (e) {
-            return res.status(400).json({ error: 'Illegal move' });
-        }
-        if (!playerMoveResult) {
+        if (!chess.move(san)) {
             return res.status(400).json({ error: 'Illegal move' });
         }
 
         if (chess.isGameOver()) {
-            const dt = Date.now() - t0;
-            console.log(`🎯 /play-move "${san}" → end, ${dt}ms`);
             return res.json({
                 check: { inBook, rank: rank || 99, total, moveCount: playerMoveCount },
                 reply: null,
                 gameOver: true,
-                result: chess.isCheckmate() ? 'checkmate' : 'draw'
+                treasures: []
             });
         }
 
+        // 2. Данные для позиции после хода игрока
         const newFen = chess.fen();
-        const replyData = await fetchLichessExplorer(newFen, rating);
+        const replyData = await LichessGateway.getOpeningData(newFen, rating);
         const replyMoves = replyData.moves || [];
         const replyTotal = replyMoves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
 
@@ -1025,23 +794,21 @@ app.post('/play-move', async (req, res) => {
             if (picked) replyMove = picked.san;
         }
 
+        // 3. Сразу извлекаем сокровища для следующей позиции без единого нового HTTP-запроса!
+        let treasures = [];
         if (replyMove) {
-            setImmediate(() => {
-                try {
-                    const preChess = new Chess(newFen);
-                    preChess.move(replyMove);
-                    prefetchLikelyPositions(preChess.fen(), rating);
-                } catch (e) { /* игнор */ }
-            });
+            const nextChess = new Chess(newFen);
+            nextChess.move(replyMove);
+            // Берем сокровища для позиции, которая возникнет после ответа соперника
+            const userTurnData = await LichessGateway.getOpeningData(nextChess.fen(), rating);
+            treasures = LichessGateway.extractTreasures(userTurnData);
         }
-
-        const dt = Date.now() - t0;
-        console.log(`🎯 /play-move "${san}" → "${replyMove || '—'}", ${dt}ms, inBook=${inBook}, rank=${rank}`);
 
         res.json({
             check: { inBook, rank: rank || 99, total, moveCount: playerMoveCount },
             reply: replyMove,
-            gameOver: false
+            gameOver: false,
+            treasures: treasures // <-- Клиент получает сокровища сразу!
         });
 
     } catch (err) {
@@ -1050,13 +817,14 @@ app.post('/play-move', async (req, res) => {
     }
 });
 
+
 // ============================================
 // API: /get-move — первый ход белых
 // ============================================
 app.post('/get-move', async (req, res) => {
     const { fen, rating } = req.body;
     try {
-        const data = await fetchLichessExplorer(fen, rating);
+        const data = await LichessGateway.getOpeningData(fen, rating); 
         const moves = data.moves || [];
         const total = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
 
@@ -1215,55 +983,6 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-// ============================================
-// Диагностика Lichess при старте
-// ============================================
-(async () => {
-    const testFen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
-    const testUrl = `https://explorer.lichess.ovh/lichess?variant=standard&speeds=blitz,rapid,classical&ratings=1600&fen=${encodeURIComponent(testFen)}`;
-
-    console.log('🔍 Тест Lichess Explorer...');
-    console.log('   URL:', testUrl);
-    console.log('   Токен:', token ? `${token.slice(0, 8)}...` : 'НЕ ЗАДАН');
-
-    try {
-        const resp = await axios.get(testUrl, {
-            headers: {
-                'Authorization': token ? `Bearer ${token}` : undefined,
-                'User-Agent': 'KrakenChessTrainer/3.3',
-                'Accept': 'application/json'
-            },
-            timeout: 10000
-        });
-        const total = (resp.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-        console.log(`✅ Тест с токеном: ${resp.status}, ${total} партий`);
-    } catch (e) {
-        console.error(`❌ Тест с токеном ПРОВАЛЕН:`);
-        if (e.response) {
-            console.error(`   HTTP ${e.response.status} ${e.response.statusText}`);
-            console.error(`   Body:`, JSON.stringify(e.response.data).slice(0, 200));
-        } else {
-            console.error(`   ${e.code || e.message}`);
-        }
-    }
-
-    try {
-        const resp = await axios.get(testUrl, {
-            headers: {
-                'User-Agent': 'KrakenChessTrainer/3.3',
-                'Accept': 'application/json'
-            },
-            timeout: 10000
-        });
-        const total = (resp.data.moves || []).reduce((s, m) => s + m.white + m.draws + m.black, 0);
-    } catch (e) {
-        if (e.response) {
-            // тихо
-        } else {
-            console.error(`   ${e.code || e.message}`);
-        }
-    }
-})();
 
 // ============================================
 // Запуск
