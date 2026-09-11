@@ -480,24 +480,15 @@ function playMoveSound(move) {
     }
 }
 
-async function processPlayerMove(move, fenBefore) {
-    try {
-        const fenAfter = game.fen();
-        const moveNumber = Math.ceil(game.history().length / 2);
-        const playerTurnBefore = fenBefore.charAt(fenBefore.indexOf(' ') + 1);
-
-        appendMoveToNotation(move, 'pending', true);
-	if (typeof TreasureHunt !== 'undefined') {
-            const foundTreasure = TreasureHunt.checkPlayerMove(move.san);
-            if (foundTreasure) {
-                console.log("🎉 Сокровище найдено в партии!", foundTreasure);
-            }
-        }
-
-        const serverDataPromise = playMoveOnServer(fenBefore, move.san, userRating);
+const serverDataPromise = playMoveOnServer(fenBefore, move.san, userRating);
         analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, playerTurnBefore, serverDataPromise);
 
-        const serverData = await serverDataPromise;
+        // ЗАЩИТА ОТ ЗАВИСАНИЯ: если Lichess дал 429 или сервер завис более чем на 3 секунды,
+        // игра не блокируется, а переходит на локальный Stockfish
+        const serverTimeout = new Promise(resolve => 
+            setTimeout(() => resolve({ timeout: true, reply: null, gameOver: false }), 3000)
+        );
+        const serverData = await Promise.race([serverDataPromise, serverTimeout]);
 
         if (serverData.gameOver) {
             updateStatus('Партия окончена');
@@ -505,7 +496,7 @@ async function processPlayerMove(move, fenBefore) {
             return;
         }
 
-        if (serverData.reply) {
+        if (serverData.reply && !serverData.timeout) {
             setTimeout(() => applyOpponentReply(serverData.reply), 120);
         } else {
             movesOutOfBook++;
@@ -518,6 +509,7 @@ async function processPlayerMove(move, fenBefore) {
             }
             makeEngineReply();
         }
+
     } catch (err) {
         console.error('❌ processPlayerMove:', err);
         waitingForOpponent = false;

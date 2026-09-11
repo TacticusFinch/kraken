@@ -199,33 +199,32 @@ const TreasureHunt = (function() {
 function prefilterCandidates(moves) {
     if (!moves || moves.length === 0) return [];
 
-    return moves.filter(move => {
+    const candidates = moves.filter(move => {
         const pop = parseFloat(move.popularity);
         const games = parseInt(move.games) || 0;
         const winRate = parseFloat(move.winRate);
 
         // 1. Слишком популярные ходы — не сокровище
-        //    Если ход играют > 12% игроков, он не «скрытый»
         if (pop >= POP_UNCOMMON) {
             return false;
         }
 
-        // 2. Слишком мало партий — нет статистической значимости
-        //    Даже для жемчужины нужно хотя бы MIN_GAMES_PEARL партий
+        // 2. Слишком мало партий
         if (games < MIN_GAMES_PEARL) {
             return false;
         }
 
-        // 3. Слишком низкий винрейт — ход скорее всего плохой
-        //    Порог ниже, чем при финальной классификации,
-        //    чтобы не отсечь пограничные случаи до проверки движком
+        // 3. Слишком низкий винрейт
         if (winRate < WINRATE_PEARL_MIN - 5) {
             return false;
         }
 
-        // 4. Ход проходит предфильтр — отправляем на проверку движком
         return true;
     });
+
+    // ОГРАНИЧЕНИЕ: берем максимум 2 лучших кандидата,
+    // чтобы не занимать все воркеры Stockfish одновременно
+    return candidates.slice(0, 2);
 }
 
 
@@ -407,7 +406,7 @@ function prefilterCandidates(moves) {
     // ЗАПРОС К СЕРВЕРУ
     // ==========================================
 
-    async function fetchBookData(fen) {
+async function fetchBookData(fen) {
         try {
             const url = API_BASE + '/api/treasure/scan';
             TreasureDiag.log('SERVER', 'POST ' + url, {
@@ -415,11 +414,17 @@ function prefilterCandidates(moves) {
                 rating: typeof userRating !== 'undefined' ? userRating : 'UNDEFINED'
             });
 
+            // Отсекаем запрос, если сервер висит дольше 2.5 секунд (из-за лимитов Lichess)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+
             const resp = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fen, rating: userRating })
+                body: JSON.stringify({ fen, rating: userRating }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             TreasureDiag.log('SERVER', 'Response status: ' + resp.status);
 
@@ -429,15 +434,9 @@ function prefilterCandidates(moves) {
             }
 
             const data = await resp.json();
-            TreasureDiag.log('SERVER', 'Response body', {
-                keys: Object.keys(data),
-                treasureCount: data.treasures ? data.treasures.length : 0,
-                sample: JSON.stringify(data).substring(0, 300)
-            });
-
             return data;
         } catch (e) {
-            TreasureDiag.log('ERROR', '💥 Fetch failed: ' + e.message);
+            TreasureDiag.log('ERROR', '💥 Fetch skipped/failed: ' + e.message);
             return null;
         }
     }
