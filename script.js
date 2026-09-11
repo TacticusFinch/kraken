@@ -531,9 +531,12 @@ async function analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, pl
         const prelimCategory = categorizeMove(fastCPL.cpl, false);
         updateMoveCategory(move.san, prelimCategory, true);
 
-        // ===== Параллельно ждём сервер =====
-        const serverData = await serverDataPromise;
-        const bookInfo = serverData.check || { inBook: false, rank: 99, moveCount: 0 };
+        // ===== Параллельно ждём сервер с таймаутом (защита от зависания сессии) =====
+        const bgTimeout = new Promise(resolve => 
+            setTimeout(() => resolve({ check: { inBook: false, rank: 99, moveCount: 0 } }), 2000)
+        );
+        const serverData = await Promise.race([serverDataPromise, bgTimeout]);
+        const bookInfo = (serverData && serverData.check) ? serverData.check : { inBook: false, rank: 99, moveCount: 0 };
         const popularityRank = bookInfo.rank || 99;
 
         // Уточняем категорию с данными книги

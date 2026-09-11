@@ -49,7 +49,7 @@ const TreasureHunt = (function() {
     const MAX_TREASURES_PER_POSITION = 3;
     const ENGINE_CACHE_LIMIT = 500;
     const SCAN_HISTORY_LIMIT = 50;
-    const MIN_COMPLEXITY = 20;
+    const MIN_COMPLEXITY = 40;
 
     // ==========================================
     // ТИПЫ СОКРОВИЩ

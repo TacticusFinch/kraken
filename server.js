@@ -272,26 +272,31 @@ app.post('/api/rating/migrate', (req, res) => {
 });
 
 // ============================================
-// API: Поиск сокровищ
+// API: Поиск сокровищ (оптимизированный)
 // ============================================
 app.post('/api/treasure/scan', async (req, res) => {
     const { fen, rating } = req.body;
     try {
-        // Используем уже существующую функцию fetchLichessExplorer
         const data = await fetchLichessExplorer(fen, rating);
         const moves = data.moves || [];
         
-        // Фильтруем ходы: ищем те, которые редко играют (например, < 12%)
-        // Это и будут наши "сокровища"
+        if (moves.length === 0) {
+            return res.json({ treasures: [] });
+        }
+
         const total = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        if (total < MIN_GAMES_FOR_BOOK) {
+            return res.json({ treasures: [] });
+        }
         
         const treasures = moves
             .filter(m => {
                 const count = m.white + m.draws + m.black;
                 const popularity = (count / total) * 100;
-                // Условие: ход редкий (меньше 12%) и имеет хоть какую-то статистику
+                // Ищем редкие ходы с минимальной выборкой
                 return popularity < 12 && count >= 5;
             })
+            .slice(0, 3) // Не более 3 кандидатов!
             .map(m => ({
                 san: m.san,
                 popularity: ((m.white + m.draws + m.black) / total * 100).toFixed(1),
@@ -302,7 +307,7 @@ app.post('/api/treasure/scan', async (req, res) => {
         res.json({ treasures });
     } catch (err) {
         console.error('Ошибка /api/treasure/scan:', err.message);
-        res.status(500).json({ error: 'Failed to scan treasures' });
+        res.json({ treasures: [] }); // Возвращаем пустой массив вместо 500 ошибки
     }
 });
 
@@ -395,7 +400,7 @@ function setCached(key, data) {
 // Ограничитель с очередью (строго 1 запрос в 1000мс)
 // ============================================
 let lastLichessCall = 0;
-const LICHESS_DELAY_MS = 1000;
+const LICHESS_DELAY_MS = 250;
 
 function lichessLimit(fn) {
     return new Promise((resolve, reject) => {
@@ -447,14 +452,23 @@ function expandBands(bands) {
 }
 
 // ============================================
-// Запрос к Lichess Explorer с мягким повтором при 429
+// Запрос к Lichess Explorer (БЕЗ ЗАВИСАНИЙ)
 // ============================================
-async function fetchLichessRaw(fen, bands, retryCount = 0) {
-    const cacheKey = `${fen}|${bands.join(',')}`;
+async function fetchLichessRaw(fen, bands) {
+    // Нормализуем ключ кэша: отсекаем счетчики ходов (оставляем только расстановку и цвет)
+    const normalizedFen = fen.split(' ').slice(0, 4).join(' ');
+    const cacheKey = `${normalizedFen}|${bands.join(',')}`;
+    
     const cached = getCached(cacheKey);
     if (cached) return cached;
 
     if (inflight.has(cacheKey)) return inflight.get(cacheKey);
+
+    // Если Lichess недавно вернул 429 — не долбим его повторно, отдаем пустой ответ сразу
+    if (Date.now() < rateLimitBlockedUntil) {
+        console.warn('⚡ Lichess во временном блоке (cooldown), пропускаем запрос в пользу движка');
+        return { moves: [] };
+    }
 
     const url = new URL('https://explorer.lichess.ovh/lichess');
     url.searchParams.set('variant', 'standard');
@@ -463,28 +477,28 @@ async function fetchLichessRaw(fen, bands, retryCount = 0) {
     url.searchParams.set('moves', '20');
     url.searchParams.set('ratings', bands.join(','));
 
-    const p = lichessLimit(() => axios.get(url.toString(), {
+    const p = axios.get(url.toString(), {
         headers: {
             'Authorization': token ? `Bearer ${token}` : undefined,
             'User-Agent': 'KrakenChessTrainer/3.3'
         },
-        timeout: 4500
-    })).then(response => {
-        if (response.data && response.data.moves && response.data.moves.length > 0) {
+        timeout: 2500 // Уменьшаем таймаут, чтобы сервер не висел
+    }).then(response => {
+        if (response.data && response.data.moves) {
             setCached(cacheKey, response.data);
         }
-        return response.data;
-    }).catch(async err => {
-        // Если прилетел 429 — не блокируем игру на 60 сек, а ждем 2.5с и повторяем
-        if (err.response?.status === 429 && retryCount < 1) {
-            console.log(`⏳ Лимит Lichess (429): мягкое ожидание 2.5с и повтор...`);
-            await new Promise(r => setTimeout(r, 2500));
-            return fetchLichessRaw(fen, bands, retryCount + 1);
+        return response.data || { moves: [] };
+    }).catch(err => {
+        if (err.response?.status === 429) {
+            console.warn('⚠️ Lichess 429! Включаем кулдаун на 15 секунд и сразу отдаем выход из книги');
+            rateLimitBlockedUntil = Date.now() + 15000; // 15 секунд не мучаем Lichess
+            return { moves: [] }; // Мгновенный ответ клиенту!
         }
+        
         if (err.response) {
-            console.error('Lichess API error:', err.response.status, err.response.statusText);
+            console.error('Lichess API error:', err.response.status);
         } else {
-            console.error('Lichess API error:', err.message);
+            console.error('Lichess network error:', err.message);
         }
         return { moves: [] };
     }).finally(() => {
