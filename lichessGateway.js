@@ -190,42 +190,99 @@ async function getOpeningData(fen, rating = 1500) {
 }
 
 /**
- * Извлечение сокровищ из уже полученных данных позиции (0 сетевых запросов)
+ * Расчет нижней границы доверительного интервала Вильсона (95% уверенности)
+ * Отсекает ходы-ловушки с 2-3 случайными победами
  */
-function extractTreasures(data) {
+function wilsonLowerBound(wins, total) {
+    if (total <= 0) return 0;
+    const z = 1.645; // 90-95% доверительный интервал
+    const p = wins / total;
+    const denominator = 1 + (z * z) / total;
+    const center = p + (z * z) / (2 * total);
+    const spread = z * Math.sqrt((p * (1 - p) + (z * z) / (4 * total)) / total);
+    return Math.max(0, (center - spread) / denominator);
+}
+
+/**
+ * Извлечение сокровищ из уже полученных данных позиции БЕЗ новых сетевых запросов
+ * @param {Object} data - Ответ Lichess Explorer
+ * @param {string} fen - Текущая позиция (чтобы определить чей ход)
+ */
+function extractTreasures(data, fen) {
     const moves = data?.moves || [];
     if (!moves.length) return [];
 
-    const totalGames = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
-    if (totalGames < 25) return [];
+    const totalGames = moves.reduce((s, m) => s + (m.white || 0) + (m.draws || 0) + (m.black || 0), 0);
+    if (totalGames < 35) return []; // Слишком мало данных в позиции
 
+    // Определяем чей ход: 'w' -> игрок белыми, 'b' -> игрок черными
+    const fenTurn = (fen && fen.split(' ')[1]) || 'w';
+    const isWhite = fenTurn === 'w';
+
+    const getMovePoints = (m) => {
+        const userWins = isWhite ? m.white : m.black;
+        return userWins + 0.5 * m.draws;
+    };
+
+    // Главный ход ветки (топ-1 по популярности) для бенчмарка
     const mainMove = moves[0];
     const mainGames = mainMove.white + mainMove.draws + mainMove.black;
-    const mainWR = (mainMove.white + 0.5 * mainMove.draws) / Math.max(1, mainGames);
+    const mainWR = getMovePoints(mainMove) / Math.max(1, mainGames);
 
     return moves
         .filter((m, idx) => {
-            if (idx === 0) return false; // Не первый ход
+            if (idx === 0) return false; // Мейнстрим — не сокровище
+
             const count = m.white + m.draws + m.black;
-            const pop = (count / totalGames) * 100;
-            const wr = (m.white + 0.5 * m.draws) / count;
-            // Критерии: редкость до 9%, от 8 партий и винрейт не хуже главного хода
-            return pop <= 9.0 && count >= 8 && wr >= (mainWR - 0.02);
+            const popPercent = (count / totalGames) * 100;
+
+            // Критерий 1: Редкость (ход делают от 0.8% до 12% игроков)
+            if (popPercent < 0.8 || popPercent > 12.0) return false;
+
+            // Критерий 2: Выборка (минимум 8-10 партий в базе)
+            if (count < 8) return false;
+
+            // Критерий 3: Винрейт
+            const winRate = getMovePoints(m) / count;
+            const wilsonWR = wilsonLowerBound(getMovePoints(m), count);
+
+            // Ход должен быть статистически не хуже главного продолжения
+            // или иметь чистый винрейт >= 50%
+            return (winRate >= mainWR - 0.02 || winRate >= 0.50) && wilsonWR >= 0.40;
         })
         .slice(0, 2)
         .map(m => {
             const count = m.white + m.draws + m.black;
+            const rawWR = (getMovePoints(m) / count) * 100;
+            const pop = (count / totalGames) * 100;
+
+            // Классификация
+            let type = 'PEARL';
+            let label = 'Жемчужина';
+            let icon = '🦪';
+            let points = 20;
+
+            if (pop <= 3.0 && rawWR >= 54) {
+                type = 'HIDDEN_GEM';
+                label = 'Тайный бриллиант';
+                icon = '💎';
+                points = 50;
+            } else if (pop <= 7.0 && rawWR >= 50) {
+                type = 'BURIED_GOLD';
+                label = 'Золото глубин';
+                icon = '🪙';
+                points = 35;
+            }
+
             return {
                 san: m.san,
-                popularity: ((count / totalGames) * 100).toFixed(1),
-                winRate: (((m.white + 0.5 * m.draws) / count) * 100).toFixed(1),
-                games: count
+                popularity: pop.toFixed(1),
+                winRate: rawWR.toFixed(1),
+                games: count,
+                type,
+                label,
+                icon,
+                points
             };
         });
 }
-
-module.exports = {
-    getOpeningData,
-    extractTreasures,
-    normalizeFen
-};

@@ -814,15 +814,25 @@ app.post('/play-move', async (req, res) => {
             if (picked) replyMove = picked.san;
         }
 
-        const treasures = LichessGateway.extractTreasures(replyData);
-        const dt = Date.now() - t0;
-        console.log(`📤 [/play-move] УСПЕХ (${dt}ms): "${san}" -> Ответ="${replyMove || '—'}" | inBook=${inBook} | rank=${rank} | games=${playerMoveCount}/${total}`);
+        // Если соперник отвечает ходом — ищем сокровища ДЛЯ ИГРОКА в позиции ПОСЛЕ ответа соперника!
+        let playerTurnFen = newFen;
+        let treasuresForPlayer = [];
+
+        if (replyMove) {
+            const tempChess = new Chess(newFen);
+            tempChess.move(replyMove);
+            playerTurnFen = tempChess.fen();
+
+            // Извлекаем сокровища для хода игрока без дополнительных сетевых запросов!
+            const playerPosData = await LichessGateway.getOpeningData(playerTurnFen, rating);
+            treasuresForPlayer = LichessGateway.extractTreasures(playerPosData, playerTurnFen);
+        }
 
         res.json({
             check: { inBook, rank, total, moveCount: playerMoveCount },
             reply: replyMove,
             gameOver: false,
-            treasures
+            treasures: treasuresForPlayer // Сокровища, которые игрок может найти на СЛЕДУЮЩЕМ ходу
         });
 
     } catch (err) {
