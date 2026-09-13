@@ -505,7 +505,7 @@ async function initUserPanel() {
 const panel = document.getElementById('userPanel');
 
 try {
-const res = await fetch('/api/user/me');
+const res = await fetch(API_BASE + '/api/user/me', { credentials: 'include' });
 const data = await res.json();
 
 if (data.loggedIn) {

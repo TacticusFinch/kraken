@@ -117,6 +117,9 @@ const TreasureHunt = (function() {
     return {
         init,
         reset,
+        // Для совместимости со старыми вызовами
+        isActive: () => state.active,
+        setTreasures: setAvailableTreasures,
         setAvailableTreasures,
         checkPlayerMove,
         getStats: () => ({ ...state })
