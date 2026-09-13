@@ -15,13 +15,16 @@ const httpsAgent = new https.Agent({
     timeout: 3000
 });
 
+const token = process.env.LICHESS_TOKEN;
+
 const apiClient = axios.create({
     baseURL: 'https://explorer.lichess.ovh',
     httpsAgent,
-    timeout: 3000,
+    timeout: 4000,
     headers: {
-        'User-Agent': 'KrakenChess/4.0 (https://krakenchess.ru; contact: admin@krakenchess.ru)',
-        'Accept': 'application/json'
+        'User-Agent': 'KrakenChess/4.0 (contact: admin@krakenchess.ru)',
+        'Accept': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     }
 });
 

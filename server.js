@@ -753,24 +753,19 @@ module.exports = { calculateRatingDelta };
 app.post('/play-move', async (req, res) => {
     const { fen, san, rating } = req.body;
     const t0 = Date.now();
-    console.log(`\n📥 [API: /play-move] ПОЛУЧЕН ХОД: san="${san}" | userRating=${rating} | fen="${fen?.substring(0, 35)}..."`);
+    console.log(`\n📥 [API: /play-move] Входящий ход: san="${san}" | fen="${fen?.substring(0, 35)}..."`);
 
     try {
-        const chess = new Chess();
-        if (!chess.load(fen)) {
+        let chess;
+        try {
+            // Безопасная инициализация для v0.x и v1.x chess.js
+            chess = new Chess(fen);
+        } catch (e) {
             console.warn(`⚠️ [/play-move] Невалидный FEN: ${fen}`);
             return res.status(400).json({ error: 'Invalid FEN' });
         }
 
-        if (!chess.move(san)) {
-            console.warn(`⚠️ [/play-move] Нелегальный ход: "${san}" для FEN: ${fen}`);
-            return res.status(400).json({ error: 'Illegal move' });
-        }
-        // отменяем ход на секунду, чтобы проверить позицию ДО хода в Lichess
-        chess.undo();
-
-
-        // 1. Проверяем ход игрока (берется из кэша L1/L2)
+        // 1. Проверяем ход игрока по дебютной книге в исходной позиции
         const currentData = await LichessGateway.getOpeningData(fen, rating);
         const moves = currentData.moves || [];
         const total = moves.reduce((s, m) => s + (m.white || 0) + (m.draws || 0) + (m.black || 0), 0);
@@ -783,14 +778,16 @@ app.post('/play-move', async (req, res) => {
             ? ((playerMoveInfo.white || 0) + (playerMoveInfo.draws || 0) + (playerMoveInfo.black || 0)) 
             : 0;
 
-        // Книжный ход: входит в топ-5 популярных ходов или сыгран от 15 раз
         const inBook = (rank <= 5 && total >= 30) || (playerMoveCount >= 15);
 
-        if (!chess.move(san)) {
+        // 2. Делаем ход игрока на виртуальной доске
+        const moveResult = chess.move(san);
+        if (!moveResult) {
+            console.warn(`⚠️ [/play-move] Нелегальный ход: "${san}" для позиции ${fen}`);
             return res.status(400).json({ error: 'Illegal move' });
         }
 
-        if (chess.isGameOver()) {
+        if (chess.isGameOver ? chess.isGameOver() : chess.game_over()) {
             return res.json({
                 check: { inBook, rank, total, moveCount: playerMoveCount },
                 reply: null,
@@ -799,7 +796,7 @@ app.post('/play-move', async (req, res) => {
             });
         }
 
-        // 2. Ищем ответ соперника (ЕДИНСТВЕННЫЙ внешний запрос, если нет в кэше)
+        // 3. Получаем ответ соперника для новой позиции
         const newFen = chess.fen();
         const replyData = await LichessGateway.getOpeningData(newFen, rating);
         const replyMoves = replyData.moves || [];
@@ -811,9 +808,7 @@ app.post('/play-move', async (req, res) => {
             if (picked) replyMove = picked.san;
         }
 
-        // 3. Сокровища извлекаем СРАЗУ из replyData (не делаем 3-й запрос к Lichess!)
         const treasures = LichessGateway.extractTreasures(replyData);
-
         const dt = Date.now() - t0;
         console.log(`📤 [/play-move] УСПЕХ (${dt}ms): "${san}" -> Ответ="${replyMove || '—'}" | inBook=${inBook} | rank=${rank} | games=${playerMoveCount}/${total}`);
 
