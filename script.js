@@ -509,10 +509,12 @@ async function processPlayerMove(move, fenBefore) {
         const serverTimeout = new Promise(resolve => 
             setTimeout(() => resolve({ timeout: true, reply: null, gameOver: false }), 5000)
         );
-        const serverData = await Promise.race([serverDataPromise, serverTimeout]);
 
-	if (serverData && serverData.treasures && typeof TreasureHunt !== 'undefined') {
-    TreasureHunt.setTreasures(serverData.treasures);
+const serverData = await Promise.race([serverDataPromise, serverTimeout]);
+
+// Передаем сокровища, которые сервер нашел для нашего следующего хода:
+if (serverData && serverData.treasures && typeof TreasureHunt !== 'undefined') {
+    TreasureHunt.setAvailableTreasures(serverData.treasures);
 }
         if (serverData.gameOver) {
             updateStatus('Партия окончена');
@@ -550,7 +552,11 @@ async function analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, pl
     try {
         // ===== Фаза 1: быстрое окрашивание =====
         const fastCPL = await computeCPL(fenBefore, fenAfter, playerTurnBefore, EVAL_DEPTH_FAST);
-
+	
+	// Проверяем сокровище с реальной оценкой качества хода от Stockfish:
+if (typeof TreasureHunt !== 'undefined') {
+    TreasureHunt.checkPlayerMove(move.san, fastCPL.cpl);
+}
         // Предварительная категория без данных книги — окрашиваем сразу
         const prelimCategory = categorizeMove(fastCPL.cpl, false);
         updateMoveCategory(move.san, prelimCategory, true);
@@ -1558,6 +1564,10 @@ if (typeof VoyageEngine !== 'undefined') {
 VoyageEngine.init(15);
 }
 
+if (typeof TreasureHunt !== 'undefined') {
+    TreasureHunt.reset();
+}
+
 updateStatus('Тренировка дебюта началась!');
 SoundEngine.gameStart();
 }
@@ -1614,6 +1624,10 @@ DOM.lichessBtn.onclick = null;
 
 if (typeof VoyageEngine !== 'undefined') {
 VoyageEngine.init(15);
+}
+
+if (typeof TreasureHunt !== 'undefined') {
+    TreasureHunt.reset();
 }
 
 SoundEngine.gameStart();
