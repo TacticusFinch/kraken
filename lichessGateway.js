@@ -144,13 +144,20 @@ async function getOpeningData(fen, rating = 1500) {
             return data;
 
         } catch (err) {
+            console.error('❌ [LichessGateway Error]:', {
+                status: err.response?.status,
+                statusText: err.response?.statusText,
+                message: err.message,
+                data: err.response?.data,
+                url: err.config?.url,
+                params: err.config?.params
+            });
+
             if (err.response?.status === 429) {
-                const retryAfterHeader = err.response.headers['retry-after'];
+                const retryAfterHeader = err.response.headers?.['retry-after'];
                 const waitSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 30;
                 circuitBlockedUntil = Date.now() + (waitSeconds * 1000);
-                console.warn(`⚠️ Lichess 429! Circuit breaker открыт на ${waitSeconds}с.`);
-            } else {
-                console.warn('Lichess API error:', err.response?.status || err.message);
+                console.warn(`⚠️ [Lichess] 429 Rate Limit! Блокировка запросов на ${waitSeconds}с.`);
             }
             return { moves: [], white: 0, draws: 0, black: 0 };
         } finally {

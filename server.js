@@ -753,12 +753,22 @@ module.exports = { calculateRatingDelta };
 app.post('/play-move', async (req, res) => {
     const { fen, san, rating } = req.body;
     const t0 = Date.now();
+    console.log(`\n📥 [API: /play-move] ПОЛУЧЕН ХОД: san="${san}" | userRating=${rating} | fen="${fen?.substring(0, 35)}..."`);
 
     try {
         const chess = new Chess();
         if (!chess.load(fen)) {
+            console.warn(`⚠️ [/play-move] Невалидный FEN: ${fen}`);
             return res.status(400).json({ error: 'Invalid FEN' });
         }
+
+        if (!chess.move(san)) {
+            console.warn(`⚠️ [/play-move] Нелегальный ход: "${san}" для FEN: ${fen}`);
+            return res.status(400).json({ error: 'Illegal move' });
+        }
+        // отменяем ход на секунду, чтобы проверить позицию ДО хода в Lichess
+        chess.undo();
+
 
         // 1. Проверяем ход игрока (берется из кэша L1/L2)
         const currentData = await LichessGateway.getOpeningData(fen, rating);
@@ -805,7 +815,7 @@ app.post('/play-move', async (req, res) => {
         const treasures = LichessGateway.extractTreasures(replyData);
 
         const dt = Date.now() - t0;
-        console.log(`🎯 /play-move "${san}" → "${replyMove || '—'}", ${dt}ms, inBook=${inBook}, rank=${rank}`);
+        console.log(`📤 [/play-move] УСПЕХ (${dt}ms): "${san}" -> Ответ="${replyMove || '—'}" | inBook=${inBook} | rank=${rank} | games=${playerMoveCount}/${total}`);
 
         res.json({
             check: { inBook, rank, total, moveCount: playerMoveCount },
