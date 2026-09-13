@@ -57,6 +57,8 @@ const inflight = new Map();
 
 // Circuit Breaker (защита от бана 429)
 let circuitBlockedUntil = 0;
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL_MS = 650; // Не чаще 1 запроса в 650мс к Lichess
 
 /**
  * Нормализация FEN для шахматных транспозиций
@@ -120,6 +122,14 @@ async function getOpeningData(fen, rating = 1500) {
     const token = process.env.LICHESS_TOKEN;
     const requestPromise = (async () => {
         try {
+            // Защита от превышения частоты: держим паузу между запросами
+            const now = Date.now();
+            const timeSinceLast = now - lastRequestTime;
+            if (timeSinceLast < MIN_REQUEST_INTERVAL_MS) {
+                await new Promise(r => setTimeout(r, MIN_REQUEST_INTERVAL_MS - timeSinceLast));
+            }
+            lastRequestTime = Date.now();
+
             const resp = await apiClient.get('/lichess', {
                 params: {
                     variant: 'standard',
@@ -165,7 +175,7 @@ async function getOpeningData(fen, rating = 1500) {
 
             if (err.response?.status === 429) {
                 const retryAfterHeader = err.response.headers?.['retry-after'];
-                const waitSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 30;
+                const waitSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 4;
                 circuitBlockedUntil = Date.now() + (waitSeconds * 1000);
                 console.warn(`⚠️ [Lichess] 429 Rate Limit! Блокировка запросов на ${waitSeconds}с.`);
             }
