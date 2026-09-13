@@ -1,11 +1,12 @@
 // ============================================================================
-// Lichess Gateway v4.0 for KrakenChess
-// Полное соответствие API Lichess: Keep-Alive, Single-Flight, L1/L2 Caching
+// Lichess Gateway v4.1 for KrakenChess
+// Полное соответствие API Lichess: Keep-Alive, Single-Flight, L1/L2 Caching,
+// а также умный поиск сокровищ без сетевой перегрузки.
 // ============================================================================
 
 const https = require('https');
 const axios = require('axios');
-const db = require('./db'); // ваш существующий sqlite db
+const db = require('./db');
 
 // 1. Постоянный HTTP-агент с переиспользованием сокетов (Keep-Alive)
 const httpsAgent = new https.Agent({
@@ -15,14 +16,11 @@ const httpsAgent = new https.Agent({
     timeout: 3000
 });
 
-const token = process.env.LICHESS_TOKEN;
-
 const headers = {
     'User-Agent': 'KrakenChess/4.0 (contact: admin@krakenchess.ru)',
     'Accept': 'application/json'
 };
 
-// Отправляем токен ТОЛЬКО если он реально существует и не пустой
 const lichessToken = process.env.LICHESS_TOKEN ? process.env.LICHESS_TOKEN.trim() : null;
 if (lichessToken) {
     headers['Authorization'] = `Bearer ${lichessToken}`;
@@ -48,17 +46,17 @@ db.exec(`
 const stmtGet = db.prepare('SELECT data FROM lichess_cache WHERE cache_key = ?');
 const stmtSet = db.prepare('INSERT OR REPLACE INTO lichess_cache (cache_key, data, updated_at) VALUES (?, ?, ?)');
 
-// 3. L1 In-Memory кэш (быстрый доступ)
+// 3. L1 In-Memory кэш
 const memCache = new Map();
 const MEM_CACHE_LIMIT = 3000;
 
 // Очередь дедупликации (Single-Flight)
 const inflight = new Map();
 
-// Circuit Breaker (защита от бана 429)
+// Circuit Breaker (защита от лимита 429)
 let circuitBlockedUntil = 0;
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL_MS = 650; // Не чаще 1 запроса в 650мс к Lichess
+const MIN_REQUEST_INTERVAL_MS = 650;
 
 /**
  * Нормализация FEN для шахматных транспозиций
@@ -109,20 +107,18 @@ async function getOpeningData(fen, rating = 1500) {
         console.error('L2 Cache read error:', e.message);
     }
 
-    // Если Lichess в блоке 429 — не шлем запрос, спасаем игру
+    // Если Lichess временно заблокирован по 429
     if (Date.now() < circuitBlockedUntil) {
         return { moves: [], white: 0, draws: 0, black: 0 };
     }
 
-    // Single-Flight: если идентичный запрос уже летит прямо сейчас, подсаживаемся на него
+    // Single-Flight: предотвращение дублирующих параллельных запросов
     if (inflight.has(cacheKey)) {
         return inflight.get(cacheKey);
     }
 
-    const token = process.env.LICHESS_TOKEN;
     const requestPromise = (async () => {
         try {
-            // Защита от превышения частоты: держим паузу между запросами
             const now = Date.now();
             const timeSinceLast = now - lastRequestTime;
             if (timeSinceLast < MIN_REQUEST_INTERVAL_MS) {
@@ -138,13 +134,10 @@ async function getOpeningData(fen, rating = 1500) {
                     ratings: bands.join(','),
                     moves: 15
                 }
-                // Токен НЕ передаем — Explorer публичен!
             });
 
             const data = resp.data || { moves: [] };
 
-            // ВАЖНО: Кэшируем ТОЛЬКО если ходы реально нашлись!
-            // Никогда не кэшируем пустой ответ, чтобы не застревать в ошибке
             if (data.moves && data.moves.length > 0) {
                 if (memCache.size >= MEM_CACHE_LIMIT) {
                     const oldest = memCache.keys().next().value;
@@ -157,27 +150,18 @@ async function getOpeningData(fen, rating = 1500) {
                         stmtSet.run(cacheKey, JSON.stringify(data), Date.now());
                     } catch (err) {}
                 });
-            } else {
-                console.warn(`⚠️ Lichess вернул 0 ходов для FEN: ${fen.substring(0, 30)}...`);
             }
 
             return data;
 
         } catch (err) {
-            console.error('❌ [LichessGateway Error]:', {
-                status: err.response?.status,
-                statusText: err.response?.statusText,
-                message: err.message,
-                data: err.response?.data,
-                url: err.config?.url,
-                params: err.config?.params
-            });
+            console.error('❌ [LichessGateway Error]:', err.message);
 
             if (err.response?.status === 429) {
                 const retryAfterHeader = err.response.headers?.['retry-after'];
                 const waitSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 4;
                 circuitBlockedUntil = Date.now() + (waitSeconds * 1000);
-                console.warn(`⚠️ [Lichess] 429 Rate Limit! Блокировка запросов на ${waitSeconds}с.`);
+                console.warn(`⚠️ [Lichess] 429 Rate Limit! Блокировка на ${waitSeconds}с.`);
             }
             return { moves: [], white: 0, draws: 0, black: 0 };
         } finally {
@@ -190,12 +174,11 @@ async function getOpeningData(fen, rating = 1500) {
 }
 
 /**
- * Расчет нижней границы доверительного интервала Вильсона (95% уверенности)
- * Отсекает ходы-ловушки с 2-3 случайными победами
+ * Оценка Вильсона для достоверности винрейта
  */
 function wilsonLowerBound(wins, total) {
     if (total <= 0) return 0;
-    const z = 1.645; // 90-95% доверительный интервал
+    const z = 1.645;
     const p = wins / total;
     const denominator = 1 + (z * z) / total;
     const center = p + (z * z) / (2 * total);
@@ -204,18 +187,15 @@ function wilsonLowerBound(wins, total) {
 }
 
 /**
- * Извлечение сокровищ из уже полученных данных позиции БЕЗ новых сетевых запросов
- * @param {Object} data - Ответ Lichess Explorer
- * @param {string} fen - Текущая позиция (чтобы определить чей ход)
+ * Извлечение сокровищ из уже имеющихся данных с учетом цвета стороны
  */
 function extractTreasures(data, fen) {
     const moves = data?.moves || [];
     if (!moves.length) return [];
 
     const totalGames = moves.reduce((s, m) => s + (m.white || 0) + (m.draws || 0) + (m.black || 0), 0);
-    if (totalGames < 35) return []; // Слишком мало данных в позиции
+    if (totalGames < 35) return [];
 
-    // Определяем чей ход: 'w' -> игрок белыми, 'b' -> игрок черными
     const fenTurn = (fen && fen.split(' ')[1]) || 'w';
     const isWhite = fenTurn === 'w';
 
@@ -224,30 +204,23 @@ function extractTreasures(data, fen) {
         return userWins + 0.5 * m.draws;
     };
 
-    // Главный ход ветки (топ-1 по популярности) для бенчмарка
     const mainMove = moves[0];
     const mainGames = mainMove.white + mainMove.draws + mainMove.black;
     const mainWR = getMovePoints(mainMove) / Math.max(1, mainGames);
 
     return moves
         .filter((m, idx) => {
-            if (idx === 0) return false; // Мейнстрим — не сокровище
+            if (idx === 0) return false;
 
             const count = m.white + m.draws + m.black;
             const popPercent = (count / totalGames) * 100;
 
-            // Критерий 1: Редкость (ход делают от 0.8% до 12% игроков)
             if (popPercent < 0.8 || popPercent > 12.0) return false;
-
-            // Критерий 2: Выборка (минимум 8-10 партий в базе)
             if (count < 8) return false;
 
-            // Критерий 3: Винрейт
             const winRate = getMovePoints(m) / count;
             const wilsonWR = wilsonLowerBound(getMovePoints(m), count);
 
-            // Ход должен быть статистически не хуже главного продолжения
-            // или иметь чистый винрейт >= 50%
             return (winRate >= mainWR - 0.02 || winRate >= 0.50) && wilsonWR >= 0.40;
         })
         .slice(0, 2)
@@ -256,7 +229,6 @@ function extractTreasures(data, fen) {
             const rawWR = (getMovePoints(m) / count) * 100;
             const pop = (count / totalGames) * 100;
 
-            // Классификация
             let type = 'PEARL';
             let label = 'Жемчужина';
             let icon = '🦪';
@@ -286,3 +258,10 @@ function extractTreasures(data, fen) {
             };
         });
 }
+
+// Экспорт всех методов наружу
+module.exports = {
+    getOpeningData,
+    extractTreasures,
+    normalizeFen
+};
