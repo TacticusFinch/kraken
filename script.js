@@ -564,8 +564,7 @@ async function analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, pl
         const popularityRank = bookInfo.rank || 99;
 
         // Уточняем категорию с данными книги
-        const isBookMoveFast = bookInfo.inBook && bookInfo.rank <= 3 &&
-            (bookInfo.moveCount || 0) >= 50 && fastCPL.cpl <= 50;
+        const isBookMoveFast = bookInfo.inBook && fastCPL.cpl <= 60;
 	console.log(`🔍 [Client Анализ] Ход: ${move.san} | inBook=${bookInfo.inBook} | rank=${bookInfo.rank} | moveCount=${bookInfo.moveCount} | CPL=${fastCPL.cpl} => ИТОГ КНИГИ: ${isBookMoveFast}`);
         const fastCategory = categorizeMove(fastCPL.cpl, isBookMoveFast);
 
@@ -630,8 +629,7 @@ async function analyzeMoveInBackground(move, fenBefore, fenAfter, moveNumber, pl
         // ===== Фаза 2: точный дорасчёт (фоновый, не блокирует UI) =====
         computeCPL(fenBefore, fenAfter, playerTurnBefore, EVAL_DEPTH)
             .then(fullCPL => {
-                const isBookMoveFull = bookInfo.inBook && bookInfo.rank <= 3 &&
-                    (bookInfo.moveCount || 0) >= 50 && fullCPL.cpl <= 50;
+                const isBookMoveFull = bookInfo.inBook && fullCPL.cpl <= 60;
                 const fullCategory = categorizeMove(fullCPL.cpl, isBookMoveFull);
 
                 // Обновить окрашивание если категория изменилась
