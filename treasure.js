@@ -813,11 +813,6 @@ async function fetchBookData(fen) {
 
 })();
 
-//============================================
-// TreasureHunt Diagnostics — Диагностика
-// Вставить после основного модуля
-//============================================
-
 const TreasureDiag = (function() {
     'use strict';
 
@@ -980,3 +975,21 @@ const TreasureDiag = (function() {
 })();
 
 window.TreasureDiag = TreasureDiag;
+
+function setTreasures(treasures) {
+        if (!state.active || !treasures || treasures.length === 0) return;
+        state.currentTreasures = treasures;
+        showTreasureHint(treasures);
+    }
+
+    return {
+        init,
+        setTreasures, 
+        scanPosition,
+        checkPlayerMove,
+        getStats,
+        isActive,
+        deactivate,
+        get state() { return state; },
+        TREASURE_TYPES
+    };

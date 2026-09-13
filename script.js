@@ -511,6 +511,9 @@ async function processPlayerMove(move, fenBefore) {
         );
         const serverData = await Promise.race([serverDataPromise, serverTimeout]);
 
+	if (serverData && serverData.treasures && typeof TreasureHunt !== 'undefined') {
+    TreasureHunt.setTreasures(serverData.treasures);
+}
         if (serverData.gameOver) {
             updateStatus('Партия окончена');
             scheduleEndSession();
@@ -691,9 +694,6 @@ function applyOpponentReply(san) {
     board.position(game.fen(), true);
     playMoveSound(result);
     appendMoveToNotation(result, 'opponent', false);
-    if (typeof TreasureHunt !== 'undefined' && TreasureHunt.isActive()) {
-        TreasureHunt.scanPosition(game.fen(), playerColor);
-    }
     // Предвычисляем оценку пока игрок думает
     prefetchEvaluation(game.fen());
 
@@ -725,9 +725,6 @@ async function makeEngineReply() {
                 board.position(game.fen(), true);
                 playMoveSound(result);
                 appendMoveToNotation(result, 'opponent', false);
-		if (typeof TreasureHunt !== 'undefined' && TreasureHunt.isActive()) {
-                    TreasureHunt.scanPosition(game.fen(), playerColor);
-                }
             }
         }
         waitingForOpponent = false;
