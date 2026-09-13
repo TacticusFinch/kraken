@@ -113,31 +113,33 @@ async function getOpeningData(fen, rating = 1500) {
             const resp = await apiClient.get('/lichess', {
                 params: {
                     variant: 'standard',
-                    fen: fen,
+                    fen: fen.trim(),
                     speeds: 'blitz,rapid,classical',
                     ratings: bands.join(','),
                     moves: 15
-                },
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                }
+                // Токен НЕ передаем — Explorer публичен!
             });
 
             const data = resp.data || { moves: [] };
 
-            // Сохраняем в L1
-            if (memCache.size >= MEM_CACHE_LIMIT) {
-                const oldest = memCache.keys().next().value;
-                memCache.delete(oldest);
-            }
-            memCache.set(cacheKey, data);
-
-            // Сохраняем в L2 (SQLite) в фоне
-            setImmediate(() => {
-                try {
-                    stmtSet.run(cacheKey, JSON.stringify(data), Date.now());
-                } catch (err) {
-                    console.error('L2 Cache write error:', err.message);
+            // ВАЖНО: Кэшируем ТОЛЬКО если ходы реально нашлись!
+            // Никогда не кэшируем пустой ответ, чтобы не застревать в ошибке
+            if (data.moves && data.moves.length > 0) {
+                if (memCache.size >= MEM_CACHE_LIMIT) {
+                    const oldest = memCache.keys().next().value;
+                    memCache.delete(oldest);
                 }
-            });
+                memCache.set(cacheKey, data);
+
+                setImmediate(() => {
+                    try {
+                        stmtSet.run(cacheKey, JSON.stringify(data), Date.now());
+                    } catch (err) {}
+                });
+            } else {
+                console.warn(`⚠️ Lichess вернул 0 ходов для FEN: ${fen.substring(0, 30)}...`);
+            }
 
             return data;
 
