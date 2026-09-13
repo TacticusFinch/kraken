@@ -19,6 +19,21 @@ const UserStore = require('./models/UserSqlite');
 const LichessGateway = require('./lichessGateway');
 
 const app = express();
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    // Разрешаем запросы с krakenchess.ru, localhost и любые поддомены
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204); // Успешный мгновенный ответ на Preflight
+    }
+    next();
+});
+
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -133,14 +148,6 @@ app.get('/api/user/me', (req, res) => {
 });
 
 
-
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') return res.sendStatus(200);
-    next();
-});
 
 const stockfishHeaders = (req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
