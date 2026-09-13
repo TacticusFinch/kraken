@@ -753,15 +753,14 @@ module.exports = { calculateRatingDelta };
 app.post('/play-move', async (req, res) => {
     const { fen, san, rating } = req.body;
     const t0 = Date.now();
-    console.log(`\n📥 [API: /play-move] Входящий ход: san="${san}" | fen="${fen?.substring(0, 35)}..."`);
 
     try {
         let chess;
         try {
-            // Безопасная инициализация для v0.x и v1.x chess.js
+            // Передаем fen прямо в конструктор: работает во ВСЕХ версиях chess.js
             chess = new Chess(fen);
         } catch (e) {
-            console.warn(`⚠️ [/play-move] Невалидный FEN: ${fen}`);
+            console.warn(`⚠️ [/play-move] Ошибка парсинга FEN: ${fen}`);
             return res.status(400).json({ error: 'Invalid FEN' });
         }
 

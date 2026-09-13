@@ -17,15 +17,22 @@ const httpsAgent = new https.Agent({
 
 const token = process.env.LICHESS_TOKEN;
 
+const headers = {
+    'User-Agent': 'KrakenChess/4.0 (contact: admin@krakenchess.ru)',
+    'Accept': 'application/json'
+};
+
+// Отправляем токен ТОЛЬКО если он реально существует и не пустой
+const lichessToken = process.env.LICHESS_TOKEN ? process.env.LICHESS_TOKEN.trim() : null;
+if (lichessToken) {
+    headers['Authorization'] = `Bearer ${lichessToken}`;
+}
+
 const apiClient = axios.create({
     baseURL: 'https://explorer.lichess.ovh',
     httpsAgent,
     timeout: 4000,
-    headers: {
-        'User-Agent': 'KrakenChess/4.0 (contact: admin@krakenchess.ru)',
-        'Accept': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    }
+    headers
 });
 
 // 2. Инициализация таблицы персистентного кэша L2 в SQLite
