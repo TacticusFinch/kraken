@@ -252,7 +252,14 @@ function createEngine(id) {
             }
         };
         e.worker.onerror = function (err) {
-            console.error(`❌ SF#${id} error:`, err.message || 'unknown');
+            console.error(`❌ SF#${id} упал (${err.message || 'unreachable'}). Перезапускаю воркер...`);
+            try { e.worker.terminate(); } catch (_) {}
+            
+            // Заменяем упавший worker на свежий
+            setTimeout(() => {
+                const fresh = createEngine(id);
+                engines[id] = fresh;
+            }, 200);
         };
         e.worker.postMessage('uci');
     } catch (err) {
@@ -284,14 +291,20 @@ function runEvalOnEngine(e, fen, depth, resolve) {
     e.turn = fen.charAt(fen.indexOf(' ') + 1);
     e.score = 0;
     e.isMate = false;
+    
+    // Обязательно останавливаем предыдущий расчет перед новой задачей
+    e.worker.postMessage('stop');
+
     e.timeout = setTimeout(() => {
         if (e.resolve === resolve) {
+            e.worker.postMessage('stop'); // 👈 Останавливаем движок физически!
             e.resolve = null;
             e.busy = false;
             resolve({ score: 0, isMate: false });
             processEngineQueue();
         }
     }, EVAL_TIMEOUT_MS);
+
     e.worker.postMessage('position fen ' + fen);
     e.worker.postMessage('go depth ' + depth);
 }
@@ -358,6 +371,7 @@ function getEngineBestMoveAdaptive(fen, depth) {
                     processEngineQueue();
                 }
             };
+		e.worker.postMessage('stop');
             e.worker.postMessage('position fen ' + fen);
             e.worker.postMessage('go depth ' + depth);
         };
