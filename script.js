@@ -3,7 +3,7 @@
 //============================================
 
 // --- Константы ---
-const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://krakenserver-tacticusfinch.msk1.amvera.tech';
+const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://krakenchess-tacticusfinch.mia0.amvera.tech';
 const EVAL_DEPTH = 15;
 const EVAL_DEPTH_FAST = 10;
 const NUM_ENGINES = 3;
